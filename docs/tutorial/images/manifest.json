@@ -1,0 +1,1012 @@
+{
+ "source": "https://chatgpt.com/share/6b01cd8e-a5d4-83ea-91ec-2586124529df",
+ "generated": "2026-11-22",
+ "images": {
+  "Espressif ESP32-S3 functional block diagram CPU memory peripherals WiFi Bluetooth USB GPIO": {
+   "file": "02-01.jpg",
+   "title": "ESPr Developer S3 Type-C 【スイッチサイエンス取寄品】 / SSCI-083119",
+   "origin": "https://doc.switch-science.com/media/files/e8bb30f2-a5b7-4030-931d-9a5eadc5f0a3.png",
+   "width": 938,
+   "height": 900,
+   "proxy": "https://images.openai.com/static-rsc-4/rWCgwYBH7YeYwb3LXW4iFcj1IwCzJjAXrytNnMSLcLLvJV6G53iQCX9LsfsV9PK8LdnPL_03yjtd9pS1t1VIyk0JL1usOyhTgWfTV7cqb4aR5MDjEx6-kHEMiF7v9ULOKn1q6ZHsLy5qn3PJU69NJVXV4CrYa50sP9MXLV3DqIQ?purpose=inline"
+  },
+  "Cadence Xtensa LX7 CPU architecture block diagram register file ALU pipeline": {
+   "file": "03-01.jpg",
+   "title": "Tensilica Xtensa LX7 Processor Datasheet | Cadence",
+   "origin": "https://www.cadence.com/content/dam/cadence-www/global/en_US/images/resources/datasheets/xtensa-lx7-processor-ds-fig-1.png",
+   "width": 1024,
+   "height": 872,
+   "proxy": "https://images.openai.com/static-rsc-4/kz3SdIAadEiD2wKkWNJ9zWF_0gmg-YWSCt9M0cEjZNrgu9pleBo-V78HD33auy0h3lMbzdsnNUJjJ9aK41-FLe4iEUKXrhMGPQ9z9RtbIZhCQv-4RcPT7ehpAXyKC_K5mHAOt7Dx1IdjflmbwkD1VdS4HMTKGl3_yAp0rBiawss?purpose=inline"
+  },
+  "USB logic analyzer oscilloscope measuring microcontroller GPIO PWM digital signal waveform": {
+   "file": "03-02.jpg",
+   "title": "Project | ESP-32 BLDC Robot Actuator Controller | Hackaday.io",
+   "origin": "https://cdn.hackaday.io/images/3954681581606183869.c1af91cd72d922962fb5cbb89ee2eb5c",
+   "width": 1126,
+   "height": 503,
+   "proxy": "https://images.openai.com/static-rsc-4/pUMrfVIGNS10BTyVpGu-jHw47k5krLptDVtwICa2PovjSCMTSReJZmwld8yWb_mpI4FSriv9p9SdpyFD_L738ZFd5BOUltA5mxV1ci6jocMIeJ2FeNgvUaalg4tG3pOqqlbUsnVHvtX-X3JeWxwpT7vfEjCHQDzIxfXudeYzlCs?purpose=inline"
+  },
+  "ESP32 S3 memory architecture SRAM ROM external SPI flash PSRAM architecture block diagram": {
+   "file": "04-01.jpg",
+   "title": "ESP Series: ESP8266/ ESP32 Related",
+   "origin": "https://www.makerfabs.com/media/wysiwyg/_4_2.png",
+   "width": 1047,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/q0UMwY-6YHrZNyxLRAlUNbiG5qJHeNXQ9kiqP5FkV-l7SfUKyqZPbeSX1bMJcXc0KkkVa1tQV-PdMgbH9mNaSg4yDh4OAaGSm8ot0wzkI2iMzasRSP4UF3X7F7Mt0WoRoGnPMZfiQJTaHI2wScW-OzbU1odk0YrpQL_I_Q37swc?purpose=inline"
+  },
+  "ESP32 GPIO input output circuit internal pull up pull down driver block diagram": {
+   "file": "05-01.jpg",
+   "title": "How big a pull-up resistor is needed to pull up an internally pulled-down GPIO (ESP32-C6)? - Electrical Engineering Stack Exchange",
+   "origin": "https://i.sstatic.net/Kszlb.png",
+   "width": 909,
+   "height": 813,
+   "proxy": "https://images.openai.com/static-rsc-4/fHsf7Np4nBlO4097EgFDcfp83A1KBNVK7hH2GHvYEUVSPXfnd7epNwZfdbgSc2DSBLUtDQ1DKW2wjUbV4h3XpxBxEkd1vbT_D42Ck8b9zEy-3_pEs2VHHgWGGBmJULTAIYDaKE-By7ekYp3T8Q-0vCZmGVnDqOJfl-guEaRfKtY?purpose=inline"
+  },
+  "MPU6050 accelerometer gyroscope sensor module": {
+   "file": "05-04.jpg",
+   "title": "MPU-6050 3-Axis Accelerometer and Gyroscope Sensor Module",
+   "origin": "https://kitsguru.com/cdn/shop/products/MPU-6050Module_2048x2048.jpg?v=1736339365",
+   "width": 1000,
+   "height": 1000,
+   "proxy": "https://images.openai.com/static-rsc-4/2o7pmWdWsSlXIduuB6IOF8siWp6ma2uPUkCLYa92bxDY1X0siXICKyL3yWoIQRqg7ZmnPNenxFAYHbabIniMOcbcZCFxyht7lYU-tYmlquZFBR9cvyRZCi8l9Ai2dSaPHohu9DX5skpBIn3940U6o_TjsiTeJNAck5iTZiB8d38?purpose=inline"
+  },
+  "BME280 temperature humidity pressure sensor module": {
+   "file": "05-05.jpg",
+   "title": "Adafruit BME280 Australia | I2C SPI Temperature Humidity Pressure STEMMA QT – Zaitronics",
+   "origin": "https://zaitronics.com.au/cdn/shop/files/2652-09.jpg?v=1763689332&width=1000",
+   "width": 970,
+   "height": 728,
+   "proxy": "https://images.openai.com/static-rsc-4/1MCJd6eueTmwiwIpTZL774_aIhPGxgf_x50jzoBSxq5pw2LlP2ttVY4HvSWgw-1d3Q5jbnXiWZF6WnPROFE7rcjicBgK2rWYCgOlVS-k-peyvMGJ_HO2ExTS1_VXVXFlrXdU01S3VCdmM9FFpgV0iSRHsEHXGpWt1gew7QV0q-4?purpose=inline"
+  },
+  "DS3231 RTC real time clock module": {
+   "file": "05-06.jpg",
+   "title": "DS3231 Real Time Clock Module - Micro Robotics",
+   "origin": "https://www.robotics.org.za/image/catalog/generic/DS3231-MOD/DS3231-MOD-007.jpg",
+   "width": 521,
+   "height": 537,
+   "proxy": "https://images.openai.com/static-rsc-4/B4Mgn34A6wy9UQZs1YgR2gqB3lWQS4aOAcXx2f1YW2z1t5roR8pDgy8xE73GR5M6ake1-o1ahQDh7wRaMl1cixCJAbRwUJJGB-AW-y-dWG_5sItk_ktQcV-n28mg0ueDP8_qD_NIHESfVEvt2SJUjnBSp08st4r5BOikCVz5bR4?purpose=inline"
+  },
+  "ST7789 1.9 inch SPI TFT LCD display module": {
+   "file": "05-08.jpg",
+   "title": "1.9吋 IPS TFT LCD 顯示屏 ST7789 SPI 高清模組",
+   "origin": "https://scccltd.com/cdn/shop/files/1-9-inch-ips-lcd-display-module-st7789-front-back.jpg?v=1764657049&width=1946",
+   "width": 1024,
+   "height": 1024,
+   "proxy": "https://images.openai.com/static-rsc-4/kYcj9d_UhW6EAdIiuyJ9WFZs5MRvxJc3SoIsk8Vl4yen3sJY5xYGGzwyQaIjAfaB8gJD4E5wEWv6063vX1qIk37uYLVl12IFyQ0HzDOuDnvz75IC99qfQW4FIp4yuG8OrLIL0AojVR3hh2u7MKpnxms4V0UnMfYobCDnKfVMQdI?purpose=inline"
+  },
+  "micro SD card SPI breakout module": {
+   "file": "05-09.jpg",
+   "title": "Adafruit 254 MicroSD Card Breakout Board | Rapid Electronics",
+   "origin": "https://static.rapidonline.com/catalogueimages/product/75/05/s75-0574p01wl.jpg",
+   "width": 600,
+   "height": 600,
+   "proxy": "https://images.openai.com/static-rsc-4/NBm_Qay-69X3oB6imYhyqc8fUceA7C5Y5SX6dEU_MRsbL09FuJUlxjcU-OY2weZV0o5Gy8_JYYHfw1kt0DJOmzYF178qnJTc5IfzyKqQqv8nK8LMP9ftjoXD4dVJduHC0Lw4P2MFYIBdlhh-2rExc7-TyV_vYQoZFh-LM3UtN4I?purpose=inline"
+  },
+  "GPS GNSS UART module NEO 6M": {
+   "file": "05-10.jpg",
+   "title": "NEO-6M 3V-5V GPS-modul GY-NEO6MV2 Super Signal med antenn för Arduino – 38-3D",
+   "origin": "https://se.38-3d.co.uk/cdn/shop/files/GY-NEO6MV2-NEO-6M-GPS-Module.webp?v=1732525587",
+   "width": 1024,
+   "height": 1024,
+   "proxy": "https://images.openai.com/static-rsc-4/7phPwjp-x4VPDoVyEYJZBdcTRJsef4n0h0LUN3OzVlHTGx_UWJaZBJLhuRlTor-M7aDmSO7pwL1OCQLwLswFDHPz0MJ0S-HJMMXg2D190Hw-BlX3Y9nSA51ihNi0b-qavhyOkOc_zu5GBfN74BdAZ-3huCG5_Xf_cUCdD5WxHfo?purpose=inline"
+  },
+  "USB to TTL serial converter CP2102 module": {
+   "file": "05-11.jpg",
+   "title": "CP2102 USB to TTL Serial UART Bridge 3.3v-5v with DTR pin - OTRONIC",
+   "origin": "https://cdn.webshopapp.com/shops/346407/files/420564031/otronic-cp2102-usb-to-ttl-serial-uart-bridge-33v-5.jpg",
+   "width": 800,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/usG_FuQ-_2M5TPTy8fKkgQiu2jKOfkdRfPLEt_wdVdZQsFYIPK5psA-6B0o-2EE2YlzgBOuyEbwpM-m-L-Ih1ZqxFaWw4hExI-t52U6vEHU08He1OykN6xbiWtiF3r9ev2PG8Tfa8slma6ZPwy64gf0XNLIsUUQaFC8Ebuy0pjU?purpose=inline"
+  },
+  "UART serial MP3 audio module DFPlayer Mini": {
+   "file": "05-12.jpg",
+   "title": "One moment, please...",
+   "origin": "https://voltatek.ca/img/cms/dfplayer_connections.jpg",
+   "width": 900,
+   "height": 701,
+   "proxy": "https://images.openai.com/static-rsc-4/H0-1Hn8xJrsbx_10ztNRatah6j7JGCHuJKtaC2Oojojah3Cj1OvlLSM9318BYtFCs4MAPFzOqF5f9UIXoJ21-cvF9ne7xR_jrYRaFqAxJBi1Zj1ePyWAbgQpmljeCMuAf_0RMhCv5wRFxB79fMAM5dCMbrIiudkA6I9tAuLLblo?purpose=inline"
+  },
+  "UART RS485 MAX3485 transceiver module": {
+   "file": "05-13.jpg",
+   "title": "Modulo convertitore TTL a RS485 MAX3485 3.3V Arduino ESP32",
+   "origin": "https://sigmanortec.ro/3755/modulo-convertitore-ttl-a-rs485-max3485-33v.jpg",
+   "width": 1024,
+   "height": 1024,
+   "proxy": "https://images.openai.com/static-rsc-4/XX4VsylAsaoCyhT7lQ7k2i1_XfmYjT_5XLUpiYDhsRcBtkfh9tmc0pwy753esGSMLqKV5q8KNQG8L05kHnfZzrzQdH9XXzA1cdiZW0Mpo8A0ROXaFXZeBmjtWtgA4FAEZcHeCYMNBTlZus2QBqEfo2A2Jmm7K8ke85RCuGXVQ-w?purpose=inline"
+  },
+  "FreeRTOS task scheduler queues semaphore embedded operating system architecture diagram": {
+   "file": "05-14.jpg",
+   "title": "Embedded Systems Series Part 3: RTOS Fundamentals (FreeRTOS/Zephyr) - Wasil Zafar",
+   "origin": "https://www.wasilzafar.com/images/series/embedded-systems/freertos-architecture-kernel-components.webp",
+   "width": 1200,
+   "height": 655,
+   "proxy": "https://images.openai.com/static-rsc-4/3ARCum4qUSt2Gxa5QsWWhAQTz7cO5dVx8dKuey2G1eJppAJxf5cR7GwCKmsYxxIuRPR7Rtbu7GsMNMHiVneGF2vcXf1KWdJFtlX0qq5GG3VheLqELQ_SWqFmVmMflwZc0iPEUoWmmOyf2AoeP1H7WnoATaJboM8A2aQ2vEuWShM?purpose=inline"
+  },
+  "ESP32 S3 WiFi Bluetooth BLE IoT communication architecture diagram": {
+   "file": "06-01.jpg",
+   "title": "Il nuovo ESP32-S3 di Espressif | Elettronica Open Source",
+   "origin": "https://it.emcelettronica.com/wp-content/uploads/2021/01/diagramma-a-blocchi--1024x1015.png",
+   "width": 1024,
+   "height": 1015,
+   "proxy": "https://images.openai.com/static-rsc-4/hDBy6hmy0kiyxuYqRPs2b1gTsaIWidCpVQ_-OP2MBlxqHJCz4Bzvx51mCvf9fCj5cQcwxk-1x5DvuDeiS3pVbY6FQPoNF7n9njw9AMgDmWHl1qg4SrZfp873B5oror8EoORnkf3IcTkI1Vp1WtvAiXH7gLoj43pY8dT2_bwZy7A?purpose=inline"
+  },
+  "Seeed Studio XIAO ESP32S3 development board antenna WiFi Bluetooth PCB antenna": {
+   "file": "07-01.jpg",
+   "title": "Seeed Studio XIAO ESP32S3 (Pre-Soldered) | Kiwi Electronics",
+   "origin": "https://www.kiwi-electronics.com/image/cache/catalog/product/km3jH8sd/5-102010634-seeed-studio-xiao-esp32s3-_pre-soldered_-all-1280x960.jpg",
+   "width": 1147,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/sCBGJr3yjhgoa8eO_9gUGNXAQP1QasXTDPm47qZTNP1LqUj7Wl9UNd2NIdbwoa9uJLPDuPd11gMTS2lee1X8yy97RRP-iOzei9MS_VeK6Iis_JSPWWAQKway2WOEYTusLF1neDHKmV44DzjMlWwJRtrOhVZaGvAbcOuRzlaAzmM?purpose=inline"
+  },
+  "Bluetooth low energy BLE smartphone IoT connection illustration": {
+   "file": "07-03.jpg",
+   "title": "Bluetooth Low Energy (BLE) for IIoT | Technical Guide - Acal BFi",
+   "origin": "https://cdn.acalbfi.com/media/jpg/ble-apps-2560x2560.jpg",
+   "width": 1024,
+   "height": 1024,
+   "proxy": "https://images.openai.com/static-rsc-4/jagtnI7yTAp3QPlx5RMwgNLYVxzpJD_g2PZq1GPXy1dA6CmM48ossdZ3j2YqdYnS5BDnigeoiU98EqEIqx_0blTSDymHv2IGI9f_G7o5Odc6KaQEevaAhP0v6g1SutuOmzYyG_znK0_N2TfaPYlkBIeNCX_dEZP13qlv2pUOnME?purpose=inline"
+  },
+  "nRF Connect for Mobile BLE scanner application screenshot": {
+   "file": "07-04.jpg",
+   "title": "Device Discovery - ESP32-S3 -  — ESP-IDF Programming Guide v5.5.2 documentation",
+   "origin": "https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/_images/ble-scan-list-nimble-beacon.jpg",
+   "width": 1024,
+   "height": 2128,
+   "proxy": "https://images.openai.com/static-rsc-4/jP_hQvCBAVAXvSVEUn_UGFyYPm_myRQrNJLGj-dxdsmjdAgQr3RXck1t0p7PnyqEm1OW4MvL8OZF5jyQcwq7semTybPHV0kyydIsvqCgH43rXYQAVCsLj07dY89ot3W7ImLTCEr2SniMaKH8PPO99V19E55xeGvid70Hq9BXx24?purpose=inline"
+  },
+  "Seeed Studio XIAO ESP32S3 Sense camera expansion board OV2640": {
+   "file": "08-02.jpg",
+   "title": "Mạch Seeed Studio XIAO ESP32S3 Sense Wi-Fi, BLE 5.0, OV2640 camera, microphone",
+   "origin": "https://bizweb.dktcdn.net/thumb/1024x1024/100/522/662/products/6-113991115-xiao-esp32s3-sense-feature-2.jpg?v=1731597572090",
+   "width": 984,
+   "height": 753,
+   "proxy": "https://images.openai.com/static-rsc-4/chta6TciaoHy4GkUTkrO9ZUtHGiXi5N6u2mXeDdPPFc36KOo59JFbmNz6qyu0_2rP5GNDv1uyYaLoziokvOuCOIg7OmjoGS2v1rPvpVScg3MT1C-TOBIs8_q9w-UAYIelRijVF6kEev9mChStBT03bdoPV9fZDOfO3dITeI3yGk?purpose=inline"
+  },
+  "CMOS image sensor camera image acquisition pipeline lens pixel sensor ADC ISP digital image block diagram": {
+   "file": "08-03.jpg",
+   "title": "Note 2-4 Image Sensing Pipeline - Jiepeng's notes",
+   "origin": "https://note.jiepeng.tech/CS_Online/ML-4360/Lec2/images/image-38.png",
+   "width": 874,
+   "height": 553,
+   "proxy": "https://images.openai.com/static-rsc-4/QdOMaCM1azVSCjJuZAv5z_lEJisgOhJVyhOJELY8WCYGmkOjQ_j9fAwN1On1iwDnOFfgYfO7ZS34fA8lrS1F5DkOqQ6H5NnMlxHghn5HqQ5Spv81cCW-EufIIve7K3xReq9UNd3CGXAERPhR-54_qifDTtPYmFdvZHnDf5iaaJ4?purpose=inline"
+  },
+  "Bayer filter RGGB 2x2 pixel pattern camera sensor diagram": {
+   "file": "08-04.jpg",
+   "title": "图像传感器 RGGB与 RYYB-CSDN博客",
+   "origin": "https://i-blog.csdnimg.cn/direct/1767358e834843249a6e5bdcc18b7d56.png",
+   "width": 1159,
+   "height": 660,
+   "proxy": "https://images.openai.com/static-rsc-4/NE1GgnpNjMhIVrqrwyK7YQd0pZWzHsp6BwfSvDCAXt_C1ftAJGXSP3rMGjZkD3uEbBj2EMyaCrjOCuG2zFZ7e4pSO7gGdeKGh7GGp6R0TxiSAfKHEMtA98ak0LdNB6Zq5QB2ApRiiRI-mxG3CDsdTWKuEUjc4K_V5Z1krm8JxDM?purpose=inline"
+  },
+  "OV2640 DVP camera module ESP32 parallel camera interface D0 D7 PCLK VSYNC HREF XCLK SCCB wiring diagram": {
+   "file": "08-05.jpg",
+   "title": "第三十五章 ESP32S3 摄像头实验_vo5640和 esp32-s3-cam接口对应-CSDN博客",
+   "origin": "https://i-blog.csdnimg.cn/direct/7ee9d10beee74b26944bac831519cf73.png",
+   "width": 933,
+   "height": 561,
+   "proxy": "https://images.openai.com/static-rsc-4/G2m1_YnrKARHWXVOKSW9Rv2CdyfrHXJ9eyg17f9il1PU3CgU06wMaEkOhIzQd3gpvlO-k-wryntSfFiUpwvyY4E3Ei1pr2F8AJyCID6KJ1h8yPrm7EvyjZ1Mfzo4IDWLwD8qyCa1eP8Pnjfp4GBzTIzb-mLPZIBe6hn-nRjtaIg?purpose=inline"
+  },
+  "OV2640 camera module 2 megapixel DVP": {
+   "file": "08-06.jpg",
+   "title": "OV2640 Camera Module | Mysite",
+   "origin": "https://static.wixstatic.com/media/2d737a_8898ba87fb1942408daaf8e7e87c0f5a~mv2.jpg/v1/fill/w_843%2Ch_843%2Cal_c%2Cq_85%2Cenc_avif%2Cquality_auto/2d737a_8898ba87fb1942408daaf8e7e87c0f5a~mv2.jpg",
+   "width": 843,
+   "height": 843,
+   "proxy": "https://images.openai.com/static-rsc-4/XV_ANZJY2RdtmkLRpHJLaedXVU568wzHyorLvOYbbvgGgYhyyecqsigS5s-uK49bv6z3TOkfybTgA1cHFU_y6buvF7Uv_BZuKKEILoyuuMtgHGBBfkikq4xVOQIw9uhm4Ud5J9_FAXirfg_uo68v3nupg0zUGNCYbUqi6AkyEaI?purpose=inline"
+  },
+  "I2S digital audio interface BCLK LRCLK DIN DOUT microphone amplifier wiring diagram": {
+   "file": "08-08.jpg",
+   "title": "Arduino中文社区",
+   "origin": "https://arduino.me/storage/v1/object/public/image/a6e4dc978b5070be5ccc18bd4fd08c33.webp",
+   "width": 1159,
+   "height": 570,
+   "proxy": "https://images.openai.com/static-rsc-4/1OASmeHvbkzYZ01PdClEkEyh68ALtmQFIxKsJ9HyiDk2tTwt7Pv4IoYNsjNlGqxRaE5atJPblYBU8NDQs2xhGos4NDp9FydQBAr9IypJWqoLBDwH55FSk8IAwQgDCkTUIDvs50Gc5ByqHfDppii1tmKiuNRcgwIPcye2HNu5JzI?purpose=inline"
+  },
+  "ICS 43434 I2S MEMS microphone module": {
+   "file": "08-10.jpg",
+   "title": "Adafruit I2S MEMS Microphone Breakout - ICS-43434 - The Pi Hut",
+   "origin": "https://thepihut.com/cdn/shop/files/adafruit-i2s-mems-microphone-breakout-ics-43434-adafruit-ada6049-71878643155329.jpg?v=1730863019&width=2048",
+   "width": 900,
+   "height": 900,
+   "proxy": "https://images.openai.com/static-rsc-4/Z9feqnVFe7s2us3TsGe0TDDnpDoUJE08F-fCj6P-BdYjUVreXXDewgTrnHmgqevTlk7NfhbZKOKUpdR1AN-uNDXrJ3bmeCflYS7OYUzPBLWOGoU1ZXgxMwA7c-uIF5G6MNrRbNHdI1mBTeUSSPffTJ1e-Qj00LA2YfjcRGx1iLg?purpose=inline"
+  },
+  "MAX98357A I2S class D amplifier module speaker wiring": {
+   "file": "08-11.jpg",
+   "title": "trigonometry - Arduino I2S sine wave - Stack Overflow",
+   "origin": "https://i.sstatic.net/LLZWh.png",
+   "width": 1200,
+   "height": 703,
+   "proxy": "https://images.openai.com/static-rsc-4/Mu4kt4hBfOvCljvx4PwLtdB_A4NBhjnZptgEb4uA6dD08ojVOrBW0FKDqSQbVO8_pgcVMxyvvRSPf7SN4vLFMAk3O_cJqWtXd-e1JjNhsZ37dVfGUchLs7AZWiac8u02dWRc-9wyLyial6MngLu5SLtbx43IeAxENLqnXkuUwAg?purpose=inline"
+  },
+  "audio signal time domain frequency domain FFT spectrum visualization": {
+   "file": "08-12.jpg",
+   "title": "wav 声音文件快速傅里叶变换-腾讯云开发者社区-腾讯云",
+   "origin": "https://ask.qcloudimg.com/http-save/yehe-6021899/2yq0j522zs.jpeg",
+   "width": 1080,
+   "height": 571,
+   "proxy": "https://images.openai.com/static-rsc-4/XJw4ddNxEw3TULp4BuGdY4UXrU0Us0OaXY9WaCj4b3DBQkzQFQduXa3jbbjahbnSIM-_dkt3-TL032X_RgEqE9VgLX_Tf2nQYyhseyKzWEnK_YsH5UWJM-BJxS27RPOdVYhJr14YIPhnND0JJSTocyqzjbf-YmJbWS7Ab1C8d38?purpose=inline"
+  },
+  "JPEG compression pipeline RGB YCbCr DCT quantization entropy coding diagram": {
+   "file": "08-13.jpg",
+   "title": "Optimization of User Service Rate with Image Compression in Edge Computing-Based Vehicular Networks | MDPI",
+   "origin": "https://www.mdpi.com/mathematics/mathematics-12-00558/article_deploy/html/images/mathematics-12-00558-g005.png",
+   "width": 1200,
+   "height": 582,
+   "proxy": "https://images.openai.com/static-rsc-4/aKhffLDwZiRAhrk07vyuBEH8PR5oiugODNo8nlSXX2aeuX1Gl5wGGbWbGEUxEI0qAJwCRADU87Wh8SiKHmTzlKC9XziJmXd9QwPEyt9a05sThQ_cr1ej6INM8yP7WJzfsH6HEET6nPznqTD-2OxTQ2Bp1I4HSl0pUR7giqjzDsM?purpose=inline"
+  },
+  "ESP32 bootloader firmware startup partition table OTA flash memory architecture diagram": {
+   "file": "08-14.jpg",
+   "title": "OTA Updates Framework. In this post we will discuss design and… | by Mahavir Jain | The ESP Journal | Medium",
+   "origin": "https://miro.medium.com/v2/resize%3Afit%3A1400/1%2AJq25sVCtXrv-WUQ0TIg2og.png",
+   "width": 733,
+   "height": 532,
+   "proxy": "https://images.openai.com/static-rsc-4/AjoafWZOf6MtVMLabCkaWWqstc0VjrNsgAe-uZdz-olsTY0BRlmKXzoYWXCXshbmHk2vqYXeyT-QZ7NfNc2pDO9li6PANBtjLzwKpX3yvFwNyS_GfFJgcxQpcVOM1eUGgGe5AosNfwEh4vCILafpanBQjDH00b1_VDZ5BqdGTdc?purpose=inline"
+  },
+  "ESP32 S3 boot process ROM bootloader second stage bootloader partition table application firmware startup flow diagram": {
+   "file": "09-01.jpg",
+   "title": "Ideas for Developers :: ESP32 부팅 시퀀스(booting sequence), 부트로더(bootloader)",
+   "origin": "https://blog.kakaocdn.net/dna/1jSW6/btrbkW7bC3k/AAAAAAAAAAAAAAAAAAAAAAzlenBWuNGcI4AjTr9KBZjFaqErYzYqnZ6k6q6MgVY9/img.png?allow_ip=&allow_referer=&credential=yqXZFxpELC7KVnFOS48ylbz2pIh7yKj8&expires=1777561199&signature=747H6Kgr8aHN3mfX54V6PwXfSSo%3D",
+   "width": 1086,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/XKVkI9dYzWRqEFChbNV7BgpfBuKMkSLwjo-s2pB4slqXtkTcx5XcJwfjeJt7InTQfEXVj8Prw5egSCZbEkEuhPOHZ4Muk1bedjViXhWuG6i6NHD_eon3Yt-3MpQg7NBlxwfxnx6FJlDGnxE9s0-IJ6Jayte4miAxKTuqdUmdWRM?purpose=inline"
+  },
+  "SPI NOR flash memory chip embedded ESP32 development board close up": {
+   "file": "09-02.jpg",
+   "title": "S3 ESP32 WROOM Çip N16R8 Diğer fixaj",
+   "origin": "https://shop.fixaj.com/s3-esp32-wroom-cip-n16r8-diger-fixaj-15305-48-B.jpg",
+   "width": 1000,
+   "height": 750,
+   "proxy": "https://images.openai.com/static-rsc-4/0hTcU0Ex3bU3uIQ8zi8W2m4uhpHSCtfQj_tmeiU-kz2HTR1fQhQ2BT-Qgl66BNAnEr9_FhKkkijJUe2xe8Fu-jetYRs85DSj3nzgFhlp0wEYGACbUIwzOfo4Mpd_YTf1ISxtMaUPmCzMcTag3HymD4-gbZKpcJSU-mVh4PCUwg4?purpose=inline"
+  },
+  "ESP32 flash partition table nvs otadata phy_init factory ota_0 ota_1 spiffs layout diagram": {
+   "file": "09-03.jpg",
+   "title": "What Is Partition Table Entry at Fred Mounce blog",
+   "origin": "https://espressif.github.io/esp32-c3-book-en/Pics/D11Z/11-2.png",
+   "width": 1200,
+   "height": 762,
+   "proxy": "https://images.openai.com/static-rsc-4/Mc0Sws8u9702VtV7kOiX7RaJdd-kVWGUgnGrgfm-KDlb63ZwVcLd4CGbqgFhD_xTpfmF9fCIYKpeaci40OPuSLJxBPoCehn4_1JJsM510Dy14AIgWL46v5tyRo7zOdbBj3RRAaEeNkPRBeJ6_L2XinwaYLb4GCyhDSoqdHEeAms?purpose=inline"
+  },
+  "embedded firmware compilation pipeline C compiler linker ELF BIN ESP32 microcontroller diagram": {
+   "file": "09-04.jpg",
+   "title": "STM32 Round-Robin Task Scheduler in Bare Metal C | Kshitij Vaze posted on the topic | LinkedIn",
+   "origin": "https://media.licdn.com/dms/image/v2/D5622AQHwg1bNx_OUMg/feedshare-shrink_800/B56ZtajLl5K8Ag-/0/1766750731641?e=2147483647&t=5KgAeuzVOF0qeFMweiTSQhd6OQ4KZQRbQXAHFVDVd6o&v=beta",
+   "width": 800,
+   "height": 443,
+   "proxy": "https://images.openai.com/static-rsc-4/F-slk1-FFTsui2FJeskGYIqKRlW3MZM2t-Y5ss3z-RMqco3Lypm8DqOs4P5sLcypAjRFcA7x0TdGiMVsRn6eEfW0q-N_tzhScEwRovTBx4SgTuOzC0rb4c3884OZpFqIx7VY-G2PueWCOopJjrs4Mo8Ke9kqto7AM8MOxcmpyKE?purpose=inline"
+  },
+  "ESP32 S3 memory map IRAM DRAM RTC RAM flash PSRAM memory architecture diagram": {
+   "file": "10-01.jpg",
+   "title": "ESP32 Flash/PSRAM & Memory Leaks: Understanding the Memory Map and Preventing Crashes | SunFounder",
+   "origin": "https://cdn.shopify.com/s/files/1/0474/7729/3217/files/2_017409f0-00bc-4f03-ba41-567bf30d459e.png?v=1768545329",
+   "width": 1200,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/8zeBjDYIpC27eOTBZbr9cEZ2YqbFUkc9X3WhWhK0AzpshnmLlHJgE6vLWx2sO3WTizuDRMzw71LlT4NBFglO0jNNBQ2ZXI_avH8fhtq2FrgSheUH8FrPfNaBj0x_Ky0MnWhpShjWfC9wSbN85bwmb5MCgy7KEbYvjxotf3NQQGg?purpose=inline"
+  },
+  "Apple MacBook laptop development terminal": {
+   "file": "10-02.jpg",
+   "title": "The Ultimate Git Command Guide: From Merge vs Rebase to Conflict Resolution 🍎",
+   "origin": "https://agmazon.com/blog/articles/technology/202603/git-commands-apple-style-guide.webp",
+   "width": 1200,
+   "height": 655,
+   "proxy": "https://images.openai.com/static-rsc-4/lalFowPJDhqQhm74L-XX_uvbVijvd0_KqmHQht_qQkmmIWbKXkCn86mrhEhliTJVNBHLtYHZ9BCEIv8OEAV0ch3Pse8tzpnQ2ewe1CMQwZ1jZX7_xkuSer6AVPtDhtG077yeYMT3dL8sO-r2zk7LGUXCSfoSOo1YaVNe9-4coDc?purpose=inline"
+  },
+  "ESP32 S3 JTAG debugger development board USB JTAG": {
+   "file": "10-03.jpg",
+   "title": "JTAG Debugging - ESP32-S3 -  — ESP-IDF Programming Guide v6.0.2 documentation",
+   "origin": "https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/_images/jtag-debugging-overview.jpg",
+   "width": 966,
+   "height": 506,
+   "proxy": "https://images.openai.com/static-rsc-4/g5hZQs0HYNqKYhhaJp-kbY4hTSNTif33j02Pj_U3awjSF8_LFyOhFaD4TGrNzHmuGcJlQk9RcZBtGBFS9IR94-sPY5n6os39zDxV1-EtTQfD53WiGq5b_2GWc8hLS7Iy6FN-0L6raxVjHUnpugS6ueFhAo1tA9BV-8U-e8dO_zc?purpose=inline"
+  },
+  "ESP32-S3 SoC internal peripheral architecture block diagram GPIO UART SPI I2C ADC LEDC RMT DMA CPU": {
+   "file": "11-01.jpg",
+   "title": "Espressif Providing Support for the AIoT Market with its Dual-Core ESP32-S3 - Embedded Computing Design",
+   "origin": "https://data.embeddedcomputing.com/uploads/resize/1256/756/external/data.embeddedcomputing.com/uploads/articles/primary_images/1614971006.png",
+   "width": 1200,
+   "height": 722,
+   "proxy": "https://images.openai.com/static-rsc-4/e4_UL88zVFhvDtia0FR0FMEPCPdQepeEaPzsEgVGZzeO4KzZxxre1M0sLfimKuf4kEt0s7YGXCi2qU7JhO8YqEsTSgINaM3QOtssRwd3iWgym_DJZNyf6ntIzUDfrNpGKt0JWU-Ph-TC0L8QXTjY8zHE7JSCxFfaCyFVgIY22Qg?purpose=inline"
+  },
+  "ESP32 GPIO matrix IO MUX signal routing peripheral GPIO diagram": {
+   "file": "11-02.jpg",
+   "title": "GPIO Matrix and Pin Mux -  -  — Arduino ESP32 latest documentation",
+   "origin": "https://docs.espressif.com/projects/arduino-esp32/en/latest/_images/tutorial_peripheral_diagram.png",
+   "width": 661,
+   "height": 424,
+   "proxy": "https://images.openai.com/static-rsc-4/L6tPFDMlbF9CpEClCuHg2uLBzo09zo47ujwz4imbjWPJDeuJQ_OkVu4B130FYRB2mg7nwHr_IDQaCjQUKXYF9HFhi_Cqolfe7Te8XrSzosaE2gKpCpBNQAF25Lkwy0H8HlOCTPOL6-s2Mu4qZrj36ZTjxgU79AoNJ7HT_ZUfgIc?purpose=inline"
+  },
+  "microcontroller GPIO LED series resistor breadboard wiring diagram": {
+   "file": "11-03.jpg",
+   "title": "2.1 Hello, LED! — SunFounder Pico 2 W Starter Kit for Raspberry Pi Pico 2 W  documentation",
+   "origin": "https://docs.sunfounder.com/projects/pico-2w-kit/en/latest/_images/wiring_led.png",
+   "width": 840,
+   "height": 565,
+   "proxy": "https://images.openai.com/static-rsc-4/1COaogPXai7PkxliwsDij0aQTItqoOb1zUmYvP7Ui1FM5qL89vZpSJLP7gwtoagbcGdHdN2dElEsSLomp5dumYLy_zWO2OAKz5t8Y-JyobAAaCDjD3ZCZWt-HB87lkfE28HSwHMbrh733AK1pWIBDTliBN-oRvc_KCV84ZoHKus?purpose=inline"
+  },
+  "UART serial communication TX RX GND microcontroller two devices wiring diagram": {
+   "file": "11-04.jpg",
+   "title": "UART详解 | MCU加油站",
+   "origin": "https://mcu.eetrend.com/files/2020-03/wen_zhang_/100048421-93639-1.jpg",
+   "width": 1042,
+   "height": 406,
+   "proxy": "https://images.openai.com/static-rsc-4/gcHryONKax4J0UxJB4-txooWR5ILBWys3ZgBadeFNPs1T_CBH_mh9Q344QaRBIR2tkNVJg_6q-rHRsPvA_PhVOZizSAI8avQv3W_lhZkABLDmueGzMD3A-5xMJPxEfK0Sjabmt21OZmKgXIpvVbbw2haVwwg07b7MZFt2hWgXNA?purpose=inline"
+  },
+  "UART serial frame start bit 8 data bits stop bit timing diagram 8N1": {
+   "file": "11-05.jpg",
+   "title": "UART Basics – ECE353: Introduction to Microprocessor Systems – UW–Madison",
+   "origin": "https://ece353.engr.wisc.edu/wp-content/uploads/sites/607/2014/11/dataFrame-8N1.jpg",
+   "width": 1200,
+   "height": 670,
+   "proxy": "https://images.openai.com/static-rsc-4/rsHpZEFQQSrbIRMT5fH_PPawj709BizVtpTCftlalUovWcMBeKt7eY7Qg8pfOaEs8TPpN75LxBz4pEu8e9NK4aZ6VIe8qx5R01_TEI69FG1UY43olrYPHKSjcu4B_62WJoE6QzNGfUv3K5WdYCYVaK9FUTvYRQSksf9yCXXgBVs?purpose=inline"
+  },
+  "UART peripheral internal block diagram baud rate generator transmit FIFO receive FIFO shift register": {
+   "file": "11-06.jpg",
+   "title": "Universal Asynchronous Receive Transmit (UART) | WIZnet Document System",
+   "origin": "https://docs.wiznet.io/assets/images/uart_block_diagram-50abce4a05d13a3cc80cdb7b8d4eb63d.jpg",
+   "width": 1068,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/F0dv0z8i9Vc4_kU9Y9eUnVifL9THCQFMmg27vks3kZ1AxkNbLajm4qBS17g9mEE8UaBuSJT2yBvPsKFqW_uI7P0N4ZyrGx2CuXKlajV0HK_A4C6oOveY0KKhhBHjccOJj3ejSRllX60aUIobR8DEKvOmDmsPx3cJWxWeGNpVicY?purpose=inline"
+  },
+  "I2C communication timing diagram start stop ACK NACK address data SDA SCL": {
+   "file": "11-08.jpg",
+   "title": "volt-X / How ESP32 BLE Works: Bluetooth Low Energy & GATT | Volt X",
+   "origin": "https://www.volt-x.dev/_next/image?q=75&url=https%3A%2F%2Fqoibkmtvaikabpjamxzs.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Fcontent-images%2Fhow-esp32-ble-works%2Fdiagram-advertising.png&w=3840",
+   "width": 1024,
+   "height": 1024,
+   "proxy": "https://images.openai.com/static-rsc-4/RF_tpm1CCXvzi5GEf9h6KHu00wVfcIyBTfNV1xJliVf9mCIQh9Vwpfa8O_rPOBV7bQVdLt93dUaTmZVYjRRbYbze6whOu3EWIvaio7aVOKe8ndeauFryiTb1hiJFEvIWK2kGXer0MgUKNeUWIEjCOkEPPDGm8zE-DG-QafI1BXw?purpose=inline"
+  },
+  "PWM pulse width modulation 25 50 75 percent duty cycle waveform diagram": {
+   "file": "11-11.jpg",
+   "title": "10. 아두이노 LED 실습 (3) with PWM 제어",
+   "origin": "https://blog.kakaocdn.net/dna/dHXfVy/btqFOLWfRzm/AAAAAAAAAAAAAAAAAAAAACjGNOINwfKawTisD4IBIiMp55c8JtE1dKPGK0AQJbZo/img.png?allow_ip=&allow_referer=&credential=yqXZFxpELC7KVnFOS48ylbz2pIh7yKj8&expires=1777561199&signature=PW8k8hvjnyaJWNls84JezZY1svs%3D",
+   "width": 774,
+   "height": 519,
+   "proxy": "https://images.openai.com/static-rsc-4/JMEAKjY9Plbg-diuczmB4bu6R5gc8NnE84LCL7OolrkStngtx99X9N6YrekBp_4AQchO6dTc55uIB7WfP1DimuHqyzIqNMeOQiIyHPQIhBJ9Req0yqoh21e-_CqE8MU2vDdvcbTXngbkBUilxNvH1O54nLfCH7Ggs1YztrFWLkY?purpose=inline"
+  },
+  "ESP32 RMT WS2812 LED strip digital timing signal waveform": {
+   "file": "11-12.jpg",
+   "title": "การใช้งานโมดูล WS2812 RGB LED (NeoPixel) - IoT Engineering Education",
+   "origin": "https://iot-kmutnb.github.io/blogs/displays/neopixel_rgb_leds/ws2812b_timing.png",
+   "width": 1200,
+   "height": 558,
+   "proxy": "https://images.openai.com/static-rsc-4/vBX22EKFMSsJQFOFA7-LihBEZ5nWPcSF-ygBF-0Mr2Cuje0jGD5XcqFya0nwWhDpPPe-izH82hsFpVLtsH3tzf1OH0Jz34xAm8ar7_g6hLmpuCaeTtnG6s73NeIQOy2eCqLMrRRvaEim1xx8az-xXjYpNo3W1GShVILx9VQcBmw?purpose=inline"
+  },
+  "ESP32 S3 development board connected OLED display microphone speaker sensors LED breadboard project": {
+   "file": "11-13.jpg",
+   "title": "体验ROCO小智物联控制GPIO外接硬件*LED/舵机/继电器- Makelog(造物记)",
+   "origin": "https://makelogimg.dfrobot.com.cn/makelog/5a197745e455e06a216f8a4f/e843afab015bcf73ea2ff7fbcf929ec9.jpg",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/M0Ghy5EGyKKA-vqIXq-vAOqMsI1AV36e5CUZMBxvlHN6Bng-8mPQ3RuFGbpVgyckqMjA5hvid43-sI6IrxerGXWD5v5ni72BgMw19lRayRM8WkMlyL7faZPVywMn86aJdYfCa77Bm4VKETDUlCmI6coJcvuyCZziL_fEjLkZ93I?purpose=inline"
+  },
+  "ESP32 ADC analog sensor sampling oscilloscope waveform DMA timer microcontroller diagram": {
+   "file": "11-14.jpg",
+   "title": "第4节 ADC 模拟输入 | 微雪文档平台",
+   "origin": "https://docs.waveshare.net/assets/images/04-ADC-75daf0aa10b419028e4d596708f3fbf0.webp",
+   "width": 1200,
+   "height": 774,
+   "proxy": "https://images.openai.com/static-rsc-4/3k8qH76tLlTxKpSAwH9yxmOWAhpqM_xNVO2NG9IKinp95ZaJixgjcWhX3iKOF_P_Sz1cUNPPM5AjQwhKRiAlHeUo9bwK40vS806Dvomz_AKuy-nmV0-GNkfeBdctmYSO6wJTEMsyhhPeC9BEO73kNI5glcpYQzUrgGp6MVPfTco?purpose=inline"
+  },
+  "analog to digital converter ADC analog voltage input digital binary output waveform diagram": {
+   "file": "12-01.jpg",
+   "title": "Analog to Digital Converter ADC - Block Diagram & Working",
+   "origin": "https://www.hackatronic.com/wp-content/uploads/2025/09/ADC-Analog-to-Digital-Converter.webp",
+   "width": 1200,
+   "height": 637,
+   "proxy": "https://images.openai.com/static-rsc-4/gkj8FLQa-X7sxVa1q0GBHz-3pWNZg0iQYZh05nh5SMNdBwfMI_EyRMNXHmLFtWbOhJgTEDl8aPNyE6abqQX1pwqKihoVkyKUpRoAOE1xgi8W8ufwBqh9eSb2qDiX1UvuCjHUvpY4r8NDftiqQo6WCBMKC2vTyaErJ9fibQAA5VI?purpose=inline"
+  },
+  "SAR ADC successive approximation register comparator DAC block diagram conversion process": {
+   "file": "12-02.jpg",
+   "title": "Understanding and Implementing SAR ADC Schematic: A Comprehensive Guide",
+   "origin": "https://techschems.com/wp-content/img/8482_sar_adc_schematic.jpg",
+   "width": 1024,
+   "height": 709,
+   "proxy": "https://images.openai.com/static-rsc-4/c38GiV4fNtAuaqDvKSI51_OcovvvZq5TXpyXMjMOsFGj5-n4qfzQYR_zSwoiBer6ZaYZcZ2Nl3_1TWUD6TDpfPClmdjDHEugr2o3yYwgz9iukmEOfG0H9HUUeUuEtY5qTdtKeibT4RapKBRvImT9hfGkLcyGz35X9QXDqlIPTHA?purpose=inline"
+  },
+  "resistor voltage divider circuit analog input microcontroller ADC schematic": {
+   "file": "12-03.jpg",
+   "title": "2. 전압 분배 법칙(Voltage Divider) 2편 — 실무 회로 설계의 3가지 핵심 패턴",
+   "origin": "https://img1.daumcdn.net/thumb/R1280x0/?fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2Fyxzy9%2FdJMcaiIW8gf%2FAAAAAAAAAAAAAAAAAAAAAH0jbLXtr-KI2v6FaKE2S1WSks88K-ClVt6NvQNwPnp3M09yZCfMDOWWK2D93RgU1JH27JCVJcxIyhabrM1CmldnFupGlZihdMQmChlq74At%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1772290799%26allow_ip%3D%26allow_referer%3D%26signature%3DODmS6hEV4nvx70KPRTIECLxyRM8%253D&scode=mtistory2",
+   "width": 1200,
+   "height": 654,
+   "proxy": "https://images.openai.com/static-rsc-4/hM6I0YkHF-UTqODZuAO9-SZiT-OtgnQcyNWr0feWWuJapSTBVVpSPP3a_kUptWMvi0n_iV0vHrwq0awlwyp48ny_SRhxPhW86vOU7tYP3g5zPll_5MDDnX0livj4_Gqo0pmdp7PTf4xWM8q09LSlDLCksR3avmQElpsN3PDlaXc?purpose=inline"
+  },
+  "microcontroller general purpose hardware timer counter prescaler alarm interrupt diagram": {
+   "file": "12-04.jpg",
+   "title": "Interrupts and Timers in Microcontrollers | Tutorials on Electronics | Next Electronics",
+   "origin": "https://www.next.gr/uploads/elec-tut-images/844_3_1.png",
+   "width": 500,
+   "height": 500,
+   "proxy": "https://images.openai.com/static-rsc-4/prPoKruq1r1z1l-PNCxBpvc-ZOPUrUoQwWVGHDahlj-4D6dGIf9YOWYeyFMAtOL-Pv5qALJQEMeqswcaso_8XsCCu3nXzW9x_cUxCHFiF3Y063IijjnXypNoROFYRInndrZaexGztqO-fBoVKi1Fd01hGBNMi_lvzy6tnNCoEz4?purpose=inline"
+  },
+  "microcontroller ADC DMA direct memory access data transfer CPU RAM block diagram": {
+   "file": "12-05.jpg",
+   "title": "1-8. DMA",
+   "origin": "https://media.licdn.com/dms/image/v2/D5612AQEuiCV4uZ_fbQ/article-cover_image-shrink_720_1280/B56Z5ipOo8KkAU-/0/1779771440473?e=2147483647&t=l_5zBUI0AuCHyBnwogdTXILVFp9XhuIFDAypy_C5AIw&v=beta",
+   "width": 1200,
+   "height": 676,
+   "proxy": "https://images.openai.com/static-rsc-4/pFExMYWIglkEwLvYJxXCpMFWy0_A-4sBrbjtJsZf-91vgIuIPXUTydgzxVVHEipjbIDM4g5KKcPgKDCTRjZ_kVdSIvWVdk_3UqU_VoppjX5g5BPnu56i99qOhF7m-LUry7aPoRlDVmoYEf88bk5gaDzg7TEanhA5rS0ooeHop9Y?purpose=inline"
+  },
+  "circular ring buffer producer consumer head tail pointers embedded systems diagram": {
+   "file": "12-06.jpg",
+   "title": "eSDE-notes",
+   "origin": "https://mateuszmyalski.github.io/images/memory_scratch_pad_protocole/circular_buffer.jpg",
+   "width": 1200,
+   "height": 698,
+   "proxy": "https://images.openai.com/static-rsc-4/s9naFRFfP4tw5gAeYViyWI-I98tGX2cinUUP1n3ztTinZ0DTAyj4c6oIdrvKvUghdqhmBw8s1WaMo1Ff5o6PqadRgUVeWPKNplZ7edWRMll_IbsHBE5FlLKYzLsH9uPTnvpPh5ulYLCjqkGy-cvmUCjGL1DTi5nxrkylvJ7vjLQ?purpose=inline"
+  },
+  "ESP32 microcontroller analog voltage monitoring OLED display voltage divider potentiometer breadboard project": {
+   "file": "12-07.jpg",
+   "title": "BRUNO FUGA ADV",
+   "origin": "https://i.ytimg.com/vi/u-1TRpLGH04/maxresdefault.jpg",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/8tli-YRuuLoaFggqnJSHBS-zHPcTqFnFxU6ypW4OQV7Xjl86C40lRxX9SN4w2bhuoA9qtbvBaoEDHk9IHSRZrEQAlleK1W7iPb4tJ6cIcsj_iNsmtAQDPzNHre67GVCvNK6WGm_5tcUEM8rSl1CtOq_pi6h9KJ9ZeafvjPMC6Bo?purpose=inline"
+  },
+  "sound wave microphone acoustic pressure analog electrical signal digital PCM sampling diagram": {
+   "file": "13-01.jpg",
+   "title": "What is digital audio? - mp4gain.com",
+   "origin": "https://dt7v1i9vyp3mf.cloudfront.net/styles/news_large/s3/imagelibrary/D/DigMyth1-wpILIpnPnsuSK1dcyD8V_Ps3F_98.qjE.jpg",
+   "width": 700,
+   "height": 532,
+   "proxy": "https://images.openai.com/static-rsc-4/gHmf2_cwXs6dkLhgmqQWl9ObMkkRz5CyQmnOr8C2OoIQ7q8__USnU9ATUA3kWzA9bavHFBYkPbBog4exUApQ76NljZDfHbiFtpVzofTXsF6ULgyx4cTvSjCGxjArUu7Oyp2SU0ftmy8mYS6z4IauiwprbNyNDIZEB_jlKPMKUrE?purpose=inline"
+  },
+  "PCM digital audio waveform sampled discrete amplitude signal diagram": {
+   "file": "13-02.jpg",
+   "title": "【ITパスポート攻略/テクノロジ系①】　　0と1の世界。基礎理論とアルゴリズム｜Smart Life Lab",
+   "origin": "https://assets.st-note.com/img/1770613383-9hMb7yWeua4NRt5Qc3GSlBrx.png?width=1200",
+   "width": 1200,
+   "height": 655,
+   "proxy": "https://images.openai.com/static-rsc-4/0oggP-H6HRLcoZjfrs4UMzBENYYJfYZnSl4cj1rbaWy1P_rlDEAEKQ_QN-4n2RR_haSQNaZEcd020lyaBwhEzefemSoPmGvd1C4bB0YaOiE176dEJUgbkLW0Vi0m_9LAKaZCrOPQ04js-D0htm1dVqjF5oeIjHbUHYKM7wv1FBo?purpose=inline"
+  },
+  "I2S bus BCLK LRCLK WS DIN DOUT digital audio connection timing diagram": {
+   "file": "13-03.jpg",
+   "title": "I2S 协议 - 可达达鸭 - 博客园",
+   "origin": "https://img2023.cnblogs.com/blog/3201119/202307/3201119-20230724162951792-210572944.png",
+   "width": 1200,
+   "height": 461,
+   "proxy": "https://images.openai.com/static-rsc-4/4uJ_k_8q5MclxiGW7YyOIO8zlRJvaDnvVvChFguz3tLOrbv9iuwfzlU35DVSLrYOmhsXmL71pogPAW1m_nnubI4271arzq2l9nBBTSJLc_6Qqa6z-RzXa7dMgtRqCbfd0ZOUiJA5b4mvQNOQctmMAU5Lzc7SQU779tmBEFgYDa0?purpose=inline"
+  },
+  "INMP441 I2S MEMS digital microphone breakout module": {
+   "file": "13-04.jpg",
+   "title": "INMP441 I2S MEMS Omnidirectional Microphone – Zaitronics",
+   "origin": "https://zaitronics.com.au/cdn/shop/files/S04fd4196b48846639220a2baf5e5ff8bW_jpg_960x960q75_jpg.png?v=1764992284&width=1000",
+   "width": 1000,
+   "height": 1000,
+   "proxy": "https://images.openai.com/static-rsc-4/jS0EqVP4fX_rAdCKl0yf4c-V2CZQJB9wovrhV73ofx6TomCEVATQ5BWHkNBpoqGlnC6HC8ZPjagLvEvKUMDdO8vQSXPnRnPhwL1o7AJLK3N9zk_rjoXOB4mJmTrpND3dX8gY9ozI_ex2ejD4NbdrT-gMGQE_7D8tOaApA2xQ0f0?purpose=inline"
+  },
+  "MAX98357A I2S class D digital audio amplifier breakout board": {
+   "file": "13-05.jpg",
+   "title": "Adafruit MAX98357A I2S 3W Class D Audio Amplifier Breakout - Thingbits India",
+   "origin": "https://www.thingbits.in/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBczRoIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--bb72f6fb26e766c28450acdba6d6df0e4e340466/3006-08.jpg",
+   "width": 1147,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/tPf2bs57DIhYcn1Qvu7TbjAuHpMnIhn1zg2b98gVyf1_t_c7Doyq5qsKovd0EWUfaqvH9glKNdmE-cVK2txRiu81WnhKiEYt4sLWOybLwGbk5MoJCHzyT-l3-eInuuAz3Pv3nFyC6EwfcOoesa6m1NFyzOwNQw2ZxEhbHZXnGVA?purpose=inline"
+  },
+  "INMP441 microphone XIAO ESP32 ESP32 S3 wiring BCLK WS SD diagram": {
+   "file": "13-06.jpg",
+   "title": "How to Make an Audio Recorder With Esp32, INMP441 I2S Microphone - Instructables",
+   "origin": "https://content.instructables.com/FZ8/1ROT/MIZ18QSP/FZ81ROTMIZ18QSP.png",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/Ybc0w1zhohmjJGhSVUeXtU-WHu67b-HJrFwcT1YExUkSqREhNhX5FzKuL3ezJN7Eam_m5JoR3LcmXMdzvtFIvrVDZnjw-rcq-n0C1OeAr8YKcvnCPvaIYeUZ4Dlqf3_zGPqsswTEqG2XFgq1ZdPDcoYRpUW7fmz5G7gN9sXGH2E?purpose=inline"
+  },
+  "MAX98357A ESP32 I2S amplifier speaker wiring BCLK LRC DIN diagram": {
+   "file": "13-07.jpg",
+   "title": "Schéma de connexion pour la radio wifi MAX98357A et code d'exemple pour ESP32 - OTRONIC",
+   "origin": "https://cdn.webshopapp.com/shops/346407/files/434889213/max98357a.png",
+   "width": 1200,
+   "height": 784,
+   "proxy": "https://images.openai.com/static-rsc-4/hI5sDaYngn_uaqRAGEdYayHMytO0vH082DF9mB-cAOSu4D8bm7-I5QPDNPD82RF3f6D6hGGhJ-IvRVgrJd2cShSe0ZamHTd1NXN0XVIeYXMuDzzhI8mgWmia6W9QxD1n6B6xlhlPrbiVMJh3wiYoCLMETvVsXKAVtT24RPJWt3s?purpose=inline"
+  },
+  "audio waveform clipping distortion comparison clean waveform clipped waveform": {
+   "file": "13-08.jpg",
+   "title": "Audio Clipping Explained: What It Means, What It Sounds Like & How to Fix It",
+   "origin": "https://assets.cdn.filesafe.space/5fsvmS0WZTPnvqa5FEuG/media/6a20b2bdac6660124efd9202.png",
+   "width": 1200,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/Uwsh0Kg5Fd4Q_1L2HNGBNBnVjBMzPBfavukCABnMEh8wdy4SpTzVYv7937KPIjWQSLhNZnEEhpU7qFndL6qtI1dh4C8vX6GzWjJb3nPksjIoC98CvuH5FHZvF-cG-J3F5Bd2r79KaxJU2ZEgPVGFRixf6AeEbWDvHxHxaXcbnqY?purpose=inline"
+  },
+  "audio FFT frequency spectrum waveform microphone voice frequency analysis graph": {
+   "file": "13-09.jpg",
+   "title": "Frequency spectrum | PPTX",
+   "origin": "https://image.slidesharecdn.com/frequencyspectrum-160102130155/75/Frequency-spectrum-3-2048.jpg",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/nN34FJ0iBrjl7W-WGk-izzwon18jypRukhLbHUV0NnRo9dj-7T7zpOrZ64rXdk-kI6D04lb9Qqe1BGDcKlhYIWyVaEF5L17AnAuEYVkQrc64TF1ozYIoghsOb6klI7OWypOg-yBuER8UlvUiSQ1otVpZJ_vGUNJlF88gr98Di1U?purpose=inline"
+  },
+  "acoustic echo cancellation microphone speaker audio signal diagram": {
+   "file": "13-10.jpg",
+   "title": "react native - How can we disable iOS ducking feature completely during our video call app? - Stack Overflow",
+   "origin": "https://i.sstatic.net/65Ot35ZB.png",
+   "width": 1200,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/PvcrV_ZtyKvBSEulkOyEAxji1A2FHJRd68cW92BQ649VLlKUJ6itJjBMQJxOStFrMojQSQlfEYU3Z95sucPuZHDI5Armb3pcWy6B8_jkf7tD-1uBtWK-3Y8-KHAtyobDaWF_lhcQ85egRLCEtMDsA_ktye5uw5124bqoxYE64wg?purpose=inline"
+  },
+  "digital audio noise reduction background noise waveform illustration": {
+   "file": "13-11.jpg",
+   "title": "Como Reduzir Ruído em Áudio Online: Guia Completo 2026",
+   "origin": "https://www.audio-editor.online/blog/reducao-ruido-audio-online/hero-antes-depois-reducao-ruido.webp",
+   "width": 1200,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/41EA0DFXfrgNtjuZ9RFKXlr08iqSL2Om_SnpIjdt8iVVJJKm9bMLztsEQVLLpdwjFSCXrdiMAVNx6yw-LmMd54gzpZPta3wemdDMcnl68z7_vIKPGC4UDxohtyIlnyUiRJiSyGevBTlHIVHQqWu4MabRjIbKori7k4t0dKZPYiE?purpose=inline"
+  },
+  "automatic gain control AGC audio input output waveform diagram": {
+   "file": "13-12.jpg",
+   "title": "Auto Gain Control in Electronic Systems",
+   "origin": "https://resource.auditoryworks.co/server/nearity/images/d03159f5-0133-4c72-b763-37ccdac842b3.png?x-oss-process=image%2Fresize%2Cw_1100%2Fformat%2Cwebp",
+   "width": 822,
+   "height": 600,
+   "proxy": "https://images.openai.com/static-rsc-4/nxi8RCy2v53ptMEqa_h8lFyg8JXQs1VU2SdPD-FgTXyN2dmQvB8c5NfWIM4WqDkjWv1_prnEpJcsYsLXjYbYGawBOgkCMLg9DmnatVt2pnlFgDNC7_UIN7I3ItyM4G31lB_gn3npjxyF-fP890-AHDCjYx8KDKSpV4elVAB9URY?purpose=inline"
+  },
+  "ESP32 S3 smart voice assistant prototype I2S microphone speaker amplifier development board enclosure": {
+   "file": "13-13.jpg",
+   "title": "How to Build a Local Voice Satellite for Hermes or OpenClaw, a ESP32 project | Schematik",
+   "origin": "https://tfvg9prl3arlawj9.public.blob.vercel-storage.com/published/fae46e10-d3ca-410a-a2a3-75781a7d26e7/99fa8d64/photo.webp",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/nwABVc6YiwZ6-A66avFmKBz7Imz6GCDRcIae1k0CRVF05Y3DFsMB4M3dwcWGJLqb9M7ZhZZWdg1bX62GzblkQl8vdxpxQwH10Yai8KAGXAFs3Q3iQjVnuRm-wSgtDlUeP0bUdk9jJA2Odf7QMhVniGuLsXk_Dps47Z4hKMV3sOU?purpose=inline"
+  },
+  "ESP32 S3 camera OV2640 JPEG image capture development electronics project": {
+   "file": "13-14.jpg",
+   "title": "Chapter 17 Camera Web Server — Basic-Starter-Kit-for-ESP32-S3-WROOM  documentation",
+   "origin": "https://basic-starter-kit-for-esp32-s3-wroom.readthedocs.io/en/latest/_images/25.1-2.png",
+   "width": 1200,
+   "height": 668,
+   "proxy": "https://images.openai.com/static-rsc-4/-FwV8DniquUew_yAQgpkCjKeQy0e2_PUdRLfrU6_46imCHSFCb5ZX6kjEPaRl4XlUDQPGjUvfLJ6V7jDHJAyVgASeleIJBAmM0sps4AmHhjNmAIlONjBN539YYf5N0fF4aaAAWy2-O_Ij039DYKh-_23c4Ik4vp_eoTm1OqQV0Q?purpose=inline"
+  },
+  "embedded camera ESP32 camera sensor image processing pipeline sensor DVP DMA PSRAM JPEG architecture diagram": {
+   "file": "14-01.jpg",
+   "title": "Real-Time Image Pipeline: DMA + DCMI Optimization",
+   "origin": "https://tech.hoomanely.com/content/images/2026/01/image-5.png",
+   "width": 887,
+   "height": 357,
+   "proxy": "https://images.openai.com/static-rsc-4/d6Z7iAGiSDBDsVSrMK-BFjVJp1V9ZjsLiDuq8ZdSnHSJGKrAxqPE5PxUPY5Pvzr7IHlEXGGD9BOB-7dVm9mSEmF5Do0q5-Ui7-H6TS1-ayrVpAiIdrIlqPxTgaO2FJ1rlqkKKyckaDp4eKrb00iLqfkpGztAlhBoNVddHNS-ip8?purpose=inline"
+  },
+  "CMOS image sensor pixel photodiode array microscopic structure diagram": {
+   "file": "14-02.jpg",
+   "title": "スマホカメラの画像センサの仕組みと「進化の先」を、ソニー開発者に聞く - CMOSセンサーのしくみ・技術のふしぎ(2) | TECH+（テックプラス）",
+   "origin": "https://news.mynavi.jp/techplus/article/Fundamentals-of-CMOS-Sensors-2/images/002.jpg",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/LXyI91EJaF5Vp2oAMfwv6kOdaabSLpypMr3zPanZjkpStTLZP4sIhhJyqWdGOJZihX2mkMVWz23J_67EVdDb8WXzN3OFJJB4PRgGtyy6lDzfpGqVqH3eTr8kk91Hg6R_nDnktib4FCEnTeFNaH0ZpVkYb5SyhS6Am1esrB-ApGk?purpose=inline"
+  },
+  "OV2640 camera module 2 megapixel DVP camera": {
+   "file": "14-03.jpg",
+   "title": "OV2640 2MP Camera Module JPEG/RGB/YUV Output for Arduino IoT Embedded DIY | eBay",
+   "origin": "https://ae01.alicdn.com/kf/S31bc80f31a074600a548ab6b7ced452bS.jpg",
+   "width": 1024,
+   "height": 1024,
+   "proxy": "https://images.openai.com/static-rsc-4/_QWk3jCnQF-Pyg1fS9hYW1EoulHAKGkx7RsGUwevBTun9ZE-IkDBmfnP009w68gSIeCyxF7X4RgU0K3cPM189oQkmE-X7cSbi1Q50z5Lg3yv7G-_E6VQzvcMbs3IdMeywAoDZidwqJG3fkj74XQA333K1uBxc92Q9y1UBixjwfs?purpose=inline"
+  },
+  "OV3660 camera module DVP sensor": {
+   "file": "14-04.jpg",
+   "title": "Cheap Price Dvp Interface Ov3660 Camera Module for Machine Vision - Mini Camera Module and Cheap Price Camera Module",
+   "origin": "https://image.made-in-china.com/2f0j00BsOMSNAyUgok/Cheap-Price-Dvp-Interface-Ov3660-Camera-Module-for-Machine-Vision.webp",
+   "width": 800,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/Y3hFdPwcI2CZ0oOvK6Hb9bTMzEKgSXnQVkBTfpKMt6i_a_YQdCY3-bx6ApjlGr7x-GOFrcwBhnoouTtc3VnY3DOLwtF_YhLN5lh-Gblue68CW5ywVD9DYhUwD3ClEe_EIINu9nv3P6Bj_6kDct0BwHjHnWNlmlZ3CJA8LjotjXY?purpose=inline"
+  },
+  "DVP camera parallel interface D0 D7 PCLK HREF VSYNC XCLK wiring timing diagram": {
+   "file": "14-05.jpg",
+   "title": "VGA Camera extension OV7670",
+   "origin": "https://wiki.epfl.ch/prsoc/documents/OV7670_H_timing.JPG",
+   "width": 1146,
+   "height": 504,
+   "proxy": "https://images.openai.com/static-rsc-4/kjftmsVSaAXdkW60e5HIY68f71_E9IlV88r15eXL881RZ1i8ZnhmpL8LPxC_nieAIf7VhprosUomm1AFVpVLHDBFTlFb7O8pgXHHIBNgWAA1b4vT1vb3ZyO11vevb1-Kg6xfFw0FGkw-OIkrUu5UfzL_tpNX_lvKWNksYXsC-ok?purpose=inline"
+  },
+  "ESP32-S3 LCD_CAM camera DVP DMA controller architecture block diagram": {
+   "file": "14-06.jpg",
+   "title": "《ESP32-S3使用指南—IDF版 V1.6》第三十三章 RGB显示屏实验 - 正点原子 - 博客园",
+   "origin": "https://img2024.cnblogs.com/blog/3467708/202508/3467708-20250808153602832-1121458586.png",
+   "width": 1200,
+   "height": 464,
+   "proxy": "https://images.openai.com/static-rsc-4/5SKiCMugD5T8ua8GyC1u7O-YQSs8OWlGBX5zP97oUzcVpbTasbRL7MEViTsYKqVpXfHxSnLKPypzChYhAC8pAG79bUW3Pb9-xKla-pJ7PAFnbjoEmlA3_fiqxdXYCxkusWVQvfwpFCT70KyEt4hjIH18WA6aTBunBxatAF7R3gQ?purpose=inline"
+  },
+  "camera double frame buffer ping pong buffering PSRAM DMA embedded vision architecture diagram": {
+   "file": "14-07.jpg",
+   "title": "Figure 1 - from Template-based automatic data flow code",
+   "origin": "https://figures.academia-assets.com/88113402/figure_001.jpg",
+   "width": 1200,
+   "height": 581,
+   "proxy": "https://images.openai.com/static-rsc-4/w3djnli7CZOGhk_gRvoOkg_uu3WSIXYXbae9NZYJADWfwaiKtivQ8sj_edFU-xNX9Xcr9SBitYXLwI-1QB3joGR3QdVyeGdDFd7a2qsNE5TCdafyo4RQD3k44B_ZuqQv9PWnDsHeTnhicJy2lmdNoTRNjXcuymF8Cl0pi_Vf5fg?purpose=inline"
+  },
+  "uncompressed RGB bitmap digital photograph pixel image": {
+   "file": "14-08.jpg",
+   "title": "Digital Image Representation.ppt",
+   "origin": "https://image.slidesharecdn.com/digitalimagerepresentation-220723084559-771ffcdb/75/Digital-Image-Representation-ppt-10-2048.jpg",
+   "width": 1147,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/7khc0WIPNm-xUfcN_nWopSiTdaARo1kDzWdM5jybAqGYQ0Eu1LUh_nOa93n_HMd9UoMs5_fKMNn1lfOhkp3znFgIPN3lFOdHjQYCj6RbaIC_CpK-k3MbKKRaiNUHiv4-8L95FWYqdqxvjHHChzwbdqV5Z4nTKPr-5kvFmvVuxBY?purpose=inline"
+  },
+  "JPEG compressed photograph image visual example": {
+   "file": "14-09.jpg",
+   "title": "How to Compress an Image: Best Free Tools in 2026 (Without Visible Quality Loss)",
+   "origin": "https://data.catioapps.com/photoaistudio/in/a6ba6d78-cd5a-4cf5-91f4-6e1c42b2f18d.webp",
+   "width": 592,
+   "height": 448,
+   "proxy": "https://images.openai.com/static-rsc-4/PxVAKulRfO7S55y48Y4SOL3pPAq7yqwGbrk6bRpxe4PiXTZikd7JDsOws_IV3WG85y0rnFiqz7Ri3sVVukefPT46FPDDAGkA73q-p-2nX2z7DBAosLdHROY6F_I28Hm7o_8GBhvj0sOOy620RXfZ5cpx9wiYEEG6bIs4GUWT-io?purpose=inline"
+  },
+  "Espressif esp32 camera OV2640 module logo project": {
+   "file": "14-10.jpg",
+   "title": "How to Use ESP32-CAM: Pinouts, Specs, and Examples | Cirkit Designer",
+   "origin": "https://abacasstorageaccnt.blob.core.windows.net/cirkit/b6fea144-67e6-416a-af83-9b6222ea9c4c.png",
+   "width": 1140,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/SnsLLyd8wWJfue-mficHebLPbzz1HsZMtKsQY9OOClidmd6iBLQmcAwf4kb9DVwGE30T-i1sLfybYXgEuE6KYuRdUiqXhT_FQU-D7dea4SQsI2M_Cdi7OZ4bQw0ApbpM4xgDm-YM0pjxUz246IUPD2gh7XE8qF01-QNld6AVkoQ?purpose=inline"
+  },
+  "Sobel edge detection original image grayscale edge detection result comparison": {
+   "file": "14-11.jpg",
+   "title": "OpenCV入门（18）：图像处理之边缘检测 - fengMisaka - 博客园",
+   "origin": "https://s2.loli.net/2025/08/12/kLszGD8t97fnYbS.png",
+   "width": 822,
+   "height": 485,
+   "proxy": "https://images.openai.com/static-rsc-4/pnx3KdbNgFip6fJ4f2lUzoJTEnvj1mOVs1deBPg06fvm-3NzcJNWe4ec8WsFmZLPokZzloVza1m2hxtzghrhfzZI0Jdl5fGTkv2eRZXDW00z0j6iA4HW_H2MkaZ3Ph7EAEkgB0yvoSU4lMfRGjNKh1gY38TeqCyBrFUUzTUoQJM?purpose=inline"
+  },
+  "Seeed Studio XIAO ESP32S3 standard development board front back": {
+   "file": "14-12.jpg",
+   "title": "Overview of IoT WiFi Microcontroller Development Boards",
+   "origin": "https://datacapturecontrol.com/articles/static/images/data-communication/wireless/wifi/dev-boards/esp32-s3-seeed-studio-xiao-dev-board.png",
+   "width": 1147,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/Mq8J2w5YRFUHeQ5kgcWry9WrsVdEUSFGQMaidDhKebi3tUF_h2P-JCneEFji0TTbFk4oqH5X5seMq9_Rhjm8Nl5Rx9wMtUHBn51YjBfVBZfGh51JNSczXhgDG2aClzB05kCKbspHDX54JHF9aL8-FuLsVrRxjqHEv5yBkVZxhJY?purpose=inline"
+  },
+  "Seeed Studio XIAO ESP32S3 Sense expansion board OV2640 camera module": {
+   "file": "14-13.jpg",
+   "title": "Seeed Studio XIAO ESP32S3 Sense - 2.4GHz WiFi, BLE 5.0, OV2640 camera sensor, digital microphone, 8MB PSRAM, 8MB FLASH, battery charge, IoT, embedded ML | Kiwi Electronics",
+   "origin": "https://www.kiwi-electronics.com/image/cache/catalog/product/map1/113991115c-1400x1050h.jpg",
+   "width": 1147,
+   "height": 860,
+   "proxy": "https://images.openai.com/static-rsc-4/CP7BqnyfGs00f2rkLmXqfYvFDWPmzEFJXEOANjMlsLQFLJBBpoSvRr5rmQPYw54t7Q1X2S-gEIBrhguuZ29PCrgVS5J0sS4MB47XaVJheo4HuG1AQ3dfKrDT5BqRF7GNkNcBpCcoyYvwJSicDXQ7MJGbkwbdkcmh0Ay4x6C9dj0?purpose=inline"
+  },
+  "edge AI embedded microcontroller neural network inference TinyML architecture illustration": {
+   "file": "14-14.jpg",
+   "title": "TinyML & On-Device AI: How to Run Machine Learning Models Without Cloud (Complete 2026 Setup Guide)",
+   "origin": "https://www.humai.blog/content/images/size/w2400/2026/01/image-447.png",
+   "width": 1200,
+   "height": 674,
+   "proxy": "https://images.openai.com/static-rsc-4/s_vfZENOH-d078tSAhMukjjDAaCDR7itBGZF2L84cv3sxf2OOjG8UqaX1J9SbDoH40_w1k8k4uAvA3un4MzlL_rgpb6ju1K9-WH3ttoOirJTFI2IKs2tXVoo58eV-nDRcxbG-KGErKa38moa6OibIu_vEzws6gJ5XpMcki7VBfc?purpose=inline"
+  },
+  "Espressif ESP32-S3 microcontroller chip dual core Xtensa LX7 development board": {
+   "file": "15-01.jpg",
+   "title": "Waveshare ESP32-S3 Development Board (with Headers) - The Pi Hut",
+   "origin": "https://cdn.shopify.com/s/files/1/0176/3274/files/ESP32-S3_Microcontroller_features_1_12b0e7c8-3bbb-4f8f-a344-8e0c74f33a1e.jpg?v=1690544112",
+   "width": 1000,
+   "height": 455,
+   "proxy": "https://images.openai.com/static-rsc-4/eVujRw69g9JZuRkfOD2rLH6ZXHqTuO1wLhulSNeLd0duNykhxSBJuVFv6tfGzkiMWNxZqiebAYezGOF0fS_4xHBjVYHp09MUrbXWWwjwngISZGyQxH2oygi9ccOFAYrFo3dCkyYWfmMu1ZWJF3OPXkvJ82Z9Q2YFFAGukxWXFQY?purpose=inline"
+  },
+  "artificial neuron neural network inputs weights bias activation function educational diagram": {
+   "file": "15-02.jpg",
+   "title": "Exploring the Power of Neural Networks | by Vibhuraj | Medium",
+   "origin": "https://miro.medium.com/v2/resize%3Afit%3A1400/1%2AUtVreXHT8Th-8NhzlASmTw.png",
+   "width": 1200,
+   "height": 685,
+   "proxy": "https://images.openai.com/static-rsc-4/IYRhkAe8UB-2YJHOVyllZXz2i2JNG2ahmfizXFqaND_WSnq_ik78rhq1o9hPOLWsjO83LzfTSQUm4YzOyxB97P64eZM2U1lDXv9XGPvEtDFzaT8JQQQzTTiCKJrJJuPJleUgoMGTcqJuoV0aellkf84vucAKn64bRvkS7HKbeZM?purpose=inline"
+  },
+  "TensorFlow Lite Micro logo embedded machine learning": {
+   "file": "15-03.jpg",
+   "title": "See Online Workshop: Build an ML app for Android with TFLite at Google Developer Groups GDG Chapel Hill",
+   "origin": "https://res.cloudinary.com/startup-grind/image/upload/c_fill%2Cdpr_2.0%2Cf_auto%2Cg_center%2Ch_1080%2Cq_100%2Cw_1080/v1/gcs/platform-data-goog/events/tensorflow-lite-logo-social_x3eyv8i.png",
+   "width": 1024,
+   "height": 1024,
+   "proxy": "https://images.openai.com/static-rsc-4/gDwh26-v5OSBQG-FOZu-MOPrzUE5HQngl5Em8Rd5l6DsckYHA2pt5f3f8Cco5BHuOdM_nqZvG57J6KKiSvDo1LDGU-vRoDiEX68X1ZOIHXM5gTYStIIhxfSgN0u_f7QIPC72HVfmxULQdssvmTZ2g08fFHJtM1h01gYBlBIxHuo?purpose=inline"
+  },
+  "Espressif ESP-DL neural network inference framework ESP32": {
+   "file": "15-04.jpg",
+   "title": "Check out ESP-DL! | Espressif Systems",
+   "origin": "https://www.espressif.com/sites/default/files/wecom-temp-5d2ef2071558b783f292750b3f61623b.png",
+   "width": 1024,
+   "height": 901,
+   "proxy": "https://images.openai.com/static-rsc-4/cw_eRk9DUOm_xoqx8YbT-SNMCqhQWHc5CjrkbyJM-kRSNuBi31QpVIjE0k4iQH46x-vQyRUGdM1JbflnzYhUigIRck_eeRB-uCpEkHDJ3LeKDUlaHa8RFtoeslHfeIqEc6d4oq5ZPtA0PSL65anY_7gEflaiWRU8dhcreiFQgVI?purpose=inline"
+  },
+  "ESP32-S3 INMP441 microphone tinyml voice keyword spotting embedded development setup": {
+   "file": "15-05.jpg",
+   "title": "ESP32 Offline Voice Recognition Using Edge Impulse and INMP441 Module",
+   "origin": "https://circuitdigest.com/sites/default/files/inlineimages/u5/ESP32-Voice-Control-Using-Edge-Impulse-Project.png",
+   "width": 750,
+   "height": 500,
+   "proxy": "https://images.openai.com/static-rsc-4/Ev0z-Pl2F-bT3WuNIfXUAGG4g6skoBmUHOGBJzV5fT5PgDNUjo5EH2VGULbBWr9kHWV4wgjQ5eYTzvkTrkqHlzuVo0clyDARxA4YbhyiOpFRUnpfB-NrQmyPFLSUfYhjVKcvshhtcjFaLy0Gv_zVQiJ9BwNe5mV039madeFDWd0?purpose=inline"
+  },
+  "ESP32 WiFi IoT device TCP IP MQTT WebSocket network architecture diagram": {
+   "file": "15-06.jpg",
+   "title": "Status Internet Co., Ltd.",
+   "origin": "https://www.status.com.tw/Uploads/media/images/status/smartIOT/devicecloud2.png",
+   "width": 1200,
+   "height": 660,
+   "proxy": "https://images.openai.com/static-rsc-4/RG8m6yIj5huNMTY8q6Uis3L0Hj-bZnR5_YcwfEkuc5swp4GCcR35-2JDESrZuz6L3WIwsqIogevUvt_JSEcaXgoHgCOFtql4S5k5m5DLtmQ996IDngXAqZqSmOmEL-XtFDa3jAO_8_D17sHV43kbwwjuXXGqnleMbEWnVJ_h2Ws?purpose=inline"
+  },
+  "Espressif ESP32-S3 WiFi RF antenna chip architecture diagram": {
+   "file": "16-01.jpg",
+   "title": "ESP32-S3 2.4GHz Wi­-Fi & BLUETOOTH LE SoCs - Espressif Systems | Mouser",
+   "origin": "https://th.mouser.com/images/marketingid/2022/microsites/0/ESP32-S3_BlockDiagram.png",
+   "width": 675,
+   "height": 642,
+   "proxy": "https://images.openai.com/static-rsc-4/T4l8L2dabQuOoKdxx7MCcAR63jj373izVbixM0ILd93sJRY6nqMRJYtSftG2YR9_gh1alYce6OGydvHw7CVxAi4i_YKmGL10t1LAZc5TxqgDgRnXGdqH_TinUa0An18HecAPyPorSFaT0QHlmR2G_wwX2ytjfHpOa7nCiDGA8oQ?purpose=inline"
+  },
+  "ESP32 WiFi station mode connecting to home router diagram": {
+   "file": "16-02.jpg",
+   "title": "Menghubungkan ESP32 ke Jaringan Wi-Fi | Internet  of Things",
+   "origin": "https://www.pdk.sk.stikom-bali.ac.id/content/resources/20251112145112078YTO/mceclip51.png",
+   "width": 575,
+   "height": 430,
+   "proxy": "https://images.openai.com/static-rsc-4/nCkPuJqGsZh8thEH0_mRxvetRxPjA6n5oQZQuI4O0SSWXi8SAI0QyAw9QR3ZkPFag7RDUtdXDs2bAPAQsNher13tEXuhEGVb7rvIjCsmZ_kKbY5k8aVF6n1Ua_Te39b1HS5s9THbIFT7IqY3rAxBo5INHa88pnkM-R3KoiMWf5U?purpose=inline"
+  },
+  "ESP32 access point AP mode phone connects directly ESP32 diagram": {
+   "file": "16-03.jpg",
+   "title": "HOW to Enable WIFI AP Mode with ESP32",
+   "origin": "https://docs.keyestudio.com/projects/KS5003-KS5004/en/latest/_images/35d90f1ce10814ea1897ba63f8bd7ad91.png",
+   "width": 636,
+   "height": 637,
+   "proxy": "https://images.openai.com/static-rsc-4/yFpxB6q3gm9t2YXRYt8g-xzHGu8tn1Y_zpqpJ9l50RZdyrGDb-kmPsHX86rkoYEGBf7oEuAcAHmvn_MnPkjhdL3F6py_1uyXixyR-qNzRTbs4eUcbpgu-x0sn6TP4S-Dl13PzypSwdOmwATNN01bj0qCtpihzMeR12ghJVVOrSw?purpose=inline"
+  },
+  "ESP32 AP STA simultaneous WiFi router smartphone network diagram": {
+   "file": "16-04.jpg",
+   "title": "ESP-IDF : ESP32 as SoftAP - iCircuit",
+   "origin": "https://icircuit.net/wp-content/uploads/2017/09/ESP32-soft-ap.jpg",
+   "width": 887,
+   "height": 715,
+   "proxy": "https://images.openai.com/static-rsc-4/n5D90GoRZUEQiUoj-jv6qwGDyvt1JXNLqsLe457rhyBF7x758n4nsmcMETzvI2ZSIuw2WlxweSYorsV7BOHsnqQdZBbVREjyf1SVvcvYnGvzFtTQsWqrJVVy8WujtvuHcL8Mc46p8UOM43whKzMOfXEk-IXO-mmqr-Tet6pTzqM?purpose=inline"
+  },
+  "Seeed Studio XIAO ESP32S3 lithium battery JST connector development board battery power": {
+   "file": "17-01.jpg",
+   "title": "PlatformIO Cookbook | Seeed Studio Wiki",
+   "origin": "https://files.seeedstudio.com/wiki/Epaper/EE04/pio_battery_0.png",
+   "width": 1187,
+   "height": 795,
+   "proxy": "https://files.seeedstudio.com/wiki/Epaper/EE04/pio_battery_0.png"
+  },
+  "ESP32 IoT OTA firmware update secure boot flash partition architecture diagram": {
+   "file": "17-02.jpg",
+   "title": "OTA的学习_esp32 ota升级执行流程 回滚-CSDN博客",
+   "origin": "https://i-blog.csdnimg.cn/blog_migrate/c63f07cf90d15eed3fd698890afed360.png",
+   "width": 874,
+   "height": 509,
+   "proxy": "https://i-blog.csdnimg.cn/blog_migrate/c63f07cf90d15eed3fd698890afed360.png"
+  },
+  "ESP32-S3 USB Serial JTAG OpenOCD GDB debugging development board laptop setup": {
+   "file": "19-01.jpg",
+   "title": "Intro to Zephyr Part 7: Debugging with OpenOCD and GDB",
+   "origin": "https://sc-b.digikeyassets.com/-/media/MakerIO/Images/Tutorials/2025/Introduction%20to%20Zephyr%20Part%207%20Debugging%20with%20OpenOCD%20and%20GDB/part7-image4.jpg?la=en&ts=3fb8e310-4db9-4452-9a6b-373011d23858",
+   "width": 600,
+   "height": 337,
+   "proxy": "https://sc-b.digikeyassets.com/-/media/MakerIO/Images/Tutorials/2025/Introduction%20to%20Zephyr%20Part%207%20Debugging%20with%20OpenOCD%20and%20GDB/part7-image4.jpg?la=en&ts=3fb8e310-4db9-4452-9a6b-373011d23858"
+  },
+  "Seeed Studio XIAO ESP32S3 standard development board front back labeled pinout": {
+   "file": "21-01.jpg",
+   "title": "Seeed Studio XIAO ESP32S3 | Kiwi Electronics",
+   "origin": "https://www.kiwi-electronics.com/image/catalog/product/map1/113991114e.jpg",
+   "width": 1200,
+   "height": 800,
+   "proxy": "https://images.openai.com/static-rsc-4/R0LoeIYiNQPwA6pmwWtYBxc17Bpj0jJKTADxkzTXKfzgKIXqjIa3PAcAL9Pgt-qR9Fj-as7SKdAEsCX2PPHN-PELVu3ScR1nML3x3t2NBSYogDg6yJwCuZlJunLrhX85DYDz0dXEs5iH48_WbGUoVNySPOYcxUKfcUywkx2qKA4?purpose=inline"
+  },
+  "microcontroller GPIO output LED series resistor schematic 3.3V circuit diagram": {
+   "file": "21-02.jpg",
+   "title": "c - Built in LED is off when GPIOC13 is high, but on then GPIOC13 is low - Stack Overflow",
+   "origin": "https://i.sstatic.net/hYBh6.png",
+   "width": 535,
+   "height": 366,
+   "proxy": "https://images.openai.com/static-rsc-4/03W-w-t0x8w0oNhBTGL1xuyv0819YS1IW4olDRtM2MO1aIRAWXp_KysaFQQnbg7Qn2G4ErmRPnhLdC1WQq1ByuZPEAH3EcvNh4oZ6iYZCP02OTNFoCk4RSBmD5NtlzlCIiCPC3DQMtosFQx1Df3kd9tnknJKVFkfNYcE-ND2sPs?purpose=inline"
+  },
+  "mechanical push button switch bounce oscilloscope waveform digital signal diagram": {
+   "file": "21-03.jpg",
+   "title": "按键控制 | 立创开发板技术文档中心",
+   "origin": "https://wiki.lckfb.com/storage/images/zh-hans/fdb/micropython/gpio-basic/button-control/button-control_20260409_201336.png",
+   "width": 1126,
+   "height": 614,
+   "proxy": "https://images.openai.com/static-rsc-4/7vsPs49V76nFroIIlvNM-gaD_x252jj8vNVUzdzFL9q748WR0QaXnDpZmUmMWPdimYWd6YxKPTKK0MaKOh5LfbGIw16DZpLc-jp9as78TvML45x92b7zeaAxdLA5XY7tNKHlZ5r9vmPCB9Es3R1Au-Ft0zs1VAzTpBPEu4T6o1w?purpose=inline"
+  },
+  "10k potentiometer three pin analog input ESP32 ADC breadboard wiring": {
+   "file": "21-04.jpg",
+   "title": "ESP32 ADC with ESP-IDF Measure Analog Inputs",
+   "origin": "https://i0.wp.com/esp32tutorials.com/wp-content/uploads/2022/07/ESP32-with-Potentiometer-ADC-Measurement-connection-diagram.jpg?resize=815%2C483&ssl=1",
+   "width": 815,
+   "height": 483,
+   "proxy": "https://images.openai.com/static-rsc-4/s8as8Eeqf9xuS7bitJVAILk7OAe9GgRSRhcntooHZqzExSuEirakrMVk5v0R5bgcSYlXNyJ6axotrijP8RG99bUTzk0dBUeJOYjIe4UHQhK-we9iF5YQx4_CErXtqxwYM2qKtmcuRYXDEqzlY5hRuVgdjqsgsvwXkZ408isrjks?purpose=inline"
+  },
+  "I2C SDA SCL two pull up resistors multiple slave devices schematic diagram": {
+   "file": "21-05.jpg",
+   "title": "Understanding I2C Communication in Linux: A Beginner's Guide with Sample Code for Raspberry Pi",
+   "origin": "https://media.licdn.com/dms/image/v2/D4E12AQGE49_spEYXmA/article-inline_image-shrink_400_744/article-inline_image-shrink_400_744/0/1688208879970?e=2147483647&t=IWXXUlFJyIRojbVJn9RFjQz-bEsgxw_aKMkbQ99aBsA&v=beta",
+   "width": 675,
+   "height": 326,
+   "proxy": "https://images.openai.com/static-rsc-4/h8CsIzOJkzDobrPARrJ_TG5rfyxPIsM5zvCEkwmpKcGlvQxsMR7zUz0ZMESCfSBoYGCIgvxUaZKl1eKbIQwlawftrvCC4ix37Z1TL2ind16ilVmiuPCik5GMRT9Xflb34KV5wZXslWzTSrXlZ7edyw89WE2Z4LVu9o8rDthZ0eI?purpose=inline"
+  },
+  "SPI master slave MOSI MISO SCLK CS wiring schematic diagram": {
+   "file": "21-06.jpg",
+   "title": "SPI Structure | USB-I2C/SPI/GPIO Interface Adapters",
+   "origin": "https://dlnware.com/sites/dlnware.com/files/images/spi-lines.png",
+   "width": 690,
+   "height": 341,
+   "proxy": "https://images.openai.com/static-rsc-4/mSZ_9Lt0occ86OOGcmyR6Nuctq13hxJq67V3ZPoj72Rk__HMnAsT172NF1STuLVynwERM_n5dpeag5dIODsNxNLqONJ7MmwGa6ACnenSQD9nATdJyDsEVCvTHupBoRR3cShWTmBJNaTAh12koNpXO0NFEdsikXVHFOjrhuj2R0s?purpose=inline"
+  },
+  "ESP32 I2S digital microphone MAX98357A amplifier connection BCLK WS DIN schematic": {
+   "file": "21-07.jpg",
+   "title": "My Local Voice Assistant Device With Wake Word In Home Assistant | Smart Home Circle",
+   "origin": "https://smarthomecircle.com/static/images/2023/voice-assistant-device-with-wake-word/voice-assistant-circuit-diagram.webp",
+   "width": 1200,
+   "height": 751,
+   "proxy": "https://images.openai.com/static-rsc-4/iO-j03Bkqurydc1Yl03c6JeS160Fj83cF8ghGPqRYT2fpELNAKmELD6xnlTKIH9Kr10RiXcdyyEiIuExudg-O9dQokBCf83_0sU6fnFtzDjnvMYV93NCg6VZWh9bMYjWGviUoJBCIa6DyaeUzFzP3ItC0kfTnkbayjzJ8zNAWsg?purpose=inline"
+  },
+  "USB connector ESD protection TVS diode PCB schematic layout": {
+   "file": "21-08.jpg",
+   "title": "PCB Surge Protection: Designing Your PCB for Transient Voltage Suppression",
+   "origin": "https://files.resources.altium.com/sites/default/files/styles/max_width_1300/public/inline-images/usb-uart-tvs.png?VersionId=UmGEae76urUqHa7B36GC.Nb5CsfN3_EU&itok=n2q8-9-G",
+   "width": 1181,
+   "height": 764,
+   "proxy": "https://images.openai.com/static-rsc-4/jKaJ8hpnTUHndbIK4YaLHot4bDL5fnHaEJKrXDnT_Y5MKckK2XvBNXJ0Iw73bAFZfilM40ymH9ob55SEfMKzOSCtknHuST2SzxQdJJmN0Wq7SiLlrWnDGHdwaVr6vhtDDCsR8ady9hOGL_cOWDXhFNaXlL7L9RdpRDnDPCLGEsM?purpose=inline"
+  },
+  "digital multimeter electronic measurement bench": {
+   "file": "21-09.jpg",
+   "title": "Smart Bench Essentials Plus | Keysight",
+   "origin": "https://www.keysight.com/content/dam/keysight/de/img/prd/smart-bench-essentials/sbe-plus/Smart-Bench-Essentials-Plus_In-Use_1600x900.png?fmt=png-alpha&hei=219&op_sharpen=1&resMode=sharp2&wid=388",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/yBuUut5H5Io0sWRlqt0tEo6i-86tCFxcOKy48GX1_WdXOE0X-E739U-MPvNg4zOyIZzSj52aqX1liKtGUt6FOcaWCS3xBhPu1q9TrDbSQrt-pIjTohzF6KV8O_iJRF9p_axs2p-XrMp6bzDBVlngWfzaXfCxqrCEew3snktdDyw?purpose=inline"
+  },
+  "USB logic analyzer 8 channel electronics": {
+   "file": "21-10.jpg",
+   "title": "SparkFun USB Logic Analyser, 24MHz / 8 channels - buy at BerryBase",
+   "origin": "https://www.berrybase.de/media/74/3f/1c/1726353103/SparkFunUSBLogicAnalyzer24MHz8Kanle-163032.webp?ts=1750874015",
+   "width": 600,
+   "height": 600,
+   "proxy": "https://images.openai.com/static-rsc-4/LvPIukdc-kZZk9s8x3kH7VRHOd6mzZSIvvcGSkP7RXYwE9WnXPjbFXwfpstQNmakFmbNmumJC-WBkGsbnG5xm5D0x_gqW2rY1mYBfx9LL6BdX1luD27P_5zcu6apA4LC1SbK-OuGIBUOCh6lqiq4f0UtUU_iHxG7oFEq89Ag1z0?purpose=inline"
+  },
+  "digital oscilloscope electronics laboratory": {
+   "file": "21-11.jpg",
+   "title": "Rohde & Schwarz Unveils Compact MXO 3 Oscilloscopes with Four and Eight Channels | Signal Integrity Journal",
+   "origin": "https://www.signalintegrityjournal.com/ext/resources/images/Newsletters/News/News_1/RS-10-15-25.webp?t=1760530883",
+   "width": 600,
+   "height": 400,
+   "proxy": "https://images.openai.com/static-rsc-4/Ev35aWYWO8Vt7L4xgOeFuYeVtQUG2V3oqvl7HY1g-Pd8Ji1zQF7hEzn9iO4qmuuMcY04riFLp4x40w5Q0RwfQ6gzribum_lt2EgjyarPoWeqQD-a9X0CS0uI2TFR6N7lrsOpTBJCCDGbmVXYYERI6hUXEtQ6YpK0o8TxlRdg_Qs?purpose=inline"
+  },
+  "electronics USB current meter power measurement": {
+   "file": "21-12.jpg",
+   "title": "Amperometr Fnirsi cyfrowy FNB48, 5905191065973 • Cena • Opinie - Allegro",
+   "origin": "https://a.allegroimg.com/s720/118d13/9159159544569117a5af7ff09652/Wielofunkcyjny-miernik-tester-portu-USB-Fnirsi-FNB48-bez-Bluetooth-LCD-TFT",
+   "width": 720,
+   "height": 651,
+   "proxy": "https://images.openai.com/static-rsc-4/dR9Q4wEefuhP2YvNmllebNvp59DYSxRi4Eyln_bawIyhTxk21rQKA8kFmxsIfKJkitEkoBx2419w5086nbUSm7f87Z6hcZuwYHZPuIceiwTAJh3aEyx_wteFubHdlx8sPZS2zdFWy216g7TEAYBibvTz_pGSWROx8-0P6HTpvMU?purpose=inline"
+  },
+  "Seeed Studio XIAO ESP32S3 standard board power circuit schematic USB battery pinout": {
+   "file": "22-01.jpg",
+   "title": "Comparison of Sleep Currents for XIAO ESP32C6, S3, and C3 - XIAO - Seeed Studio Forum",
+   "origin": "https://forum.seeedstudio.com/uploads/default/original/2X/5/50bd56aee6e732787e8a255af207b6289fd05b31.jpeg",
+   "width": 1200,
+   "height": 627,
+   "proxy": "https://images.openai.com/static-rsc-4/Bi04hxKecWJpdD8o9zC9GjN29RtCLpG9cIy6kHTX_GJ9D-LZogA7eS7DVjB2n8qj6llugHxBKPss7VHcwx-ImzqrgZRd8CrVr8KZvJ5Uooax6U5tj9Nph61pv77WLIYnStWzZDY0Tdi_OQA62hfHzRlKrHjgi2qvPJIaU0X55AI?purpose=inline"
+  },
+  "buck converter DC DC step down power supply circuit schematic inductor MOSFET diode capacitor": {
+   "file": "22-02.jpg",
+   "title": "Buck Converter Circuit Diagram, Working and Applications",
+   "origin": "https://www.hackatronic.com/wp-content/uploads/2025/05/Buck-Converter-Circuit.webp",
+   "width": 1200,
+   "height": 638,
+   "proxy": "https://images.openai.com/static-rsc-4/RGPnGYIATEtIsLx7pMvfZvBeLoLZ4EI1HVGGaoCUdi75phZqlP3tWnkKAnF8hS663cIrzsLgKxBJrGqpycnTKFIXllpW9OO1JcjKDpN6rZ8dET5H0TlkWnFFD5kQ3W13bKQPMm3sIwFGmo7iW5w1o8371HTLg3y0HaLxNyS4A4s?purpose=inline"
+  },
+  "single cell lithium ion battery voltage discharge curve 4.2V 3.7V 3.0V graph": {
+   "file": "22-03.jpg",
+   "title": "Solar Panels V/s Batteries - Understanding the key Difference",
+   "origin": "https://media.licdn.com/dms/image/v2/D5612AQGmHPAWR4E-fA/article-inline_image-shrink_400_744/article-inline_image-shrink_400_744/0/1723315159574?e=2147483647&t=exyNOovdGCE45fCu0ItxlnChWmAo8SVQb2mMUe7Dxoo&v=beta",
+   "width": 625,
+   "height": 370,
+   "proxy": "https://images.openai.com/static-rsc-4/wN9Q0AuFGL9QI39tKRrMS2cWtPzcoV55_WPNO15xPrLSF7ZEHyNfX5rQWtl0-OZ933jkOWfVCHXiKqfusm7lTXVtyTwJvXAEifGGZIHvbdMeA6pP0ufDRK-F4VKj6eyKERjBCAoUBbuVUjejYs0eL9pbPgsOl4YaZYFp-KrMTMQ?purpose=inline"
+  },
+  "PCB decoupling capacitor placement close to IC power pin ground plane layout example": {
+   "file": "22-04.jpg",
+   "title": "Decoupling Capacitors Matter in PCB Design",
+   "origin": "https://blindburiedcircuits.com/wp-content/uploads/2025/04/Decoupling-Capacitors-1536x872.jpg",
+   "width": 1200,
+   "height": 681,
+   "proxy": "https://images.openai.com/static-rsc-4/RovNwW0Ri1Q2FqyWa6vRVEqUQleRdtsuwBkLzEuG59ZCgGBkdoFRGHcL3GYAc0ePajT9eRscCoddBkRCUEGtTtzrGY5m9XXawVuNnEyyTh9z-VeThaB3gNuoGbZ_3xbCPasa8ocqA3V7YmImCqE-B26a1Ae-L1UUE9IICL_u5YM?purpose=inline"
+  },
+  "PCB ground bounce shared ground impedance high current circuit return current path illustration": {
+   "file": "22-05.jpg",
+   "title": "EMC and Interference Management and Suppression",
+   "origin": "https://media.monolithicpower.com/wysiwyg/Educational/Automotive_Chapter_12_Fig6-_960_x_504.png",
+   "width": 960,
+   "height": 504,
+   "proxy": "https://images.openai.com/static-rsc-4/gaMHnXhetTN8lwMe82wvq62u8UkFf84S6IliOgTgnPnl09pLNWhA0OCffW2cM_C_h0fTRLML56BVNlLTmJ9KN64i3tQV6Uo-PUfK6Fze0M_iIsXKu3qCpPekqtrfdiev5yfycNzVZH8C4RA1oXRCvcXLU54wSORNvCqHeRgm24I?purpose=inline"
+  },
+  "PCB mixed signal analog digital layout partitioning ground plane microphone audio power amplifier RF circuit example": {
+   "file": "22-06.jpg",
+   "title": "EMC Design Guidelines in PCB Layout Design - PCB Design & Layout - PCBway",
+   "origin": "https://pcbwayfile.s3.us-west-2.amazonaws.com/web/25/09/17/1349501996831ab8d7e734129bac0d33ce3b5c0c15584t.png",
+   "width": 1200,
+   "height": 676,
+   "proxy": "https://images.openai.com/static-rsc-4/xNUssDIt16cG94cuXu6iCevkTVzIEokzyLOYOcXxoRvNOWuENJlCSL2msxNRbUW0Ayekfw0UV6e8LqgJWOTBUki-uE2C6Cd9k8ECvTl9RQV6zX3-109rFGfotPtAslpMafW6t5eIhqWI3_h8fNdbrryk8LRK1EE7spGp0Xf5tsc?purpose=inline"
+  },
+  "USB Type C D+ D- TVS ESD protection diode schematic circuit": {
+   "file": "22-07.jpg",
+   "title": "usb c - ESD protection at CC pins of USB C - Electrical Engineering Stack Exchange",
+   "origin": "https://i.sstatic.net/cwI8bFKg.png",
+   "width": 822,
+   "height": 401,
+   "proxy": "https://images.openai.com/static-rsc-4/9kwWBxcOFNAqBlb7ShAV0_qzSdNsm7-_gytwd9P2qlZtZHr7eQrHiOr0XijgoloEudFmzd8YWgOJpJc8AHRvG64VrSpSNQCS7jC55AUJdvu_XM9x0IZEIyHs8zFIEgARAZ3R30GYMHRUxBp06gvlquJmqHH5-1Vwax5AHwfcKoc?purpose=inline"
+  },
+  "FreeCAD CAD enclosure mechanical engineering PCB design": {
+   "file": "22-09.jpg",
+   "title": "KiCad + FreeCad 3D workflow - Hardware - TMPDIR",
+   "origin": "https://community.tmpdir.org/uploads/default/optimized/2X/9/9d9b6e4f97f0bd9500d8bd9b582fbab65ff3b430_2_1023x763.png",
+   "width": 1023,
+   "height": 763,
+   "proxy": "https://images.openai.com/static-rsc-4/ZHJCgPDkdx7cZ-Ij0fwtCAPrUG831xUyUVmKHkL2osvFRuH3rFBnwTETJstQoHB3ywoNacmZoAgvRP9-_Nqgk75kdH-bRWFSgPB-chZgshX2Ax4Xh9j08iSHic87m6IDj28gVOQZHmyQ7WtZ4wtppskvoLrsPUqBAX7TNhSschc?purpose=inline"
+  },
+  "OpenAI Codex code editor programming workspace": {
+   "file": "22-10.jpg",
+   "title": "Voice Dictation for AI Prompts on Mac: Real Speakmac Workflow",
+   "origin": "https://www.speakmac.app/blog/voice-prompting-codex-on-mac-hero.webp",
+   "width": 1200,
+   "height": 675,
+   "proxy": "https://images.openai.com/static-rsc-4/2eY-IXFU6O2hknLNh-_QhGFIKyfgVqwAJc0IrF_A8Bo6L_Isa3JEQHCNz7-VfZoEWQIDprHnuaj6xEGTVbpbLZqNr2BQ539fHxKYuRu__kleORIcohfuv9fR7L03PEGXi0VT5q41q08zo_uhb7XWnOCzCdDV1LScErcp8XXeS50?purpose=inline"
+  },
+  "battery voltage sensing resistor divider ESP32 ADC schematic two resistors": {
+   "file": "22-11.jpg",
+   "title": "Solar Powered WiFi Weather Station V3.0 - Redeem Hardware Products, DIY Electronics, and Kits by PCBWay Beans - PCBWay",
+   "origin": "https://content.instructables.com/ORIG/FGW/LL49/KMNGJC41/FGWLL49KMNGJC41.png?auto=webp&fit=bounds&frame=1&md=fae7d8ecaa4c49087b523440e0f74a8a&width=842",
+   "width": 842,
+   "height": 700,
+   "proxy": "https://images.openai.com/static-rsc-4/buCY4UPY5n8hOdIgS8b__pMsy_CPROlYRzt7rnyfkyR0kTzi4zIvYoBjEOYiEb9HMxFiU1CrZ57sqmBW5cyzsVh4LXap-q6vIKauSiSM2hhWs_ksV26tZQQ_WraBrM1_rrRpkDJWv3Cowy5x-NZiPptQmaTsXiYKnMFOFPztiaA?purpose=inline"
+  }
+ },
+ "missing": [
+  {
+   "query": "ESP32 S3 GPIO matrix peripheral routing block diagram",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "I2C protocol waveform start address ACK register read repeated start stop timing diagram",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "SSD1306 0.96 inch OLED I2C display module",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "SPI communication master slave MOSI MISO SCLK CS wiring diagram",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "WiFi wireless router signal icon technology",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "Seeed Studio XIAO ESP32S3 standard board front back",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "OV3660 camera sensor module",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "INMP441 I2S digital microphone breakout module",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "ESP32 S3 microcontroller peripheral architecture GPIO UART SPI I2C ADC PWM RMT LEDC diagram",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "I2C bus multiple slave devices shared SDA SCL pull up resistors wiring diagram",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "Seeed XIAO ESP32S3 SSD1306 OLED I2C wiring SDA SCL D4 D5",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "SPI master slave communication wiring SCLK MOSI MISO CS diagram",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "ESP32 I2S digital microphone MAX98357A amplifier speaker audio development wiring diagram",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "ESP32-S3 battery powered IoT development board lithium battery low power deep sleep electronics",
+   "reason": "no-search-result"
+  },
+  {
+   "query": "KiCad PCB editor circuit board design screenshot",
+   "reason": "no-search-result"
+  }
+ ]
+}

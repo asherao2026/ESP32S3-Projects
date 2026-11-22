@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理 · <a href="index.html">课程目录</a> · <a href="../tutorial/08-第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理</h1>
+
+<p>前面七课，我们已经从 CPU、寄存器、内存、驱动、FreeRTOS，一直学习到 Wi-Fi、BLE 和网络通信。</p>
+
+<p>现在进入 ESP32-S3 非常重要的一组应用技术：</p>
+
+<p><strong>图像采集、数字音频、DMA 数据传输和实时多媒体处理。</strong></p>
+
+<p>这部分知识对以后开发智能摄像头、语音交互设备、音频播放器、网络监控终端非常重要。</p>
+
+<p>本课仍然以普通版 XIAO ESP32S3 为主，涉及 Sense 摄像头时会单独说明硬件区别。</p>
+
+<h2>一、先认识 XIAO ESP32S3 的多媒体处理能力</h2>
+
+<p>ESP32-S3 不仅是一颗微控制器，还集成了多媒体处理相关硬件。</p>
+
+<div class="table-wrap"><table><thead><tr><th>硬件模块</th><th>作用</th></tr></thead><tbody><tr><td>双核 Xtensa LX7</td><td>执行图像和音频处理程序</td></tr><tr><td>PSRAM</td><td>保存较大的图像和音频缓存</td></tr><tr><td>LCD_CAM</td><td>支持并行摄像头数据采集及 LCD 数据输出</td></tr><tr><td>I2S</td><td>数字音频采集和播放</td></tr><tr><td>DMA / EDMA</td><td>满足条件时直接搬运数据</td></tr><tr><td>Wi-Fi</td><td>将图像和音频发送到网络</td></tr><tr><td>GPIO Matrix</td><td>将外设信号映射到可用引脚</td></tr></tbody></table></div>
+
+<p>特别注意：ESP32-S3 的硬件图像采集能力，不意味着普通版 XIAO 已经安装摄像头。</p>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-image-ph"><span>Seeed Studio XIAO ESP32S3 standard board front back</span></div><strong>XIAO ESP32S3 普通版</strong><span class="cg-text is-secondary is-xs">主控开发板，可通过外部硬件扩展音频、摄像头等功能。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/08-02.jpg" alt="Mạch Seeed Studio XIAO ESP32S3 Sense Wi-Fi, BLE 5.0, OV2640 camera, microphone" loading="lazy"><figcaption><a href="https://bizweb.dktcdn.net/thumb/1024x1024/100/522/662/products/6-113991115-xiao-esp32s3-sense-feature-2.jpg?v=1731597572090" target="_blank" rel="noopener">Mạch Seeed Studio XIAO ESP32S3 Sense Wi-Fi, BLE 5.0, OV2640 camera, microphone</a> · 搜索词：Seeed Studio XIAO ESP32S3 Sense camera expansion board OV2640</figcaption></figure><strong>XIAO ESP32S3 Sense</strong><span class="cg-text is-secondary is-xs">增加摄像头扩展硬件，适合图像采集实验。</span></div></div>
+
+
+<p>两者的 ESP32-S3 核心架构相近，但扩展板、摄像头接口、引脚占用和实际存储配置需要分别核对。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、摄像头的工作原理：如何把光变成数字图像？</h2>
+
+<p>首先理解摄像头内部发生了什么。</p>
+
+<p>摄像头不是简单地把照片传给 ESP32-S3，而是经过一系列硬件处理。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/08-03.jpg" alt="Note 2-4 Image Sensing Pipeline - Jiepeng&#x27;s notes" loading="lazy"><figcaption><a href="https://note.jiepeng.tech/CS_Online/ML-4360/Lec2/images/image-38.png" target="_blank" rel="noopener">Note 2-4 Image Sensing Pipeline - Jiepeng&#x27;s notes</a> · 搜索词：CMOS image sensor camera image acquisition pipeline lens pixel sensor ADC ISP digital image block diagram</figcaption></figure>
+
+
+<h3>1. CMOS 图像传感器</h3>
+
+<p>摄像头镜头将光线聚焦到 CMOS 图像传感器上。</p>
+
+<p>传感器上有大量感光像素。</p>
+
+<p>例如：</p>
+
+<ul><li>160 × 120；</li><li>320 × 240；</li><li>640 × 480；</li><li>1600 × 1200。</li></ul>
+
+<p>像素数量越多，理论上可以提供更高的空间细节，但也意味着更大的数据量和处理开销。</p>
+
+<h3>2. 像素如何形成颜色？</h3>
+
+<p>常见彩色 CMOS 传感器使用 Bayer 彩色滤光阵列。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/08-04.jpg" alt="图像传感器 RGGB与 RYYB-CSDN博客" loading="lazy"><figcaption><a href="https://i-blog.csdnimg.cn/direct/1767358e834843249a6e5bdcc18b7d56.png" target="_blank" rel="noopener">图像传感器 RGGB与 RYYB-CSDN博客</a> · 搜索词：Bayer filter RGGB 2x2 pixel pattern camera sensor diagram</figcaption></figure>
+
+
+<p>每个像素位置通常只采集红、绿、蓝中的一种颜色信息。</p>
+
+<p>经过去马赛克等处理，才能形成完整 RGB 彩色图像。</p>
+
+<h3>3. 摄像头输出的数据格式</h3>
+
+<p>常见图像格式包括：</p>
+
+<div class="table-wrap"><table><thead><tr><th>格式</th><th>每像素数据量</th><th>特点</th></tr></thead><tbody><tr><td>RGB565</td><td>16 bit</td><td>每像素 2 字节</td></tr><tr><td>RGB888</td><td>24 bit</td><td>每像素 3 字节</td></tr><tr><td>YUV422</td><td>16 bit</td><td>适合视频处理</td></tr><tr><td>JPEG</td><td>可变</td><td>压缩图像</td></tr></tbody></table></div>
+
+<p>对于 ESP32-S3，JPEG 通常是网络传输和摄像头缓存中非常实用的格式。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、图像数据量计算：为什么需要 PSRAM？</h2>
+
+<p>假设摄像头输出 320 × 240 的 RGB565 图像。</p>
+
+<p>每个像素占 2 字节。</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>320</mn><mo>×</mo><mn>240</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>153600</mn></mrow><annotation encoding="application/x-tex">320\times240\times2=153600</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">320</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">240</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">153600</span></span></span></span></span>
+
+
+<p>即约 150KB。</p>
+
+<p>如果是 640 × 480：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>640</mn><mo>×</mo><mn>480</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>614400</mn></mrow><annotation encoding="application/x-tex">640\times480\times2=614400</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">640</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">480</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">614400</span></span></span></span></span>
+
+
+<p>即约 600KB。</p>
+
+<p>如果需要同时保留两帧 640 × 480 的图像：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>614400</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>1228800</mn></mrow><annotation encoding="application/x-tex">614400\times2=1228800</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">614400</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1228800</span></span></span></span></span>
+
+
+<p>约 1.17MiB。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><strong>不同图像分辨率的内存需求</strong><div class="table-wrap"><table><thead><tr><th>分辨率</th><th>单帧内存</th></tr></thead><tbody><tr><td>160×120</td><td>37.5 KB</td></tr><tr><td>320×240</td><td>150 KB</td></tr><tr><td>640×480</td><td>600 KB</td></tr><tr><td>800×600</td><td>937.5 KB</td></tr></tbody></table></div><div class="cg-caption">按 RGB565、每像素 2 字节计算，未计入其他缓存和系统开销。</div><span class="cg-text is-secondary is-xs">这些是理论缓冲区大小，不代表摄像头实际能够以该分辨率、格式和帧率运行。</span></div>
+
+
+<p>这就是为什么图像项目通常需要使用 PSRAM。</p>
+
+<p>但是要记住：</p>
+
+<p><strong>PSRAM 容量大，不代表所有摄像头数据都可以无条件放入 PSRAM。</strong></p>
+
+<p>还需要检查摄像头驱动、DMA 能力、缓冲区对齐和缓存一致性要求。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、ESP32-S3 如何接收摄像头数据？</h2>
+
+<p>ESP32-S3 有 LCD_CAM 外设，可以用于并行摄像头数据采集。</p>
+
+<p>典型的 DVP 摄像头接口包含：</p>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>作用</th></tr></thead><tbody><tr><td>D0～D7</td><td>图像数据</td></tr><tr><td>PCLK</td><td>像素时钟</td></tr><tr><td>VSYNC</td><td>帧同步</td></tr><tr><td>HREF</td><td>行有效信号</td></tr><tr><td>XCLK</td><td>摄像头参考时钟</td></tr><tr><td>SCCB</td><td>摄像头寄存器配置接口</td></tr></tbody></table></div>
+
+<p>SCCB 与 I2C 类似，但属于摄像头常用的控制总线协议。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/08-05.jpg" alt="第三十五章 ESP32S3 摄像头实验_vo5640和 esp32-s3-cam接口对应-CSDN博客" loading="lazy"><figcaption><a href="https://i-blog.csdnimg.cn/direct/7ee9d10beee74b26944bac831519cf73.png" target="_blank" rel="noopener">第三十五章 ESP32S3 摄像头实验_vo5640和 esp32-s3-cam接口对应-CSDN博客</a> · 搜索词：OV2640 DVP camera module ESP32 parallel camera interface D0 D7 PCLK VSYNC HREF XCLK SCCB wiring diagram</figcaption></figure>
+
+
+<h3>1. 摄像头启动过程</h3>
+
+<pre class="code"><code class="language-text">摄像头供电
+    ↓
+生成 XCLK
+    ↓
+通过 SCCB 配置传感器
+    ↓
+配置分辨率和输出格式
+    ↓
+摄像头开始输出像素
+    ↓
+LCD_CAM 接收数据
+    ↓
+DMA / EDMA 搬运
+    ↓
+图像帧缓冲区
+    ↓
+应用程序处理</code></pre>
+
+<p>这里有一个关键知识：</p>
+
+<p>CPU 不需要逐个读取每个像素。</p>
+
+<p>满足硬件和驱动条件时，LCD_CAM 可以配合 DMA/EDMA 把图像数据搬运到内存，CPU 再处理完整帧或图像块。</p>
+
+<h3>2. 摄像头和普通 GPIO 读取有什么不同？</h3>
+
+<p>如果使用 GPIO 逐个读取高速像素信号：</p>
+
+<ul><li>CPU 负担很大；</li><li>容易丢失数据；</li><li>难以稳定处理连续图像。</li></ul>
+
+<p>因此，实际开发应该使用摄像头专用采集外设和驱动，而不是自己用 GPIO 轮询模拟摄像头总线。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、在 XIAO ESP32S3 上使用摄像头</h2>
+
+<p>这里要区分两种硬件情况。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><span class="cg-badge color-success">当前普通版开发范围</span><strong>普通版 XIAO ESP32S3</strong>
+
+  可以使用外部摄像头，但必须先确认摄像头接口、供电、引脚和电气兼容性。不能直接把 Sense 摄像头扩展板的引脚配置套用过来。
+  <hr class="cg-divider"/><span class="cg-badge color-info">扩展知识</span><strong>XIAO ESP32S3 Sense</strong>
+
+  可以使用配套摄像头扩展板及兼容摄像头模块，按照对应硬件资料配置驱动。
+</div>
+
+
+<h3>1. 推荐先了解的摄像头型号</h3>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/08-06.jpg" alt="OV2640 Camera Module | Mysite" loading="lazy"><figcaption><a href="https://static.wixstatic.com/media/2d737a_8898ba87fb1942408daaf8e7e87c0f5a~mv2.jpg/v1/fill/w_843%2Ch_843%2Cal_c%2Cq_85%2Cenc_avif%2Cquality_auto/2d737a_8898ba87fb1942408daaf8e7e87c0f5a~mv2.jpg" target="_blank" rel="noopener">OV2640 Camera Module | Mysite</a> · 搜索词：OV2640 camera module 2 megapixel DVP</figcaption></figure><strong>OV2640</strong><span class="cg-text is-secondary is-xs">常见 200 万像素摄像头，支持 JPEG 输出，适合入门实验。</span></div><div class="cg-grid-item"><div class="cg-image-ph"><span>OV3660 camera sensor module</span></div><strong>OV3660</strong><span class="cg-text is-secondary is-xs">更高分辨率的摄像头型号，需检查驱动和接口兼容性。</span></div></div>
+
+
+<h3>2. ESP-IDF 摄像头开发库</h3>
+
+<p>常见方案是 Espressif 的 <code>esp32-camera</code>。</p>
+
+<p>官方项目：</p>
+
+<p><a class="cg-link" href="https://github.com/espressif/esp32-camera" target="_blank" rel="noopener">Espressif esp32-camera GitHub<span class="cg-ext" aria-hidden="true">↗</span></a></p>
+
+<p>它提供：</p>
+
+<ul><li>摄像头初始化；</li><li>传感器寄存器配置；</li><li>图像格式配置；</li><li>帧缓冲管理；</li><li>JPEG 图像采集；</li><li>图像数据读取。</li></ul>
+
+<p>典型代码结构：</p>
+
+<pre class="code"><code class="language-c">camera_config_t config = {
+    // 摄像头引脚配置
+    // 时钟配置
+    // 像素格式
+    // 分辨率
+    // 帧缓冲配置
+};
+
+esp_err_t err = esp_camera_init(&amp;config);
+
+if (err != ESP_OK) {
+    printf(&quot;Camera init failed: %s\n&quot;,
+           esp_err_to_name(err));
+    return;
+}
+
+camera_fb_t *fb = esp_camera_fb_get();
+
+if (fb != NULL) {
+    printf(&quot;Image size: %u bytes\n&quot;,
+           (unsigned)fb-&gt;len);
+
+    esp_camera_fb_return(fb);
+}</code></pre>
+
+<p>这是接口结构示意，不能直接作为普通版 XIAO 的可烧录程序：必须补全实际摄像头 GPIO、XCLK、格式、分辨率和内存配置。</p>
+
+<hr class="cg-divider"/>
+
+<h2>六、I2S 数字音频：让 XIAO ESP32S3 采集和播放声音</h2>
+
+<p>图像处理解决的是视觉输入，I2S 则是 ESP32-S3 处理数字音频的重要接口。</p>
+
+<p>如果要开发以下设备，就必须掌握 I2S：</p>
+
+<ul><li>语音助手；</li><li>网络音频播放器；</li><li>语音识别设备；</li><li>录音设备；</li><li>数字麦克风；</li><li>网络语音对讲机。</li></ul>
+
+<h3>1. 什么是 I2S？</h3>
+
+<p>I2S 全称 Inter-IC Sound，是一种用于数字音频设备之间传输 PCM 音频数据的串行接口。</p>
+
+<p>它通常包含三根主要信号线：</p>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>名称</th><th>作用</th></tr></thead><tbody><tr><td>BCLK</td><td>Bit Clock</td><td>位时钟</td></tr><tr><td>WS / LRCLK</td><td>Word Select</td><td>左右声道选择</td></tr><tr><td>DOUT</td><td>Data Out</td><td>数据输出</td></tr><tr><td>DIN</td><td>Data In</td><td>数据输入</td></tr></tbody></table></div>
+
+<p>注意：I2S 的 DIN 和 DOUT 是相对于 ESP32-S3 来定义的。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/08-08.jpg" alt="Arduino中文社区" loading="lazy"><figcaption><a href="https://arduino.me/storage/v1/object/public/image/a6e4dc978b5070be5ccc18bd4fd08c33.webp" target="_blank" rel="noopener">Arduino中文社区</a> · 搜索词：I2S digital audio interface BCLK LRCLK DIN DOUT microphone amplifier wiring diagram</figcaption></figure>
+
+
+<p>例如：</p>
+
+<ul><li>数字麦克风向 ESP32-S3 发送声音数据；</li><li>ESP32-S3 通过 I2S 接收数据；</li><li>ESP32-S3 对声音进行处理；</li><li>最后通过 I2S 将数据发送给数字功放。</li></ul>
+
+<h3>2. I2S 与普通 GPIO 的区别</h3>
+
+<p>GPIO 只能简单地读取或输出电平。</p>
+
+<p>如果要通过 GPIO 自己读取高速音频数据，需要自己处理：</p>
+
+<ul><li>位时钟；</li><li>数据同步；</li><li>左右声道；</li><li>数据位宽；</li><li>采样时间。</li></ul>
+
+<p>这非常复杂。</p>
+
+<p>I2S 外设可以自动完成这些工作。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><strong>I2S 音频数据流</strong><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>数字麦克风</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>I2S 接收外设</strong><span class="cg-text is-secondary is-xs">时钟同步、串行数据接收</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>DMA / EDMA</strong><span class="cg-text is-secondary is-xs">数据搬运到内存</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>PCM 音频缓冲区</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>音频处理程序</strong></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>七、PCM：数字音频数据到底是什么？</h2>
+
+<p>要理解 I2S，必须先理解 PCM。</p>
+
+<p>PCM 是 Pulse Code Modulation，即脉冲编码调制。</p>
+
+<p>它是数字音频最常见的基础数据表示方式之一。</p>
+
+<h3>1. 采样率</h3>
+
+<p>采样率表示每秒钟采集多少次声音。</p>
+
+<p>例如：</p>
+
+<div class="table-wrap"><table><thead><tr><th>采样率</th><th>含义</th></tr></thead><tbody><tr><td>8kHz</td><td>每秒采样 8000 次</td></tr><tr><td>16kHz</td><td>每秒采样 16000 次</td></tr><tr><td>22.05kHz</td><td>每秒采样 22050 次</td></tr><tr><td>44.1kHz</td><td>每秒采样 44100 次</td></tr><tr><td>48kHz</td><td>每秒采样 48000 次</td></tr></tbody></table></div>
+
+<p>语音识别常见使用 16kHz 单声道 PCM。</p>
+
+<p>音乐播放常见使用 44.1kHz 或 48kHz。</p>
+
+<h3>2. 位深</h3>
+
+<p>位深表示每个采样值使用多少位表示。</p>
+
+<p>常见的有：</p>
+
+<ul><li>16 bit；</li><li>24 bit；</li><li>32 bit。</li></ul>
+
+<p>位深越高，理论量化精度越高，但数据量也会增加。</p>
+
+<h3>3. 声道</h3>
+
+<div class="table-wrap"><table><thead><tr><th>声道</th><th>含义</th></tr></thead><tbody><tr><td>Mono</td><td>单声道</td></tr><tr><td>Stereo</td><td>立体声，左、右声道</td></tr></tbody></table></div>
+
+<h3>4. 音频数据量计算</h3>
+
+<p>假设：</p>
+
+<ul><li>采样率：16000Hz；</li><li>位深：16bit；</li><li>声道：1。</li></ul>
+
+<p>每秒数据量：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>16000</mn><mo>×</mo><mn>16</mn><mo>×</mo><mn>1</mn><mo>=</mo><mn>256000</mn><mtext> bit/s</mtext></mrow><annotation encoding="application/x-tex">16000\times16\times1
+=256000\text{ bit/s}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">256000</span><span class="mord text"><span class="mord"> bit/s</span></span></span></span></span></span>
+
+
+<p>换算成字节：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>256000</mn><mo>÷</mo><mn>8</mn><mo>=</mo><mn>32000</mn><mtext> Bytes/s</mtext></mrow><annotation encoding="application/x-tex">256000\div8=32000\text{ Bytes/s}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">256000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">÷</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">8</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">32000</span><span class="mord text"><span class="mord"> Bytes/s</span></span></span></span></span></span>
+
+
+<p>即每秒约 31.25KB。</p>
+
+<p>如果连续录音 60 秒：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>32000</mn><mo>×</mo><mn>60</mn><mo>=</mo><mn>1920000</mn><mtext> Bytes</mtext></mrow><annotation encoding="application/x-tex">32000\times60=1920000\text{ Bytes}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">32000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">60</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">1920000</span><span class="mord text"><span class="mord"> Bytes</span></span></span></span></span></span>
+
+
+<p>约 1.83MiB。</p><div class="table-wrap"><table><thead><tr><th>时长</th><th>PCM 数据量</th></tr></thead><tbody><tr><td>1 秒</td><td>0.032 MB</td></tr><tr><td>10 秒</td><td>0.32 MB</td></tr><tr><td>30 秒</td><td>0.96 MB</td></tr><tr><td>60 秒</td><td>1.92 MB</td></tr></tbody></table></div><div class="cg-caption">16kHz、16bit、单声道、未压缩 PCM。</div>
+
+
+
+<p>这说明：</p>
+
+<p>即使只是录制一分钟语音，也会产生相当可观的数据量。</p>
+
+<p>所以音频项目通常使用循环缓冲区，而不是无限地将录音数据保存在内存里。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、I2S 麦克风：采集真实声音</h2>
+
+<p>常见数字麦克风：</p>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-image-ph"><span>INMP441 I2S digital microphone breakout module</span></div><strong>INMP441</strong><span class="cg-text is-secondary is-xs">常见 I2S 数字麦克风，适合语音采集。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/08-10.jpg" alt="Adafruit I2S MEMS Microphone Breakout - ICS-43434 - The Pi Hut" loading="lazy"><figcaption><a href="https://thepihut.com/cdn/shop/files/adafruit-i2s-mems-microphone-breakout-ics-43434-adafruit-ada6049-71878643155329.jpg?v=1730863019&amp;width=2048" target="_blank" rel="noopener">Adafruit I2S MEMS Microphone Breakout - ICS-43434 - The Pi Hut</a> · 搜索词：ICS 43434 I2S MEMS microphone module</figcaption></figure><strong>ICS-43434</strong><span class="cg-text is-secondary is-xs">I2S MEMS 麦克风，适合数字音频实验。</span></div></div>
+
+
+<h3>1. 麦克风的引脚</h3>
+
+<p>以 INMP441 为例：</p>
+
+<div class="table-wrap"><table><thead><tr><th>麦克风引脚</th><th>功能</th></tr></thead><tbody><tr><td>VDD</td><td>电源</td></tr><tr><td>GND</td><td>地</td></tr><tr><td>SCK</td><td>I2S 位时钟</td></tr><tr><td>WS</td><td>左右声道时钟</td></tr><tr><td>SD</td><td>串行数据输出</td></tr><tr><td>L/R</td><td>左右声道选择</td></tr></tbody></table></div>
+
+<p>这里的 SCK 对应 I2S 的 BCLK。</p>
+
+<h3>2. 音频采集过程</h3>
+
+<pre class="code"><code class="language-text">声音
+ ↓
+麦克风 MEMS 传感器
+ ↓
+模拟信号转换
+ ↓
+麦克风内部 ADC
+ ↓
+I2S 数字数据
+ ↓
+XIAO ESP32S3
+ ↓
+DMA
+ ↓
+PCM 缓冲区
+ ↓
+语音处理</code></pre>
+
+<p>数字麦克风已经完成了模拟到数字的转换，因此 ESP32-S3 不需要再通过 ADC 读取它的音频输出。</p>
+
+<h3>3. ESP-IDF 新版 I2S 驱动</h3>
+
+<p>ESP-IDF 5.x 及以后版本使用新的 I2S Channel API。</p>
+
+<p>主要头文件：</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/i2s_std.h&quot;</code></pre>
+
+<p>首先创建接收通道：</p>
+
+
+<pre class="code"><code class="language-c">#include &quot;driver/i2s_std.h&quot;
+#include &quot;esp_err.h&quot;
+
+#define AUDIO_SAMPLE_RATE 16000
+
+static i2s_chan_handle_t rx_handle;
+
+void audio_i2s_init(void)
+{
+    i2s_chan_config_t chan_config =
+        I2S_CHANNEL_DEFAULT_CONFIG(
+            I2S_NUM_0,
+            I2S_ROLE_MASTER
+        );
+
+    ESP_ERROR_CHECK(
+        i2s_new_channel(
+            &amp;chan_config,
+            NULL,
+            &amp;rx_handle
+        )
+    );
+
+    i2s_std_config_t std_config = {
+        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(
+            AUDIO_SAMPLE_RATE
+        ),
+
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(
+            I2S_DATA_BIT_WIDTH_32BIT,
+            I2S_SLOT_MODE_MONO
+        ),
+
+        .gpio_cfg = {
+            .mclk = I2S_GPIO_UNUSED,
+            .bclk = GPIO_NUM_7,
+            .ws = GPIO_NUM_8,
+            .dout = I2S_GPIO_UNUSED,
+            .din = GPIO_NUM_9,
+            .invert_flags = {
+                .mclk_inv = false,
+                .bclk_inv = false,
+                .ws_inv = false
+            }
+        }
+    };
+
+    ESP_ERROR_CHECK(
+        i2s_channel_init_std_mode(
+            rx_handle,
+            &amp;std_config
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        i2s_channel_enable(rx_handle)
+    );
+}</code></pre>
+
+
+<p>这里有一个特别重要的硬件问题：</p>
+
+<p>上面 GPIO7、GPIO8、GPIO9 只是软件演示引脚，不能直接照搬到所有 XIAO 项目。它们也是 XIAO 常用 SPI 引脚。</p>
+
+<p>如果你的 SPI 屏幕已经使用这些引脚，就必须重新规划 I2S 引脚。</p>
+
+<p>另外，INMP441 的数据通常以 24 位有效音频数据装载在 32 位 I2S 时隙中。采集格式必须结合麦克风数据手册和 I2S 驱动的位宽配置进行调整。</p>
+
+<h3>4. 读取音频数据</h3>
+
+<pre class="code"><code class="language-c">int32_t audio_buffer[512];
+
+size_t bytes_read = 0;
+
+esp_err_t err = i2s_channel_read(
+    rx_handle,
+    audio_buffer,
+    sizeof(audio_buffer),
+    &amp;bytes_read,
+    1000
+);
+
+if (err == ESP_OK &amp;&amp; bytes_read &gt; 0) {
+    printf(
+        &quot;Audio bytes: %u\n&quot;,
+        (unsigned)bytes_read
+    );
+}</code></pre>
+
+<p>这里已经完成了最基础的数字音频采集。</p>
+
+<p>但要注意：原始 32 位 I2S 数据不一定等于已经转换好的标准 16 位 PCM 数据。实际语音识别之前，通常还要进行位对齐、符号扩展、位宽转换、声道选择和增益处理。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、I2S 音频播放：让 ESP32-S3 输出声音</h2>
+
+<p>采集声音之后，还需要学习播放声音。</p>
+
+<p>常见的方案是：</p>
+
+<ul><li>ESP32-S3；</li><li>I2S 数字功放；</li><li>扬声器。</li></ul>
+
+<p>例如：</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/08-11.jpg" alt="trigonometry - Arduino I2S sine wave - Stack Overflow" loading="lazy"><figcaption><a href="https://i.sstatic.net/LLZWh.png" target="_blank" rel="noopener">trigonometry - Arduino I2S sine wave - Stack Overflow</a> · 搜索词：MAX98357A I2S class D amplifier module speaker wiring</figcaption></figure>
+
+
+<h3>1. MAX98357A 的工作原理</h3>
+
+<p>MAX98357A 是一款常见的 I2S 数字输入音频功放。</p>
+
+<p>它接收：</p>
+
+<ul><li>BCLK；</li><li>LRC / WS；</li><li>DIN。</li></ul>
+
+<p>然后将数字音频转换为驱动扬声器的功率信号。</p>
+
+<p>数据流：</p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3
+      ↓
+I2S 输出
+      ↓
+MAX98357A
+      ↓
+功率放大
+      ↓
+扬声器</code></pre>
+
+<p>注意：</p>
+
+<p>扬声器不能直接接到 ESP32-S3 的 GPIO 上。</p>
+
+<p>扬声器需要合适的功率放大器，且功放供电和扬声器阻抗、功率规格必须匹配。</p>
+
+<h3>2. ESP-IDF I2S 发送配置</h3>
+
+<p>与接收通道类似：</p>
+
+<pre class="code"><code class="language-c">static i2s_chan_handle_t tx_handle;</code></pre>
+
+<p>创建发送通道：</p>
+
+<pre class="code"><code class="language-c">i2s_chan_config_t chan_config =
+    I2S_CHANNEL_DEFAULT_CONFIG(
+        I2S_NUM_0,
+        I2S_ROLE_MASTER
+    );
+
+ESP_ERROR_CHECK(
+    i2s_new_channel(
+        &amp;chan_config,
+        &amp;tx_handle,
+        NULL
+    )
+);</code></pre>
+
+<p>配置发送格式时，需要将 <code>dout</code> 指定到连接功放 DIN 的 GPIO，并将 <code>din</code> 设置为 <code>I2S_GPIO_UNUSED</code>。</p>
+
+<p>启用通道：</p>
+
+<pre class="code"><code class="language-c">ESP_ERROR_CHECK(
+    i2s_channel_init_std_mode(
+        tx_handle,
+        &amp;tx_config
+    )
+);
+
+ESP_ERROR_CHECK(
+    i2s_channel_enable(tx_handle)
+);</code></pre>
+
+<p>发送 PCM 数据：</p>
+
+<pre class="code"><code class="language-c">size_t bytes_written = 0;
+
+esp_err_t err = i2s_channel_write(
+    tx_handle,
+    pcm_buffer,
+    pcm_size,
+    &amp;bytes_written,
+    1000
+);</code></pre>
+
+<p>这里的 <code>tx_config</code>、<code>pcm_buffer</code> 和 <code>pcm_size</code> 需要根据实际的采样率、位宽、声道和引脚定义配置。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、音频 DMA：为什么不能一直让 CPU 搬运数据？</h2>
+
+<p>假设：</p>
+
+<ul><li>16kHz；</li><li>16bit；</li><li>单声道。</li></ul>
+
+<p>每秒需要处理 32KB 音频数据。</p>
+
+<p>如果 CPU 不断逐个读取数据、复制数据、再处理数据，会浪费大量时间。</p>
+
+<p>因此需要 DMA。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><strong>I2S DMA 工作流程</strong><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>I2S 外设</strong><span class="cg-text is-secondary is-xs">连续接收或发送音频</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>DMA 描述符和缓冲区</strong><span class="cg-text is-secondary is-xs">按块进行数据传输</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>FreeRTOS 音频任务</strong><span class="cg-text is-secondary is-xs">获取完成的数据块</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>DSP / 语音识别 / 网络发送</strong></div></div>
+
+
+<h3>1. 音频缓冲区应该多大？</h3>
+
+<p>例如：</p>
+
+<ul><li>采样率：16000Hz；</li><li>采样位宽：16bit；</li><li>单声道；</li><li>每次处理 20ms。</li></ul>
+
+<p>每个缓冲区的数据量：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>16000</mn><mo>×</mo><mn>0.02</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>640</mn><mtext> Bytes</mtext></mrow><annotation encoding="application/x-tex">16000\times0.02\times2=640\text{ Bytes}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">0.02</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">640</span><span class="mord text"><span class="mord"> Bytes</span></span></span></span></span></span>
+
+
+<p>这意味着每 20ms 就有一个 640 字节的音频数据块。</p>
+
+<p>可以设计：</p>
+
+<pre class="code"><code class="language-text">DMA Buffer 0
+     ↓
+DMA Buffer 1
+     ↓
+DMA Buffer 2
+     ↓
+Audio Processing Task</code></pre>
+
+<p>实际驱动可能采用多 DMA 描述符和环形缓冲区，具体数量与驱动配置有关。</p>
+
+<h3>2. 音频任务设计</h3>
+
+<p>推荐：</p>
+
+<div class="table-wrap"><table><thead><tr><th>任务</th><th>功能</th></tr></thead><tbody><tr><td>Audio Capture</td><td>读取麦克风</td></tr><tr><td>Audio Processing</td><td>音频格式转换、降噪</td></tr><tr><td>Audio Network</td><td>上传音频数据</td></tr><tr><td>Audio Playback</td><td>输出声音</td></tr></tbody></table></div>
+
+<p>通过 Queue 或 Ring Buffer 在任务之间传递音频块。</p>
+
+<p>不要在音频采集任务中直接执行 HTTP 请求或等待 MQTT 网络操作，否则网络阻塞可能导致音频缓冲区溢出。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、DSP：数字音频处理原理</h2>
+
+<p>采集到声音之后，并不是一定要直接上传。</p>
+
+<p>很多情况下，需要先对声音进行处理。</p>
+
+<p>这就涉及 DSP，即 Digital Signal Processing，数字信号处理。</p>
+
+<h3>1. 常见音频处理算法</h3>
+
+<div class="table-wrap"><table><thead><tr><th>算法</th><th>作用</th><th>应用</th></tr></thead><tbody><tr><td>Gain</td><td>调节音量</td><td>音频输入输出</td></tr><tr><td>Low-pass Filter</td><td>低通滤波</td><td>降低高频噪声</td></tr><tr><td>High-pass Filter</td><td>高通滤波</td><td>消除低频干扰</td></tr><tr><td>Noise Reduction</td><td>降噪</td><td>语音识别</td></tr><tr><td>AGC</td><td>自动增益控制</td><td>语音采集</td></tr><tr><td>VAD</td><td>语音活动检测</td><td>判断是否有人说话</td></tr><tr><td>FFT</td><td>频谱分析</td><td>音频分析</td></tr><tr><td>AEC</td><td>回声消除</td><td>双向语音通话</td></tr></tbody></table></div>
+
+<h3>2. 什么是 VAD？</h3>
+
+<p>VAD 是 Voice Activity Detection。</p>
+
+<p>它的作用是判断当前音频中是否包含有效语音。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">麦克风持续采集
+       ↓
+计算音频能量
+       ↓
+判断是否超过阈值
+       ↓
+有语音？
+   /       \
+ 是         否
+ ↓           ↓
+保存语音    减少处理</code></pre>
+
+<p>这样就不必把所有静音数据都上传到服务器。</p>
+
+<p>不过，单纯使用能量阈值并不等于真正可靠的语音检测。环境噪声、麦克风距离和背景音乐都可能影响判断。</p>
+
+<h3>3. FFT 是什么？</h3>
+
+<p>FFT 是 Fast Fourier Transform，快速傅里叶变换。</p>
+
+<p>它可以将时域信号转换为频域信息。</p>
+
+<p>例如：</p>
+
+<ul><li>低频部分；</li><li>中频部分；</li><li>高频部分。</li></ul>
+
+<p>这样可以分析声音的频率分布。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/08-12.jpg" alt="wav 声音文件快速傅里叶变换-腾讯云开发者社区-腾讯云" loading="lazy"><figcaption><a href="https://ask.qcloudimg.com/http-save/yehe-6021899/2yq0j522zs.jpeg" target="_blank" rel="noopener">wav 声音文件快速傅里叶变换-腾讯云开发者社区-腾讯云</a> · 搜索词：audio signal time domain frequency domain FFT spectrum visualization</figcaption></figure>
+
+
+<p>在 ESP32-S3 上，可以使用轻量级 DSP 算法处理简单音频，也可以使用经过验证的第三方 DSP 库。</p>
+
+<p>需要注意：复杂降噪、回声消除和语音识别会消耗较多 CPU 和内存资源，必须进行性能测试。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、JPEG：为什么摄像头通常不直接传输 RGB 图像？</h2>
+
+<p>我们回到图像处理。</p>
+
+<p>假设一张 640 × 480 RGB565 图像：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>640</mn><mo>×</mo><mn>480</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>614400</mn><mtext> Bytes</mtext></mrow><annotation encoding="application/x-tex">640\times480\times2=614400\text{ Bytes}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">640</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">480</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">614400</span><span class="mord text"><span class="mord"> Bytes</span></span></span></span></span></span>
+
+
+<p>也就是 600KB。</p>
+
+<p>如果每秒传输 10 帧：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>614400</mn><mo>×</mo><mn>10</mn><mo>=</mo><mn>6144000</mn><mtext> Bytes/s</mtext></mrow><annotation encoding="application/x-tex">614400\times10=6144000\text{ Bytes/s}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">614400</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">10</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">6144000</span><span class="mord text"><span class="mord"> Bytes/s</span></span></span></span></span></span>
+
+
+<p>即约 6.14MB/s。</p>
+
+<p>这对于无线传输来说负担很大。</p>
+
+<p>所以很多摄像头系统使用 JPEG 压缩。</p>
+
+<h3>1. JPEG 压缩原理</h3>
+
+<p>JPEG 是一种有损图像压缩技术。</p>
+
+<p>大致过程：</p>
+
+<pre class="code"><code class="language-text">RGB 图像
+   ↓
+颜色空间转换
+   ↓
+图像分块
+   ↓
+离散余弦变换 DCT
+   ↓
+量化
+   ↓
+熵编码
+   ↓
+JPEG 文件</code></pre>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/08-13.jpg" alt="Optimization of User Service Rate with Image Compression in Edge Computing-Based Vehicular Networks | MDPI" loading="lazy"><figcaption><a href="https://www.mdpi.com/mathematics/mathematics-12-00558/article_deploy/html/images/mathematics-12-00558-g005.png" target="_blank" rel="noopener">Optimization of User Service Rate with Image Compression in Edge Computing-Based Vehicular Networks | MDPI</a> · 搜索词：JPEG compression pipeline RGB YCbCr DCT quantization entropy coding diagram</figcaption></figure>
+
+
+<p>JPEG 可以大幅降低图像数据量。</p>
+
+<p>但压缩率取决于图像内容、分辨率和质量设置，不能保证每张图像都有固定压缩比例。</p>
+
+<h3>2. ESP32-S3 如何使用 JPEG？</h3>
+
+<p>常见方式有两种：</p>
+
+<p><strong>方式 A：摄像头直接输出 JPEG</strong></p>
+
+<p>摄像头传感器内部完成 JPEG 压缩，ESP32-S3 接收 JPEG 数据。</p>
+
+<p>优点：</p>
+
+<ul><li>减少内存占用；</li><li>减少网络传输量；</li><li>减少后续压缩计算。</li></ul>
+
+<p><strong>方式 B：先采集 RGB，再软件压缩</strong></p>
+
+<p>ESP32-S3 采集 RGB 图像，再进行 JPEG 编码。</p>
+
+<p>优点：</p>
+
+<ul><li>可以进行图像处理；</li><li>可以先裁剪、调整颜色或尺寸。</li></ul>
+
+<p>缺点：</p>
+
+<ul><li>CPU 开销增加；</li><li>需要更多内存；</li><li>处理速度受到软件编码器性能限制。</li></ul>
+
+<p>对于资源有限的项目，优先考虑摄像头直接输出 JPEG。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十三、摄像头图像如何通过 Wi-Fi 发送到电脑？</h2>
+
+<p>现在把摄像头、PSRAM、DMA 和 Wi-Fi 结合起来。</p>
+
+<p>一个典型的图像传输架构：</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>摄像头</strong><span class="cg-text is-secondary is-xs">获取 JPEG 图像</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>LCD_CAM + DMA</strong><span class="cg-text is-secondary is-xs">接收数据并搬运</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>PSRAM 帧缓冲区</strong><span class="cg-text is-secondary is-xs">保存 JPEG 数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>Wi-Fi 网络任务</strong><span class="cg-text is-secondary is-xs">通过 HTTP 或其他协议发送</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>电脑或服务器</strong><span class="cg-text is-secondary is-xs">接收、保存、显示图像</span></div></div>
+
+
+<h3>1. 为什么要把采集任务和网络任务分开？</h3>
+
+<p>假设摄像头正在采集图像。</p>
+
+<p>如果网络传输突然变慢，采集任务不能一直等待网络。</p>
+
+<p>否则就可能发生：</p>
+
+<ul><li>帧缓冲区积压；</li><li>图像丢帧；</li><li>内存耗尽；</li><li>摄像头采集失败。</li></ul>
+
+<p>因此应该采用生产者—消费者模式：</p>
+
+<pre class="code"><code class="language-text">Camera Task
+    ↓
+Frame Queue
+    ↓
+Network Task
+    ↓
+HTTP Server</code></pre>
+
+<p>需要特别注意：帧缓冲区通常是有限资源。队列中保存的是帧缓冲区指针时，必须明确所有权，消费者使用完成后归还缓冲区，避免内存泄漏和重复释放。</p>
+
+<h3>2. 推荐传输方案</h3>
+
+<div class="table-wrap"><table><thead><tr><th>方案</th><th>适用场景</th></tr></thead><tbody><tr><td>HTTP POST</td><td>上传单张图片</td></tr><tr><td>HTTP MJPEG</td><td>局域网连续图像预览</td></tr><tr><td>WebSocket</td><td>双向实时通信</td></tr><tr><td>MQTT</td><td>发送图像状态和元数据，不适合直接传输大量连续图像</td></tr><tr><td>RTP/UDP</td><td>对实时性要求较高的视频传输，需要自行处理可靠性</td></tr></tbody></table></div>
+
+<p>对于初学阶段，我建议先完成 HTTP 单张 JPEG 上传，再实现 MJPEG 实时预览。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十四、普通版 XIAO ESP32S3 的多媒体开发注意事项</h2>
+
+<p>这里回到你的实际开发板。</p>
+
+<p>普通版 XIAO ESP32S3 并不是 Sense 版本。</p>
+
+<p>在开发多媒体功能时，必须注意以下问题。</p>
+
+<div class="table-wrap"><table><thead><tr><th>功能</th><th>普通版是否支持</th><th>额外要求</th></tr></thead><tbody><tr><td>I2S 数字麦克风</td><td>支持</td><td>外接兼容麦克风</td></tr><tr><td>I2S 数字功放</td><td>支持</td><td>外接功放和扬声器</td></tr><tr><td>摄像头采集</td><td>有条件支持</td><td>外接兼容摄像头和接口电路</td></tr><tr><td>JPEG 网络传输</td><td>支持</td><td>有图像数据来源</td></tr><tr><td>PCM 音频网络传输</td><td>支持</td><td>麦克风、音频缓冲区</td></tr><tr><td>FFT 音频分析</td><td>支持</td><td>DSP 算法和 CPU 资源</td></tr><tr><td>Wi-Fi 音频传输</td><td>支持</td><td>网络缓冲及协议设计</td></tr></tbody></table></div>
+
+<h3>1. 引脚冲突问题</h3>
+
+<p>这是 XIAO 项目中特别需要重视的地方。</p>
+
+<p>前面我们学习过：</p>
+
+<div class="table-wrap"><table><thead><tr><th>XIAO 引脚</th><th>ESP32-S3 GPIO</th><th>常见功能</th></tr></thead><tbody><tr><td>D0</td><td>GPIO1</td><td>GPIO / ADC</td></tr><tr><td>D1</td><td>GPIO2</td><td>GPIO / ADC</td></tr><tr><td>D2</td><td>GPIO3</td><td>GPIO / ADC</td></tr><tr><td>D3</td><td>GPIO4</td><td>GPIO / ADC</td></tr><tr><td>D4</td><td>GPIO5</td><td>I2C SDA</td></tr><tr><td>D5</td><td>GPIO6</td><td>I2C SCL</td></tr><tr><td>D6</td><td>GPIO43</td><td>UART TX</td></tr><tr><td>D7</td><td>GPIO44</td><td>UART RX</td></tr><tr><td>D8</td><td>GPIO7</td><td>SPI SCK</td></tr><tr><td>D9</td><td>GPIO8</td><td>SPI MISO</td></tr><tr><td>D10</td><td>GPIO9</td><td>SPI MOSI</td></tr></tbody></table></div>
+
+<p>I2S 也可以通过 GPIO Matrix 分配到其他合适的引脚，但必须检查：</p>
+
+<ul><li>引脚是否已经使用；</li><li>是否有板载电路占用；</li><li>是否涉及启动绑带功能；</li><li>是否涉及 USB 或其他特殊功能；</li><li>是否满足外设时钟和电气要求。</li></ul>
+
+<p>不要把一套 I2S 示例的 GPIO 定义直接复制到所有工程。</p>
+
+<h3>2. 内存规划</h3>
+
+<p>对于普通版 XIAO ESP32S3：</p>
+
+<ul><li>音频小块缓冲优先考虑内部 RAM；</li><li>大型音频缓存可评估 PSRAM；</li><li>图像帧缓冲通常优先考虑 PSRAM；</li><li>DMA 缓冲区必须符合对应驱动的内存要求；</li><li>任务栈和中断关键数据需要考虑内部 RAM。</li></ul>
+
+<p>尤其是同时运行 Wi-Fi、BLE、音频和摄像头时，不能只看 8MB PSRAM 的标称容量，还要监控内部 RAM 的可用量。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十五、建立多媒体系统的标准软件架构</h2>
+
+<p>建议以后在 XIAO-ESP32S3-Projects 中，为多媒体项目建立独立组件。</p>
+
+<pre class="code"><code class="language-text">components/
+│
+├── xiao_bsp/
+│
+├── camera_manager/
+│   ├── camera_init.c
+│   ├── camera_capture.c
+│   ├── camera_buffer.c
+│   └── camera_manager.h
+│
+├── audio_manager/
+│   ├── audio_i2s.c
+│   ├── audio_capture.c
+│   ├── audio_playback.c
+│   ├── audio_buffer.c
+│   └── audio_manager.h
+│
+├── dsp_manager/
+│   ├── audio_filter.c
+│   ├── audio_vad.c
+│   ├── audio_fft.c
+│   └── dsp_manager.h
+│
+├── image_manager/
+│   ├── jpeg_decoder.c
+│   ├── image_process.c
+│   └── image_manager.h
+│
+├── network_manager/
+│   ├── image_upload.c
+│   └── audio_stream.c
+│
+└── system_manager/
+    ├── memory_monitor.c
+    ├── task_monitor.c
+    └── resource_manager.c</code></pre>
+
+<h3>推荐任务划分</h3>
+
+<div class="table-wrap"><table><thead><tr><th>FreeRTOS 任务</th><th>功能</th><th>设计重点</th></tr></thead><tbody><tr><td>Camera Task</td><td>摄像头采集</td><td>避免阻塞</td></tr><tr><td>Audio Capture</td><td>音频采集</td><td>保证连续性</td></tr><tr><td>Audio Process</td><td>音频处理</td><td>控制计算时间</td></tr><tr><td>Network Task</td><td>网络发送</td><td>允许超时和重试</td></tr><tr><td>Display Task</td><td>屏幕刷新</td><td>控制刷新频率</td></tr><tr><td>System Monitor</td><td>系统监控</td><td>内存与任务统计</td></tr></tbody></table></div>
+
+<p>实际工程中，任务优先级和 CPU 核心分配必须经过性能测试，不建议一开始就把所有任务固定在不同核心。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十六、给 Codex 的多媒体开发任务</h2>
+
+<p>可以将下面的要求交给 Codex，让它在现有 <code>XIAO-ESP32S3-Projects</code> 项目中建立多媒体基础组件。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Codex 多媒体组件开发指令</strong><button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制指令
+    </button></div>
+  请在项目中建立普通版 XIAO ESP32S3 多媒体基础组件。
+
+  要求：
+
+<ul><li>I2S 音频采集与播放。</li><li>PCM 缓冲区管理。</li><li>DMA 内存管理。</li><li>JPEG 图像数据管理。</li><li>HTTP 图像上传。</li><li>FreeRTOS 多任务设计。</li><li>摄像头接口适配层。</li><li>内存和 CPU 性能监控。</li></ul>
+  特别要求：普通版摄像头硬件未确认之前，不允许编造引脚配置或声称摄像头程序可以直接烧录。
+
+  先静态分析和编译，不自动烧录。
+</div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十七、本课知识总结</h2>
+
+<p>这一课最重要的是理解四条数据处理链路。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><strong>图像采集链路</strong>
+
+  摄像头 → LCD_CAM → DMA → PSRAM → 图像处理
+  <hr class="cg-divider"/><strong>音频采集链路</strong>
+
+  数字麦克风 → I2S → DMA → PCM → DSP
+  <hr class="cg-divider"/><strong>音频播放链路</strong>
+
+  PCM → I2S → 数字功放 → 扬声器
+  <hr class="cg-divider"/><strong>网络传输链路</strong>
+
+  图像 / 音频 → 缓冲区 → Wi-Fi → HTTP / WebSocket → 服务器
+</div>
+
+
+<p>你现在已经学习了 XIAO ESP32S3 的八个核心技术阶段：</p>
+
+<div class="table-wrap"><table><thead><tr><th>课程</th><th>核心技术</th></tr></thead><tbody><tr><td>第一课</td><td>ESP32-S3 芯片架构</td></tr><tr><td>第二课</td><td>CPU、寄存器、中断、时钟</td></tr><tr><td>第三课</td><td>Flash、SRAM、PSRAM</td></tr><tr><td>第四课</td><td>内存管理、DMA</td></tr><tr><td>第五课</td><td>GPIO、I2C、SPI、UART、ADC、PWM</td></tr><tr><td>第六课</td><td>FreeRTOS 多任务</td></tr><tr><td>第七课</td><td>Wi-Fi、BLE、TCP/IP、MQTT、OTA</td></tr><tr><td>第八课</td><td>摄像头、I2S、PCM、JPEG、DSP</td></tr></tbody></table></div>
+
+<hr class="cg-divider"/>
+
+<h2>十八、下一课：ESP32-S3 底层安全、启动流程与固件结构</h2>
+
+<p>下一步建议进入更接近产品工程的内容。</p>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第九课：Bootloader、Flash 分区与固件启动机制</h2><figure class="cg-figure"><img src="../tutorial/images/08-14.jpg" alt="OTA Updates Framework. In this post we will discuss design and… | by Mahavir Jain | The ESP Journal | Medium" loading="lazy"><figcaption><a href="https://miro.medium.com/v2/resize%3Afit%3A1400/1%2AJq25sVCtXrv-WUQ0TIg2og.png" target="_blank" rel="noopener">OTA Updates Framework. In this post we will discuss design and… | by Mahavir Jain | The ESP Journal | Medium</a> · 搜索词：ESP32 bootloader firmware startup partition table OTA flash memory architecture diagram</figcaption></figure>
+  学习内容：
+
+<ol><li>ESP32-S3 上电后的启动过程。</li><li>Boot ROM 和 Second Stage Bootloader。</li><li>Flash 中的固件存储结构。</li><li>Partition Table 分区表。</li><li>NVS 配置存储。</li><li>Factory、OTA_0、OTA_1 分区。</li><li>固件链接和 ELF 文件结构。</li><li>Secure Boot V2。</li><li>Flash Encryption。</li><li>OTA 回滚与固件恢复。</li><li>如何制作可量产的 XIAO ESP32S3 固件。</li></ol></div>
+
+
+<p>这一课非常值得深入，因为它将解释一个关键问题：</p>
+
+<p><strong>为什么 XIAO ESP32S3 上电后能够自动运行你的程序？固件究竟存放在 Flash 的什么位置？升级失败后又如何恢复？</strong></p>
+
+<p>完成第九课后，我们就可以从单个驱动开发进一步进入完整固件工程、产品启动、安全和量产设计。</p>
+</div></section>
+<nav class="lesson-nav"><a href="07-第七课：XIAO ESP32S3 的 Wi-Fi、BLE 与网络通信原理.html">← 第七课：XIAO ESP32S3 的 Wi-Fi、BLE 与网络通信原理</a><span class="spacer"></span><a href="09-第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全.html">第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全 →</a></nav>
+</main></body></html>

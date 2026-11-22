@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第1课：XIAO ESP32S3 开发原理：从硬件到软件运行</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第1课：XIAO ESP32S3 开发原理：从硬件到软件运行 · <a href="index.html">课程目录</a> · <a href="../tutorial/01-XIAO ESP32S3 开发原理：从硬件到软件运行.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>XIAO ESP32S3 开发原理：从硬件到软件运行</h1>
+
+<p>本次只针对 <strong>Seeed Studio XIAO ESP32S3 普通版开发板</strong>，不涉及 Sense 摄像头版本和 Plus 扩展版本。</p>
+
+<p>理解 XIAO ESP32S3 的开发原理，关键是掌握五个部分：<strong>芯片如何工作、程序如何运行、GPIO 如何控制硬件、多个任务如何协同，以及 Codex 如何参与开发。</strong></p>
+
+<h2>一、XIAO ESP32S3 的核心工作原理</h2>
+
+
+
+<p>XIAO ESP32S3 是一块以 Espressif ESP32-S3 为核心的微型开发板。</p>
+
+<div class="table-wrap"><table><thead><tr><th>硬件</th><th>作用</th></tr></thead><tbody><tr><td>ESP32-S3 芯片</td><td>执行程序、处理数据、控制外设</td></tr><tr><td>双核 Xtensa LX7 CPU</td><td>运行应用程序和系统任务，最高 240 MHz</td></tr><tr><td>Flash</td><td>保存固件和持久化数据</td></tr><tr><td>PSRAM</td><td>为较大数据缓冲区提供额外内存</td></tr><tr><td>GPIO</td><td>控制 LED、按键、继电器、传感器等</td></tr><tr><td>Wi-Fi</td><td>与路由器、服务器、云端通信</td></tr><tr><td>Bluetooth LE</td><td>与手机、低功耗蓝牙设备通信</td></tr><tr><td>USB-C</td><td>供电、下载程序、USB 通信</td></tr><tr><td>电源管理电路</td><td>为芯片和外设提供合适电压</td></tr></tbody></table></div>
+
+<p>需要特别注意：Flash、PSRAM 容量以及可用 GPIO 必须依据具体 XIAO 板卡规格确认，不能直接套用其他 ESP32-S3 开发板的配置。</p>
+
+<h2>二、程序是如何在 XIAO ESP32S3 上运行的？</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:2;--pad:3;"><div class="cg-box radius-lg bg-surface-secondary align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="laptop" style="color:var(--text-secondary);width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2"/><path d="M2 20h20"/></svg></span><strong>Mac + Codex / VS Code</strong><span class="cg-text is-secondary is-xs">编写 C/C++ 固件代码</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-lg align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="settings" style="color:var(--text-secondary);width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><strong>ESP-IDF 编译工具链</strong><span class="cg-text is-secondary is-xs">源码 → 编译 → 链接 → 固件二进制文件</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-lg align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="usb" style="color:var(--text-secondary);width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="1"/><circle cx="4" cy="20" r="1"/><path d="M4.7 19.3 19 5"/><path d="m21 3-3 1 2 2Z"/><path d="M9.26 7.68 5 12l2 5"/><path d="m10 14 5 2 4-4"/></svg></span><strong>USB-C 下载固件</strong><span class="cg-text is-secondary is-xs">通过下载模式将固件写入 Flash</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-lg bg-surface-secondary align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="cpu" style="color:var(--text-secondary);width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></svg></span><strong>ESP32-S3 启动程序</strong><span class="cg-text is-secondary is-xs">ROM Bootloader → 二级 Bootloader → 应用程序</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-lg align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="workflow" style="color:var(--text-secondary);width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg></span><strong>FreeRTOS 任务调度</strong><span class="cg-text is-secondary is-xs">执行 GPIO、Wi-Fi、通信和业务逻辑</span></div></div>
+
+
+<p><strong>核心原理：</strong> Mac 负责开发和编译，ESP32-S3 负责独立运行固件。烧录完成后，开发板不需要一直连接 Mac，也能通过合适的外部电源独立工作。</p>
+
+<h2>三、GPIO 控制硬件的原理</h2>
+
+<p>GPIO 是 ESP32-S3 与外部电路交互的基础。</p>
+
+<p>例如，将一个 LED 通过限流电阻连接到 D0（GPIO1），并将另一端连接 GND：</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><svg viewBox="0 0 340 112" width="100%" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="30" width="95" height="52" rx="8" fill="#64748b" fillOpacity=".15" stroke="#64748b"/><text x="55" y="51" textAnchor="middle" fontSize="12" fill="currentColor" fontWeight="600">XIAO</text><text x="55" y="66" textAnchor="middle" fontSize="11" fill="currentColor">GPIO1 / D0</text><path d="M103 56 H137 M181 56 H208 M244 56 H291" fill="none" stroke="#64748b" strokeWidth="2"/><rect x="137" y="45" width="44" height="22" rx="3" fill="#f59e0b" fillOpacity=".2" stroke="#b45309"/><text x="159" y="59" fontSize="10" textAnchor="middle" fill="currentColor">330Ω</text><path d="M208 45 L208 67 L229 56 Z" fill="#eab308" fillOpacity=".25" stroke="#ca8a04" strokeWidth="1.5"/><path d="M231 45 V67" stroke="#ca8a04" strokeWidth="2"/><path d="M291 44 V68 M282 48 V64 M273 52 V60" stroke="#64748b" strokeWidth="2" transform="translate(0,0)"/><text x="159" y="90" textAnchor="middle" fontSize="11" fill="currentColor">限流电阻</text><text x="220" y="90" textAnchor="middle" fontSize="11" fill="currentColor">LED</text><text x="293" y="90" textAnchor="middle" fontSize="11" fill="currentColor">GND</text></svg></div>
+
+
+<p>使用 ESP-IDF 的控制代码：</p>
+
+
+<pre class="code"><code class="language-c">#include &quot;driver/gpio.h&quot;
+#include &quot;freertos/FreeRTOS.h&quot;
+#include &quot;freertos/task.h&quot;
+
+#define LED_GPIO GPIO_NUM_1
+
+void app_main(void)
+{
+    gpio_reset_pin(LED_GPIO);
+    gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
+
+    while (1) {
+        gpio_set_level(LED_GPIO, 1);
+        vTaskDelay(pdMS_TO_TICKS(500));
+
+        gpio_set_level(LED_GPIO, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}</code></pre>
+
+
+<p>当 GPIO1 输出高电平时，LED 导通；输出低电平时，LED 熄灭。这个示例使用的是<strong>外接 LED</strong>，并非板载 LED。XIAO ESP32S3 的板载用户 LED 使用 GPIO21，且为低电平点亮。</p>
+
+<h2>四、GPIO 与外设通信原理</h2>
+
+<p>XIAO ESP32S3 的同一组引脚可以根据软件配置承担不同功能，这叫做<strong>引脚复用</strong>。</p>
+
+<div class="table-wrap"><table><thead><tr><th>通信方式</th><th>XIAO 引脚示例</th><th>工作原理</th></tr></thead><tbody><tr><td>GPIO</td><td>D0 / GPIO1</td><td>输出高低电平或读取输入</td></tr><tr><td>ADC</td><td>D1 / GPIO2</td><td>将模拟电压转换为数字值</td></tr><tr><td>I2C</td><td>D4 / GPIO5、D5 / GPIO6</td><td>两根信号线连接传感器</td></tr><tr><td>UART</td><td>D6 / GPIO43、D7 / GPIO44</td><td>串行发送与接收数据</td></tr><tr><td>SPI</td><td>D8 / GPIO7、D9 / GPIO8、D10 / GPIO9</td><td>高速同步传输数据</td></tr><tr><td>PWM</td><td>可用输出 GPIO</td><td>通过占空比控制亮度、电机等</td></tr></tbody></table></div>
+
+<p>以上映射来自 Seeed 官方普通版引脚资料。</p>
+
+<p>例如读取温度传感器的完整过程是：</p>
+
+<p><strong>传感器测温 → I2C 传输 → ESP32-S3 驱动读取 → 程序计算 → Wi-Fi 上传。</strong></p>
+
+<p>这也是嵌入式开发最基本的模式：采集输入、处理数据、执行输出。</p>
+
+<h2>五、FreeRTOS 多任务原理</h2>
+
+<p>ESP32-S3 使用双核处理器，ESP-IDF 提供 FreeRTOS 实时操作系统。</p>
+
+<p>例如开发一个 Wi-Fi 控制器，可以将功能分成不同任务：</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-lg bg-surface-secondary" style="--gap:2;--pad:3;"><strong>CPU Core 0</strong><hr class="cg-divider"/><span class="cg-text">Wi-Fi 网络任务</span><span class="cg-text">TCP/IP 协议栈</span><span class="cg-text">系统后台任务</span></div></div><div class="cg-grid-item"><div class="cg-box radius-lg bg-surface-secondary" style="--gap:2;--pad:3;"><strong>CPU Core 1</strong><hr class="cg-divider"/><span class="cg-text">传感器采集</span><span class="cg-text">按键处理</span><span class="cg-text">业务逻辑</span></div></div></div><div class="cg-caption">示意性任务划分，并非 ESP-IDF 默认固定的核心分配。实际运行由任务亲和性、优先级及系统配置决定。</div></div>
+
+
+<p>FreeRTOS 通过调度器管理多个任务，并使用队列、信号量、事件组等机制实现任务间通信。</p>
+
+<p>这意味着你可以同时进行 Wi-Fi 通信、按键响应和传感器采集，而不必把所有功能写在一个无限循环里。</p>
+
+<h2>六、供电和启动原理</h2>
+
+<p>XIAO ESP32S3 普通版支持 USB-C 5V 供电，也支持合适的单节 3.7V 锂电池供电。板载电源管理电路负责稳压和电池充电。</p>
+
+<p>特别需要了解：</p>
+
+<ul><li>ESP32-S3 的 GPIO 使用 3.3V 逻辑，不能直接接入 5V 信号。</li><li>BOOT 按键关联 GPIO0，启动时可用于选择下载模式。</li><li>RESET 控制芯片复位，重新执行启动流程。</li><li>普通版没有专门的电池电压 ADC 引脚，若要检测电池电量，需要额外设计测量电路。</li><li>外壳设计应预留 USB-C、BOOT、RESET、天线及必要的散热空间。</li></ul>
+
+<p>这些细节可以对照 <a class="cg-link" href="https://wiki.seeedstudio.com/cn/xiao_esp32s3_getting_started/" target="_blank" rel="noopener">Seeed 官方中文开发文档<span class="cg-ext" aria-hidden="true">↗</span></a> 和 <a class="cg-link" href="https://files.seeedstudio.com/wiki/SeeedStudio-XIAO-ESP32S3/res/XIAO_ESP32S3_V1.3_SCH_260115.pdf" target="_blank" rel="noopener">XIAO ESP32S3 V1.3 原理图<span class="cg-ext" aria-hidden="true">↗</span></a>。</p>
+
+<h2>七、如何将这些原理应用到你的开发项目</h2>
+
+<p>建议在 <code>XIAO-ESP32S3-Projects</code> 中按照以下顺序建立可验证的实验：</p>
+
+<ol><li><strong>GPIO 实验</strong>：LED 闪烁、按键输入、中断处理。</li><li><strong>外设实验</strong>：I2C 传感器、SPI 屏幕、UART 通信。</li><li><strong>网络实验</strong>：Wi-Fi 连接、HTTP 服务、MQTT 通信。</li><li><strong>多任务实验</strong>：FreeRTOS 任务、队列、互斥锁。</li><li><strong>电源实验</strong>：USB 与电池供电、休眠和唤醒。</li><li><strong>完整应用</strong>：将驱动、通信和业务逻辑组合成独立运行的固件。</li></ol>
+
+<p><strong>最重要的开发思路是：先理解硬件资源，再编写驱动，最后构建应用。</strong> Codex 可以协助生成和检查代码，但引脚连接、供电能力、编译结果和真实硬件行为仍需要逐项验证。</p>
+
+<p>对于你的项目，最适合先掌握的是 <strong>XIAO ESP32S3 的 GPIO、启动机制、ESP-IDF 驱动模型和 FreeRTOS</strong>。掌握这四部分之后，就能逐步独立开发较复杂的 XIAO ESP32S3 产品。</p>
+</div></section>
+<nav class="lesson-nav"><span class="spacer"></span><a href="02-XIAO ESP32S3 开发原理进阶（二）：从芯片底层到完整固件.html">第2课：XIAO ESP32S3 开发原理进阶（二）：从芯片底层到完整固件 →</a></nav>
+</main></body></html>

@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP · <a href="index.html">课程目录</a> · <a href="../tutorial/13-第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP</h1>
+
+<p>前面我们学习了 ADC、GPTimer、DMA、环形缓冲区和数字滤波。</p>
+
+<p>现在进入 XIAO ESP32S3 非常重要的一个应用领域：<strong>数字音频开发</strong>。</p>
+
+<p>这节课我们将从数字音频的硬件原理开始，一直讲到实际录音、音频播放、数字信号处理和 Wi-Fi 音频传输。</p>
+
+<p>本课全部以普通版 Seeed XIAO ESP32S3 为基础，外接音频模块，不依赖 Sense 版本的板载摄像头或麦克风。</p>
+
+<h2>一、先建立完整的音频系统概念</h2>
+
+<p>一套完整的数字音频设备通常有两条数据链路。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><strong>音频采集链路</strong><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>声音</strong><span class="cg-text is-secondary is-xs">空气中的声波</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>数字麦克风</strong><span class="cg-text is-secondary is-xs">将声音转换为数字数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>I2S RX + DMA</strong><span class="cg-text is-secondary is-xs">接收音频数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>PCM 缓冲区</strong><span class="cg-text is-secondary is-xs">保存原始音频采样</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>DSP 音频处理</strong><span class="cg-text is-secondary is-xs">增益、滤波、VAD、FFT</span></div><hr class="cg-divider"/><strong>音频播放链路</strong><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>PCM 音频数据</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>I2S TX + DMA</strong><span class="cg-text is-secondary is-xs">输出数字音频数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>数字音频功放</strong><span class="cg-text is-secondary is-xs">DAC 转换和功率放大（依模块而定）</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>扬声器</strong><span class="cg-text is-secondary is-xs">输出声音</span></div></div>
+
+
+<p>先记住一个概念：</p>
+
+<ul><li>I2S：负责数字音频数据传输。</li><li>PCM：负责表示数字音频采样数据。</li><li>DMA：负责数据搬运。</li><li>DSP：负责数字音频处理。</li><li>功放：负责驱动扬声器。</li></ul>
+
+<p>这几个模块组合起来，才能构成完整的音频系统。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、声音是如何变成数字数据的？</h2>
+
+<p>首先理解声音本身。</p>
+
+<p>声音是一种机械波。</p>
+
+<p>麦克风接收到声波后，将其转换成电信号。</p>
+
+<p>数字麦克风内部通常已经集成了模数转换功能。</p>
+
+<p>模拟麦克风则输出模拟电压，需要外部 ADC 或音频编解码器进行转换。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-01.jpg" alt="What is digital audio? - mp4gain.com" loading="lazy"><figcaption><a href="https://dt7v1i9vyp3mf.cloudfront.net/styles/news_large/s3/imagelibrary/D/DigMyth1-wpILIpnPnsuSK1dcyD8V_Ps3F_98.qjE.jpg" target="_blank" rel="noopener">What is digital audio? - mp4gain.com</a> · 搜索词：sound wave microphone acoustic pressure analog electrical signal digital PCM sampling diagram</figcaption></figure>
+
+
+<h3>1. 什么是采样？</h3>
+
+<p>假设麦克风输出连续变化的信号：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x(t)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">x</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span></span>
+
+
+<p>数字系统不能无限连续地保存它，所以需要按照固定时间间隔读取信号。</p>
+
+<p>例如每秒采样 16000 次：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>f</mi><mi>s</mi></msub><mo>=</mo><mn>16000</mn><mi>H</mi><mi>z</mi></mrow><annotation encoding="application/x-tex">f_s=16000Hz</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">16000</span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord mathnormal" style="margin-right:0.044em;">z</span></span></span></span></span>
+
+
+<p>采样间隔：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mi>s</mi></msub><mo>=</mo><mfrac><mn>1</mn><mn>16000</mn></mfrac></mrow><annotation encoding="application/x-tex">T_s=\frac{1}{16000}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">16000</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>约为 62.5 微秒。</p>
+
+<p>也就是说，每隔 62.5 微秒记录一次声音幅度。</p>
+
+<h3>2. 什么是采样率？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>采样率</th><th>每秒采样次数</th><th>常见用途</th></tr></thead><tbody><tr><td>8kHz</td><td>8000</td><td>窄带语音</td></tr><tr><td>16kHz</td><td>16000</td><td>语音识别</td></tr><tr><td>22.05kHz</td><td>22050</td><td>音频处理</td></tr><tr><td>44.1kHz</td><td>44100</td><td>常见音乐音频</td></tr><tr><td>48kHz</td><td>48000</td><td>数字音频、视频</td></tr></tbody></table></div>
+
+<p>采样率越高，意味着每秒需要处理的数据越多。</p>
+
+<p>但采样率并不是越高越好，需要结合目标信号的频率范围和系统处理能力选择。</p>
+
+<h3>3. 奈奎斯特采样定理</h3>
+
+<p>这是数字音频必须理解的理论。</p>
+
+如果需要正确表示最高频率为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub></mrow><annotation encoding="application/x-tex">f_{max}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 的带限信号，理想情况下采样率至少应满足：
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>f</mi><mi>s</mi></msub><mo>&gt;</mo><mn>2</mn><msub><mi>f</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub></mrow><annotation encoding="application/x-tex">f_s&gt;2f_{max}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord">2</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">ma</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>例如希望处理最高频率为 8kHz 的信号：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>f</mi><mi>s</mi></msub><mo>&gt;</mo><mn>16</mn><mi>k</mi><mi>H</mi><mi>z</mi></mrow><annotation encoding="application/x-tex">f_s&gt;16kHz</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord">16</span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord mathnormal" style="margin-right:0.044em;">z</span></span></span></span></span>
+
+
+<p>实际系统还需要抗混叠滤波，不能仅仅把采样率设置成两倍就认为可以得到高质量音频。</p>
+
+<h3>4. 什么是量化位数？</h3>
+
+<p>采样得到的是一个幅度值，还需要将幅度转换成数字。</p>
+
+<p>例如：</p>
+
+<div class="table-wrap"><table><thead><tr><th>位数</th><th>可表示等级</th></tr></thead><tbody><tr><td>8bit</td><td>256</td></tr><tr><td>16bit</td><td>65536</td></tr><tr><td>24bit</td><td>16777216</td></tr><tr><td>32bit</td><td>4294967296</td></tr></tbody></table></div>
+
+<p>这里要注意：</p>
+
+<p>32bit PCM 不一定代表 32 位有效音频精度。有些 I2S 设备使用 32 位数据槽，但实际有效数据只有 18、24 或其他位数。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、PCM：数字音频的数据格式</h2>
+
+<p>PCM 全称 Pulse Code Modulation，即脉冲编码调制。</p>
+
+<p>它是最基础的数字音频表示形式之一。</p>
+
+<p>例如一段音频：</p>
+
+<pre class="code"><code class="language-text">[100]
+[250]
+[400]
+[350]
+[120]
+[-100]
+[-300]
+[-200]</code></pre>
+
+<p>这些数字就是不同时间点的音频采样值。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-02.jpg" alt="【ITパスポート攻略/テクノロジ系①】　　0と1の世界。基礎理論とアルゴリズム｜Smart Life Lab" loading="lazy"><figcaption><a href="https://assets.st-note.com/img/1770613383-9hMb7yWeua4NRt5Qc3GSlBrx.png?width=1200" target="_blank" rel="noopener">【ITパスポート攻略/テクノロジ系①】　　0と1の世界。基礎理論とアルゴリズム｜Smart Life Lab</a> · 搜索词：PCM digital audio waveform sampled discrete amplitude signal diagram</figcaption></figure>
+
+
+<h3>1. PCM 数据的三个关键参数</h3>
+
+<div class="table-wrap"><table><thead><tr><th>参数</th><th>说明</th></tr></thead><tbody><tr><td>Sample Rate</td><td>采样率</td></tr><tr><td>Bit Depth</td><td>采样数据位数</td></tr><tr><td>Channels</td><td>声道数量</td></tr></tbody></table></div>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">16000Hz
+16bit
+Mono</code></pre>
+
+<p>代表：</p>
+
+<ul><li>每秒 16000 个采样；</li><li>每个采样 16 位；</li><li>单声道。</li></ul>
+
+<h3>2. 如何计算 PCM 数据量？</h3>
+
+<p>公式：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>a</mi><mi>t</mi><mi>a</mi><mi>R</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo>=</mo><mi>S</mi><mi>a</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>R</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo>×</mo><mi>B</mi><mi>i</mi><mi>t</mi><mi>D</mi><mi>e</mi><mi>p</mi><mi>t</mi><mi>h</mi><mo>×</mo><mi>C</mi><mi>h</mi><mi>a</mi><mi>n</mi><mi>n</mi><mi>e</mi><mi>l</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">DataRate=
+SampleRate\times BitDepth\times Channels</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">am</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">e</span><span class="mord mathnormal">pt</span><span class="mord mathnormal">h</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">hann</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">s</span></span></span></span></span>
+
+
+<p>例如：</p>
+
+<p>16kHz、16bit、单声道：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>16000</mn><mo>×</mo><mn>16</mn><mo>×</mo><mn>1</mn><mo>=</mo><mn>256000</mn><mi>b</mi><mi>i</mi><mi>t</mi><mi mathvariant="normal">/</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">16000\times16\times1
+=256000bit/s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">256000</span><span class="mord mathnormal">bi</span><span class="mord mathnormal">t</span><span class="mord">/</span><span class="mord mathnormal">s</span></span></span></span></span>
+
+
+<p>转换成字节：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>256000</mn><mo>÷</mo><mn>8</mn><mo>=</mo><mn>32000</mn><mi>B</mi><mi>y</mi><mi>t</mi><mi>e</mi><mi mathvariant="normal">/</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">256000\div8=32000Byte/s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">256000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">÷</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">8</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">32000</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord">/</span><span class="mord mathnormal">s</span></span></span></span></span>
+
+
+<p>即：</p>
+
+<p><span class="cg-badge color-success">32KB/s</span></p>
+
+<p>如果是 16kHz、16bit、双声道：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>16000</mn><mo>×</mo><mn>16</mn><mo>×</mo><mn>2</mn><mo>÷</mo><mn>8</mn><mo>=</mo><mn>64000</mn><mi>B</mi><mi>y</mi><mi>t</mi><mi>e</mi><mi mathvariant="normal">/</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">16000\times16\times2\div8
+=64000Byte/s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">÷</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">8</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">64000</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord">/</span><span class="mord mathnormal">s</span></span></span></span></span>
+
+
+<p>即 64KB/s。</p>
+
+<h3>3. 不同音频配置的数据量</h3>
+
+<div class="table-wrap"><table><thead><tr><th>音频格式</th><th>每秒数据量</th></tr></thead><tbody><tr><td>8kHz / 16bit / Mono</td><td>16KB</td></tr><tr><td>16kHz / 16bit / Mono</td><td>32KB</td></tr><tr><td>16kHz / 16bit / Stereo</td><td>64KB</td></tr><tr><td>44.1kHz / 16bit / Stereo</td><td>176.4KB</td></tr><tr><td>48kHz / 32bit / Stereo</td><td>384KB</td></tr></tbody></table></div>
+
+<p>这对 XIAO ESP32S3 的内存规划非常重要。</p>
+
+<p>例如采集 10 秒 16kHz、16bit、单声道音频：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>32000</mn><mo>×</mo><mn>10</mn><mo>=</mo><mn>320000</mn><mi>B</mi><mi>y</mi><mi>t</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">32000\times10=320000Byte</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">32000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">10</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">320000</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span></span></span></span></span>
+
+
+<p>大约需要 312.5KiB。</p>
+
+<p>所以不能把长时间录音的数据全部放在普通任务栈里。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、I2S：ESP32-S3 如何与数字麦克风通信？</h2>
+
+<p>I2S 全称 Inter-IC Sound。</p>
+
+<p>它是专门为数字音频数据传输设计的串行接口。</p>
+
+<p>与 UART、I2C 不同，I2S 主要用于连续音频数据流。</p>
+
+<h3>1. I2S 的主要信号</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-03.jpg" alt="I2S 协议 - 可达达鸭 - 博客园" loading="lazy"><figcaption><a href="https://img2023.cnblogs.com/blog/3201119/202307/3201119-20230724162951792-210572944.png" target="_blank" rel="noopener">I2S 协议 - 可达达鸭 - 博客园</a> · 搜索词：I2S bus BCLK LRCLK WS DIN DOUT digital audio connection timing diagram</figcaption></figure>
+
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>作用</th></tr></thead><tbody><tr><td>BCLK</td><td>位时钟</td></tr><tr><td>WS / LRCLK</td><td>左右声道选择时钟</td></tr><tr><td>DIN</td><td>数据输入</td></tr><tr><td>DOUT</td><td>数据输出</td></tr><tr><td>MCLK</td><td>主时钟，部分设备需要</td></tr></tbody></table></div>
+
+<p>其中：</p>
+
+<ul><li>BCLK 控制每一位数据的传输节奏。</li><li>WS 表示当前传输的是左声道还是右声道。</li><li>DIN/DOUT 负责实际音频数据。</li></ul>
+
+<h3>2. I2S 主机和从机</h3>
+
+<p>在常见的 ESP32-S3 音频系统中：</p>
+
+<p>ESP32-S3 可以作为 I2S 主机。</p>
+
+<p>由它产生：</p>
+
+<ul><li>BCLK；</li><li>WS。</li></ul>
+
+<p>数字麦克风接收时钟，然后把数据发送给 ESP32-S3。</p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3
+     |
+     ├── BCLK ───→ 数字麦克风
+     |
+     ├── WS ─────→ 数字麦克风
+     |
+     └── DIN ←──── 数字麦克风数据</code></pre>
+
+<p>播放时则可以把方向反过来：</p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3
+     |
+     ├── BCLK ───→ 数字功放
+     |
+     ├── WS ─────→ 数字功放
+     |
+     └── DOUT ───→ 数字功放</code></pre>
+
+<h3>3. I2S 为什么需要 DMA？</h3>
+
+<p>假设：</p>
+
+<pre class="code"><code class="language-text">16kHz
+16bit
+单声道</code></pre>
+
+<p>每秒就有 32000 字节音频数据。</p>
+
+<p>如果 CPU 每个采样都单独处理，就会产生大量数据搬运工作。</p>
+
+<p>I2S + DMA 可以实现：</p>
+
+<pre class="code"><code class="language-text">数字麦克风
+    ↓
+I2S 接收
+    ↓
+DMA 缓冲区
+    ↓
+FreeRTOS 音频任务
+    ↓
+PCM 数据处理</code></pre>
+
+<p>CPU 可以按块读取数据，而不是逐个采样搬运。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、I2S 实际硬件：选择数字麦克风和数字功放</h2>
+
+<p>现在把理论落实到普通版 XIAO ESP32S3。</p>
+
+<p>建议第一套音频实验使用两个模块：</p>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/13-04.jpg" alt="INMP441 I2S MEMS Omnidirectional Microphone – Zaitronics" loading="lazy"><figcaption><a href="https://zaitronics.com.au/cdn/shop/files/S04fd4196b48846639220a2baf5e5ff8bW_jpg_960x960q75_jpg.png?v=1764992284&amp;width=1000" target="_blank" rel="noopener">INMP441 I2S MEMS Omnidirectional Microphone – Zaitronics</a> · 搜索词：INMP441 I2S MEMS digital microphone breakout module</figcaption></figure><strong>INMP441 数字麦克风</strong><span class="cg-text is-secondary is-xs">负责声音采集，输出 I2S 数字数据。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/13-05.jpg" alt="Adafruit MAX98357A I2S 3W Class D Audio Amplifier Breakout - Thingbits India" loading="lazy"><figcaption><a href="https://www.thingbits.in/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBczRoIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--bb72f6fb26e766c28450acdba6d6df0e4e340466/3006-08.jpg" target="_blank" rel="noopener">Adafruit MAX98357A I2S 3W Class D Audio Amplifier Breakout - Thingbits India</a> · 搜索词：MAX98357A I2S class D digital audio amplifier breakout board</figcaption></figure><strong>MAX98357A 数字功放</strong><span class="cg-text is-secondary is-xs">接收 I2S 数据，驱动扬声器。</span></div></div>
+
+
+<p>这两个模块可以构成一套基础的录音和播放系统。</p>
+
+<h3>1. INMP441 麦克风接线</h3>
+
+<p>INMP441 常见引脚：</p>
+
+<div class="table-wrap"><table><thead><tr><th>麦克风引脚</th><th>XIAO ESP32S3 示例连接</th></tr></thead><tbody><tr><td>VDD</td><td>3V3</td></tr><tr><td>GND</td><td>GND</td></tr><tr><td>SCK</td><td>D0 / GPIO1</td></tr><tr><td>WS</td><td>D1 / GPIO2</td></tr><tr><td>SD</td><td>D2 / GPIO3</td></tr><tr><td>L/R</td><td>GND（选择左声道，具体依模块说明）</td></tr></tbody></table></div>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-06.jpg" alt="How to Make an Audio Recorder With Esp32, INMP441 I2S Microphone - Instructables" loading="lazy"><figcaption><a href="https://content.instructables.com/FZ8/1ROT/MIZ18QSP/FZ81ROTMIZ18QSP.png" target="_blank" rel="noopener">How to Make an Audio Recorder With Esp32, INMP441 I2S Microphone - Instructables</a> · 搜索词：INMP441 microphone XIAO ESP32 ESP32 S3 wiring BCLK WS SD diagram</figcaption></figure>
+
+
+<p>说明：</p>
+
+<ul><li>SCK 对应 I2S BCLK。</li><li>WS 对应 I2S WS。</li><li>SD 对应 ESP32-S3 的 DIN。</li><li>L/R 用于选择麦克风输出的声道位置。</li></ul>
+
+<p>INMP441 通常在 32 位 I2S 数据槽中提供有效音频数据。不能简单认为每个槽里的 32 位都是 32 位有效音频。</p>
+
+<h3>2. MAX98357A 功放接线</h3>
+
+<div class="table-wrap"><table><thead><tr><th>MAX98357A</th><th>XIAO ESP32S3 示例连接</th></tr></thead><tbody><tr><td>VIN</td><td>按模块规格接电源</td></tr><tr><td>GND</td><td>GND</td></tr><tr><td>BCLK</td><td>D0 / GPIO1</td></tr><tr><td>LRC</td><td>D1 / GPIO2</td></tr><tr><td>DIN</td><td>D3 / GPIO4</td></tr><tr><td>SD / MODE</td><td>按模块要求配置</td></tr></tbody></table></div>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-07.jpg" alt="Schéma de connexion pour la radio wifi MAX98357A et code d&#x27;exemple pour ESP32 - OTRONIC" loading="lazy"><figcaption><a href="https://cdn.webshopapp.com/shops/346407/files/434889213/max98357a.png" target="_blank" rel="noopener">Schéma de connexion pour la radio wifi MAX98357A et code d&#x27;exemple pour ESP32 - OTRONIC</a> · 搜索词：MAX98357A ESP32 I2S amplifier speaker wiring BCLK LRC DIN diagram</figcaption></figure>
+
+
+<p>注意：</p>
+
+<ul><li>MAX98357A 的扬声器输出是桥接功放输出，不能将扬声器负端直接接 GND。</li><li>扬声器应该连接功放的 OUT+ 和 OUT−。</li><li>功放供电电压按照具体模块规格确定。</li><li>麦克风和功放需要共地。</li><li>如果同时连接采集和播放，两个设备可以共享 BCLK、WS 时钟，但需要合理设计 I2S 全双工通道及声道配置。</li></ul>
+
+<p>以上 GPIO 是实验规划示例。真正接线前必须确认没有与现有板载电路、USB、其他外设冲突。不要把普通版和 Sense 版的引脚定义混用。</p>
+
+<hr class="cg-divider"/>
+
+<h2>六、ESP-IDF I2S 驱动：建立数字麦克风采集程序</h2>
+
+<p>现在进入实际代码。</p>
+
+<p>ESP-IDF 5.x 使用新版 I2S Channel API。</p>
+
+<p>主要头文件：</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/i2s_std.h&quot;
+#include &quot;driver/i2s_common.h&quot;</code></pre>
+
+<h3>1. 初始化 I2S 接收通道</h3>
+
+<p>下面以：</p>
+
+<ul><li>16kHz 采样率；</li><li>32 位数据槽；</li><li>单声道；</li><li>Philips I2S 标准格式；</li></ul>
+
+<p>作为实验配置。</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/i2s_std.h&quot;
+#include &quot;esp_err.h&quot;
+
+#define I2S_PORT I2S_NUM_0
+
+#define I2S_BCLK GPIO_NUM_1
+#define I2S_WS   GPIO_NUM_2
+#define I2S_DIN  GPIO_NUM_3
+
+static i2s_chan_handle_t rx_handle;
+
+void audio_input_init(void)
+{
+    i2s_chan_config_t chan_config =
+        I2S_CHANNEL_DEFAULT_CONFIG(
+            I2S_PORT,
+            I2S_ROLE_MASTER
+        );
+
+    ESP_ERROR_CHECK(
+        i2s_new_channel(
+            &amp;chan_config,
+            NULL,
+            &amp;rx_handle
+        )
+    );
+
+    i2s_std_config_t std_config = {
+
+        .clk_cfg =
+            I2S_STD_CLK_DEFAULT_CONFIG(16000),
+
+        .slot_cfg =
+            I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(
+                I2S_DATA_BIT_WIDTH_32BIT,
+                I2S_SLOT_MODE_MONO
+            ),
+
+        .gpio_cfg = {
+            .mclk = I2S_GPIO_UNUSED,
+            .bclk = I2S_BCLK,
+            .ws = I2S_WS,
+            .dout = I2S_GPIO_UNUSED,
+            .din = I2S_DIN,
+
+            .invert_flags = {
+                .mclk_inv = false,
+                .bclk_inv = false,
+                .ws_inv = false
+            }
+        }
+    };
+
+    ESP_ERROR_CHECK(
+        i2s_channel_init_std_mode(
+            rx_handle,
+            &amp;std_config
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        i2s_channel_enable(rx_handle)
+    );
+}</code></pre>
+
+<p>这里有几个重要概念：</p>
+
+<div class="table-wrap"><table><thead><tr><th>配置</th><th>含义</th></tr></thead><tbody><tr><td><code>I2S_ROLE_MASTER</code></td><td>ESP32-S3 产生时钟</td></tr><tr><td><code>16000</code></td><td>采样率</td></tr><tr><td><code>32BIT</code></td><td>每个数据槽的位宽</td></tr><tr><td><code>MONO</code></td><td>单声道配置</td></tr><tr><td><code>din</code></td><td>接收数字音频数据的 GPIO</td></tr></tbody></table></div>
+
+<p>注意：单声道 I2S 的左右声道槽位选择，必须与麦克风的 L/R 配置匹配。部分麦克风虽然只输出一个声道的数据，但总线上仍存在左右声道时隙。若读到全零或数据异常，应优先检查声道槽位，而不是直接认定麦克风损坏。</p>
+
+<h3>2. 读取 PCM 数据</h3>
+
+<pre class="code"><code class="language-c">#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+
+#define AUDIO_BUFFER_SIZE 1024
+
+static int32_t audio_buffer[AUDIO_BUFFER_SIZE];
+
+void audio_capture_task(void *arg)
+{
+    size_t bytes_read = 0;
+
+    while (1) {
+
+        esp_err_t ret = i2s_channel_read(
+            rx_handle,
+            audio_buffer,
+            sizeof(audio_buffer),
+            &amp;bytes_read,
+            1000
+        );
+
+        if (ret == ESP_OK &amp;&amp; bytes_read &gt; 0) {
+
+            printf(
+                &quot;Audio bytes: %u\n&quot;,
+                (unsigned)bytes_read
+            );
+
+            // 后续进行 PCM 数据处理
+        }
+    }
+}</code></pre>
+
+<p>这段代码先实现连续读取。</p>
+
+<p>下一步需要将 I2S 数据槽转换为真正的 PCM 样本。</p>
+
+<h3>3. 为什么不能直接把 32 位数据当成 16 位 PCM？</h3>
+
+<p>因为麦克风的数据格式可能是：</p>
+
+<ul><li>24 位有效数据；</li><li>左对齐或其他对齐方式；</li><li>32 位 I2S 数据槽。</li></ul>
+
+<p>例如，实际有效数据可能位于 32 位槽的高 24 位。</p>
+
+<p>因此需要根据 INMP441 数据手册和实际采集结果确定移位和符号扩展方式。</p>
+
+<p>概念示例：</p>
+
+<pre class="code"><code class="language-c">int32_t sample_24bit =
+    audio_buffer[i] &gt;&gt; 8;
+
+int16_t sample_16bit =
+    (int16_t)(sample_24bit &gt;&gt; 8);</code></pre>
+
+<p>这里仅演示位移处理思路，不能在未确认数据对齐和有效位位置时直接用于最终产品。</p>
+
+<p><strong>调试音频的第一原则：先确认 I2S 时序和原始数据格式，再做 PCM 转换。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>七、I2S 音频播放：让 XIAO ESP32S3 发出声音</h2>
+
+<p>采集数据只是第一步。</p>
+
+<p>现在我们学习如何播放音频。</p>
+
+<p>播放过程：</p>
+
+<pre class="code"><code class="language-text">PCM 数据
+   ↓
+I2S TX
+   ↓
+DMA
+   ↓
+数字功放
+   ↓
+扬声器</code></pre>
+
+<h3>1. 创建 I2S TX 通道</h3>
+
+<p>播放时可以使用 I2S_NUM_0 的 TX 通道，并与 RX 共享时钟资源，具体取决于驱动支持的全双工配置。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">#define I2S_DOUT GPIO_NUM_4
+
+static i2s_chan_handle_t tx_handle;</code></pre>
+
+<p>创建全双工通道时，建议在创建阶段同时申请 TX 和 RX：</p>
+
+<pre class="code"><code class="language-c">i2s_chan_handle_t tx_handle;
+i2s_chan_handle_t rx_handle;
+
+i2s_chan_config_t chan_config =
+    I2S_CHANNEL_DEFAULT_CONFIG(
+        I2S_NUM_0,
+        I2S_ROLE_MASTER
+    );
+
+ESP_ERROR_CHECK(
+    i2s_new_channel(
+        &amp;chan_config,
+        &amp;tx_handle,
+        &amp;rx_handle
+    )
+);</code></pre>
+
+<p>之后分别配置 TX 和 RX 的标准模式，并确认两者时钟配置兼容。</p>
+
+<h3>2. 播放 PCM 数据</h3>
+
+<p>假设我们已经有一段 16 位 PCM 音频：</p>
+
+<pre class="code"><code class="language-c">int16_t pcm_data[1024];</code></pre>
+
+<p>播放：</p>
+
+<pre class="code"><code class="language-c">size_t bytes_written = 0;
+
+ESP_ERROR_CHECK(
+    i2s_channel_write(
+        tx_handle,
+        pcm_data,
+        sizeof(pcm_data),
+        &amp;bytes_written,
+        1000
+    )
+);</code></pre>
+
+<p>实际使用时，必须保证 TX 的数据槽宽度、声道模式和功放要求相匹配。</p>
+
+<p>例如，功放使用 32 位 I2S 槽，而 PCM 是 16 位，就需要将 16 位样本转换为适当的 32 位槽格式，不能直接假定数据会自动以预期方式对齐。</p>
+
+<h3>3. 为什么扬声器不能直接接 GPIO？</h3>
+
+<p>因为 GPIO 只能输出数字逻辑信号，不能提供足够的音频功率。</p>
+
+<p>扬声器需要驱动电流。</p>
+
+<p>因此需要：</p>
+
+<ul><li>DAC 或数字音频功放；</li><li>功率放大电路；</li><li>合适的扬声器负载。</li></ul>
+
+<p>MAX98357A 将数字 I2S 音频转换并放大，适合这种场景。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、DSP：让声音变得更清晰</h2>
+
+<p>现在我们已经可以采集 PCM，也可以播放 PCM。</p>
+
+<p>但原始声音通常需要处理。</p>
+
+<p>DSP 是 Digital Signal Processing，即数字信号处理。</p>
+
+<h3>1. 音频增益 Gain</h3>
+
+<p>例如麦克风采集的声音太小，可以通过乘法调节增益：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo stretchy="false">[</mo><mi>n</mi><mo stretchy="false">]</mo><mo>=</mo><mi>G</mi><mo>⋅</mo><mi>x</mi><mo stretchy="false">[</mo><mi>n</mi><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">y[n]=G\cdot x[n]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mopen">[</span><span class="mord mathnormal">n</span><span class="mclose">]</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">G</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">x</span><span class="mopen">[</span><span class="mord mathnormal">n</span><span class="mclose">]</span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo stretchy="false">[</mo><mi>n</mi><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">x[n]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">x</span><span class="mopen">[</span><span class="mord mathnormal">n</span><span class="mclose">]</span></span></span></span>：原始采样；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>G</mi></mrow><annotation encoding="application/x-tex">G</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">G</span></span></span></span>：增益系数；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo stretchy="false">[</mo><mi>n</mi><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">y[n]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mopen">[</span><span class="mord mathnormal">n</span><span class="mclose">]</span></span></span></span>：处理后采样。</li></ul>
+
+<p>代码：</p>
+
+<pre class="code"><code class="language-c">int16_t apply_gain(
+    int16_t input,
+    float gain
+)
+{
+    float output = input * gain;
+
+    if (output &gt; 32767) {
+        output = 32767;
+    }
+
+    if (output &lt; -32768) {
+        output = -32768;
+    }
+
+    return (int16_t)output;
+}</code></pre>
+
+<p>注意这里进行了限幅，防止整数溢出。</p>
+
+<h3>2. 什么是削波 Clipping？</h3>
+
+<p>如果输入信号已经达到最大值，再继续放大，就会出现削波。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-08.jpg" alt="Audio Clipping Explained: What It Means, What It Sounds Like &amp; How to Fix It" loading="lazy"><figcaption><a href="https://assets.cdn.filesafe.space/5fsvmS0WZTPnvqa5FEuG/media/6a20b2bdac6660124efd9202.png" target="_blank" rel="noopener">Audio Clipping Explained: What It Means, What It Sounds Like &amp; How to Fix It</a> · 搜索词：audio waveform clipping distortion comparison clean waveform clipped waveform</figcaption></figure>
+
+
+<p>削波会产生明显失真。</p>
+
+<p>所以不能简单地认为增益越高声音越清晰。</p>
+
+<h3>3. RMS：计算声音能量</h3>
+
+<p>RMS 是 Root Mean Square，均方根。</p>
+
+<p>常用于计算音频信号的有效幅度。</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>M</mi><mi>S</mi><mo>=</mo><msqrt><mrow><msubsup><mfrac><mn>1</mn><mo lspace="0em" rspace="0em">∑</mo></mfrac><mrow><mi>n</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></msubsup><mi>x</mi><mo stretchy="false">[</mo><mi>n</mi><msup><mo stretchy="false">]</mo><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding="application/x-tex">RMS=\sqrt{\frac{1}\sum_{n=0}^{N-1}x[n]^2}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:3.04em;vertical-align:-1.1226em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.9174em;"><span class="svg-align" style="top:-5em;"><span class="pstrut" style="height:5em;"></span><span class="mord" style="padding-left:1em;"><span class="mord"><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mop op-symbol small-op" style="position:relative;top:0em;">∑</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.936em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5527em;"><span style="top:-1.7143em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">n</span><span class="mrel mtight">=</span><span class="mord mtight">0</span></span></span></span><span style="top:-3.7743em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9857em;"><span></span></span></span></span></span></span><span class="mord mathnormal">x</span><span class="mopen">[</span><span class="mord mathnormal">n</span><span class="mclose"><span class="mclose">]</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7401em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span><span style="top:-3.8774em;"><span class="pstrut" style="height:5em;"></span><span class="hide-tail" style="min-width:1.02em;height:3.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="3.08em" viewBox="0 0 400000 3240" preserveAspectRatio="xMinYMin slice"><path d="M473,2793
+c339.3,-1799.3,509.3,-2700,510,-2702 l0 -0
+c3.3,-7.3,9.3,-11,18,-11 H400000v40H1017.7
+s-90.5,478,-276.2,1466c-185.7,988,-279.5,1483,-281.5,1485c-2,6,-10,9,-24,9
+c-8,0,-12,-0.7,-12,-2c0,-1.3,-5.3,-32,-16,-92c-50.7,-293.3,-119.7,-693.3,-207,-1200
+c0,-1.3,-5.3,8.7,-16,30c-10.7,21.3,-21.3,42.7,-32,64s-16,33,-16,33s-26,-26,-26,-26
+s76,-153,76,-153s77,-151,77,-151c0.7,0.7,35.7,202,105,604c67.3,400.7,102,602.7,104,
+606zM1001 80h400000v40H1017.7z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.1226em;"><span></span></span></span></span></span></span></span></span></span>
+
+
+<p>代码：</p>
+
+<pre class="code"><code class="language-c">#include &lt;math.h&gt;
+#include &lt;stdint.h&gt;
+
+float audio_rms(
+    const int16_t *samples,
+    int count
+)
+{
+    double sum = 0;
+
+    for (int i = 0; i &lt; count; i++) {
+
+        double value = samples[i];
+
+        sum += value * value;
+    }
+
+    return sqrt(sum / count);
+}</code></pre>
+
+<p>RMS 可以用于：</p>
+
+<ul><li>音量表；</li><li>声音强度监测；</li><li>VAD 初步判断；</li><li>音频信号分析。</li></ul>
+
+<h3>4. VAD：判断是否有人说话</h3>
+
+<p>VAD 是 Voice Activity Detection。</p>
+
+<p>基本思路：</p>
+
+<pre class="code"><code class="language-text">麦克风采集
+    ↓
+计算 RMS
+    ↓
+与阈值比较
+    ↓
+是否存在有效声音？
+   /        \
+ 是          否
+ ↓            ↓
+标记语音     标记静音</code></pre>
+
+<p>简单能量阈值只能判断声音强弱，并不能可靠识别语音。</p>
+
+<p>真实 VAD 还可能需要：</p>
+
+<ul><li>背景噪声估计；</li><li>频段能量；</li><li>自适应阈值；</li><li>语音特征；</li><li>神经网络模型。</li></ul>
+
+<h3>5. FFT：分析声音频率</h3>
+
+<p>FFT 是 Fast Fourier Transform。</p>
+
+<p>它把时域信号转换成频域信息。</p>
+
+<p>例如：</p>
+
+<ul><li>低频：声音中的低频成分；</li><li>中频：语音主体频率成分；</li><li>高频：较高频率的声音成分。</li></ul>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-09.jpg" alt="Frequency spectrum | PPTX" loading="lazy"><figcaption><a href="https://image.slidesharecdn.com/frequencyspectrum-160102130155/75/Frequency-spectrum-3-2048.jpg" target="_blank" rel="noopener">Frequency spectrum | PPTX</a> · 搜索词：audio FFT frequency spectrum waveform microphone voice frequency analysis graph</figcaption></figure>
+
+
+<p>ESP32-S3 可以通过轻量级 FFT 算法进行实时频谱分析。</p>
+
+<p>常见选择：</p>
+
+<ul><li>ESP-DSP；</li><li>KissFFT；</li><li>自己实现的定点 FFT。</li></ul>
+
+<p>官方资料：</p>
+
+<p><a class="cg-link" href="https://docs.espressif.com/projects/esp-dsp/en/latest/esp-dsp-library.html" target="_blank" rel="noopener">Espressif ESP-DSP 数字信号处理库<span class="cg-ext" aria-hidden="true">↗</span></a></p>
+
+<hr class="cg-divider"/>
+
+<h2>九、音频缓冲区：为什么录音容易出现爆音和丢帧？</h2>
+
+<p>这是实际开发中很容易遇到的问题。</p>
+
+<p>假设：</p>
+
+<ul><li>I2S 每秒采集 32000 字节；</li><li>音频任务负责读取；</li><li>网络任务负责上传。</li></ul>
+
+<p>如果网络突然变慢，可能出现：</p>
+
+<ul><li>音频缓冲区堆积；</li><li>DMA 缓冲区溢出；</li><li>音频丢失；</li><li>播放出现爆音；</li><li>延迟不断增加。</li></ul>
+
+<h3>1. 推荐的音频缓冲架构</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>I2S + DMA</strong><span class="cg-text is-secondary is-xs">连续音频采集</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>Buffer A / Buffer B</strong><span class="cg-text is-secondary is-xs">双缓冲交替使用</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>PCM Ring Buffer</strong><span class="cg-text is-secondary is-xs">暂存音频数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:2;"><strong>DSP Task</strong><span class="cg-text is-secondary is-xs">音频处理</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:2;"><strong>Network Task</strong><span class="cg-text is-secondary is-xs">网络发送</span></div></div></div></div>
+
+
+<h3>2. 为什么推荐双缓冲？</h3>
+
+<p>假设有两个缓冲区：</p>
+
+<pre class="code"><code class="language-text">Buffer A：DMA 正在写入
+
+Buffer B：CPU 正在处理</code></pre>
+
+<p>当 A 写满后：</p>
+
+<pre class="code"><code class="language-text">Buffer A：CPU 开始处理
+
+Buffer B：DMA 开始写入</code></pre>
+
+<p>两个缓冲区交替使用。</p>
+
+<p>这样可以减少采集和处理之间的相互等待。</p>
+
+<p>但必须明确缓冲区所有权，不能让 CPU 读取 DMA 正在修改的数据。</p>
+
+<h3>3. 音频缓冲区大小如何计算？</h3>
+
+<p>假设：</p>
+
+<ul><li>16kHz；</li><li>16bit；</li><li>单声道；</li><li>每次处理 20ms。</li></ul>
+
+<p>采样数量：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>16000</mn><mo>×</mo><mn>0.02</mn><mo>=</mo><mn>320</mn></mrow><annotation encoding="application/x-tex">16000\times0.02=320</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.02</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">320</span></span></span></span></span>
+
+
+<p>数据大小：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>320</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>640</mn><mi>B</mi><mi>y</mi><mi>t</mi><mi>e</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">320\times2=640Bytes</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">320</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">640</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">t</span><span class="mord mathnormal">es</span></span></span></span></span>
+
+
+<p>因此每个 20ms 音频块需要 640 字节。</p>
+
+<p>这也是语音识别和实时语音通信中常见的数据分块思路。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、FreeRTOS：音频系统如何划分任务？</h2>
+
+<p>对于普通版 XIAO ESP32S3，建议把音频系统划分为独立任务。</p>
+
+<div class="table-wrap"><table><thead><tr><th>任务</th><th>主要职责</th><th>设计重点</th></tr></thead><tbody><tr><td>Audio Capture</td><td>I2S 采集</td><td>及时读取</td></tr><tr><td>Audio Process</td><td>DSP 处理</td><td>控制处理延迟</td></tr><tr><td>Audio Playback</td><td>I2S 播放</td><td>防止欠载</td></tr><tr><td>Network</td><td>Wi-Fi 传输</td><td>允许超时</td></tr><tr><td>Monitor</td><td>监控</td><td>检查缓冲区和内存</td></tr></tbody></table></div>
+
+<h3>1. 任务间的数据流</h3>
+
+<pre class="code"><code class="language-text">Audio Capture
+      ↓
+PCM Ring Buffer
+      ↓
+Audio Process
+      ↓
+Processed PCM
+      ↓
+ ┌────┴────┐
+ ↓         ↓
+Playback   Network</code></pre>
+
+<h3>2. 为什么不能在采集任务中直接执行 HTTP？</h3>
+
+<p>因为网络传输可能发生阻塞。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">while (1) {
+
+    i2s_channel_read(...);
+
+    http_post_audio(...);
+}</code></pre>
+
+<p>如果 HTTP 请求等待 200ms，那么连续采集任务就可能错过大量音频数据。</p>
+
+<p>正确设计：</p>
+
+<pre class="code"><code class="language-text">采集任务：负责采集
+
+处理任务：负责处理
+
+网络任务：负责上传</code></pre>
+
+<p>每个任务各司其职。</p>
+
+<h3>3. 监控音频系统</h3>
+
+<p>建议监控：</p>
+
+<pre class="code"><code class="language-c">printf(&quot;Free heap: %u\n&quot;,
+       (unsigned)esp_get_free_heap_size());
+
+printf(&quot;Minimum free heap: %u\n&quot;,
+       (unsigned)esp_get_minimum_free_heap_size());</code></pre>
+
+<p>同时监控：</p>
+
+<ul><li>I2S 读取错误；</li><li>DMA 缓冲区异常；</li><li>PCM 队列积压；</li><li>音频丢帧次数；</li><li>任务栈余量；</li><li>网络传输延迟。</li></ul>
+
+<hr class="cg-divider"/>
+
+<h2>十一、Wi-Fi 音频传输：让电脑实时听到 XIAO 采集的声音</h2>
+
+<p>现在把音频和网络结合起来。</p>
+
+<p>假设你希望在 Mac 上实时听到 XIAO ESP32S3 麦克风采集的声音。</p>
+
+<p>推荐先从局域网 UDP 或 WebSocket 音频传输开始。</p>
+
+<h3>1. 系统架构</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>INMP441</strong><span class="cg-text is-secondary is-xs">数字麦克风</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>XIAO ESP32S3</strong><span class="cg-text is-secondary is-xs">I2S + DMA + PCM</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>Wi-Fi</strong><span class="cg-text is-secondary is-xs">UDP / WebSocket</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>Mac 音频接收程序</strong><span class="cg-text is-secondary is-xs">接收 PCM 数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>电脑扬声器</strong><span class="cg-text is-secondary is-xs">播放声音</span></div></div>
+
+
+<h3>2. 为什么不建议直接发送每个采样值？</h3>
+
+<p>假设使用：</p>
+
+<ul><li>16kHz；</li><li>16bit；</li><li>单声道。</li></ul>
+
+<p>每秒需要传输 32KB。</p>
+
+<p>如果每次只发送一个采样值，就会产生大量网络数据包和协议开销。</p>
+
+<p>因此建议将数据分块。</p>
+
+<p>例如每 20ms 发送一包：</p>
+
+<pre class="code"><code class="language-text">每包 640 Bytes PCM</code></pre>
+
+<p>数据包可以增加：</p>
+
+<pre class="code"><code class="language-text">设备 ID
+序列号
+采样时间戳
+采样率
+声道数
+PCM 数据</code></pre>
+
+<p>这样电脑可以识别数据格式，并检测是否丢包。</p>
+
+<h3>3. UDP 和 WebSocket 如何选择？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>对比</th><th>UDP</th><th>WebSocket</th></tr></thead><tbody><tr><td>传输延迟</td><td>通常较低</td><td>有 TCP 可靠传输开销</td></tr><tr><td>是否保证到达</td><td>否</td><td>TCP 提供可靠字节流</td></tr><tr><td>是否保证顺序</td><td>否</td><td>是</td></tr><tr><td>协议复杂度</td><td>需要自行设计</td><td>较容易使用</td></tr><tr><td>适合</td><td>实时音频实验</td><td>语音数据和控制通信</td></tr></tbody></table></div>
+
+<p>初学阶段建议：</p>
+
+<p>先使用 WebSocket 完成稳定的数据传输，再研究 UDP 的实时性优化。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、AEC、NS 和 AGC：智能语音设备的三大关键技术</h2>
+
+<p>如果你以后想制作智能语音终端，这三个技术一定要了解。</p>
+
+
+<div class="cg-box" style="--gap:3;--pad:0;"><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/13-10.jpg" alt="react native - How can we disable iOS ducking feature completely during our video call app? - Stack Overflow" loading="lazy"><figcaption><a href="https://i.sstatic.net/65Ot35ZB.png" target="_blank" rel="noopener">react native - How can we disable iOS ducking feature completely during our video call app? - Stack Overflow</a> · 搜索词：acoustic echo cancellation microphone speaker audio signal diagram</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>1. AEC：回声消除</strong>
+
+      Acoustic Echo Cancellation。
+
+      当扬声器播放声音时，麦克风可能重新采集到扬声器的声音。
+
+      AEC 通过参考播放信号和麦克风信号，估计并消除回声。
+    </div></div><hr class="cg-divider"/><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/13-11.jpg" alt="Como Reduzir Ruído em Áudio Online: Guia Completo 2026" loading="lazy"><figcaption><a href="https://www.audio-editor.online/blog/reducao-ruido-audio-online/hero-antes-depois-reducao-ruido.webp" target="_blank" rel="noopener">Como Reduzir Ruído em Áudio Online: Guia Completo 2026</a> · 搜索词：digital audio noise reduction background noise waveform illustration</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>2. NS：噪声抑制</strong>
+
+      Noise Suppression。
+
+      减少风扇、空调、环境噪声等对语音的影响。
+
+      可以使用频域滤波或专门的语音降噪算法。
+    </div></div><hr class="cg-divider"/><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/13-12.jpg" alt="Auto Gain Control in Electronic Systems" loading="lazy"><figcaption><a href="https://resource.auditoryworks.co/server/nearity/images/d03159f5-0133-4c72-b763-37ccdac842b3.png?x-oss-process=image%2Fresize%2Cw_1100%2Fformat%2Cwebp" target="_blank" rel="noopener">Auto Gain Control in Electronic Systems</a> · 搜索词：automatic gain control AGC audio input output waveform diagram</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>3. AGC：自动增益控制</strong>
+
+      Automatic Gain Control。
+
+      自动调节输入音频增益，让远近不同的声音保持相对合适的音量。
+    </div></div></div>
+
+
+<p>这些技术在智能音箱、语音助手和远场语音终端中非常重要。</p>
+
+<p>ESP32-S3 可以运行部分轻量级音频算法，但复杂 AEC、NS、AGC 是否能够实时运行，需要结合算法复杂度、采样率、CPU 负载和内存实测。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十三、实战项目：制作一台 XIAO ESP32S3 网络语音终端</h2>
+
+<p>这是建议你完成的第一个综合音频项目。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/13-13.jpg" alt="How to Build a Local Voice Satellite for Hermes or OpenClaw, a ESP32 project | Schematik" loading="lazy"><figcaption><a href="https://tfvg9prl3arlawj9.public.blob.vercel-storage.com/published/fae46e10-d3ca-410a-a2a3-75781a7d26e7/99fa8d64/photo.webp" target="_blank" rel="noopener">How to Build a Local Voice Satellite for Hermes or OpenClaw, a ESP32 project | Schematik</a> · 搜索词：ESP32 S3 smart voice assistant prototype I2S microphone speaker amplifier development board enclosure</figcaption></figure>
+
+
+<h3>第一阶段：本地录音</h3>
+
+<p>硬件：</p>
+
+<ul><li>XIAO ESP32S3；</li><li>INMP441；</li><li>USB 连接 Mac。</li></ul>
+
+<p>目标：</p>
+
+<ol><li>初始化 I2S。</li><li>采集 PCM。</li><li>输出原始数据。</li><li>计算 RMS。</li><li>保存 PCM 文件。</li><li>在电脑上播放录音。</li></ol>
+
+<h3>第二阶段：本地播放</h3>
+
+<p>增加：</p>
+
+<ul><li>MAX98357A；</li><li>4Ω 或 8Ω 扬声器，按功放模块规格选择。</li></ul>
+
+<p>目标：</p>
+
+<ol><li>生成 PCM 测试数据。</li><li>I2S TX 输出。</li><li>数字功放播放。</li><li>调节音量。</li><li>测试连续播放稳定性。</li></ol>
+
+<h3>第三阶段：Wi-Fi 音频传输</h3>
+
+<p>目标：</p>
+
+<ol><li>连接 Wi-Fi。</li><li>分块发送 PCM。</li><li>Mac 接收 PCM。</li><li>检测丢包。</li><li>实时播放。</li><li>统计延迟。</li></ol>
+
+<h3>第四阶段：智能语音处理</h3>
+
+<p>目标：</p>
+
+<ol><li>VAD 检测语音。</li><li>静音时停止上传音频。</li><li>语音数据发送到服务器。</li><li>服务器进行语音识别。</li><li>接收文字或语音回复。</li><li>XIAO 通过扬声器播放。</li></ol>
+
+<hr class="cg-divider"/>
+
+<h2>十四、推荐的音频工程目录</h2>
+
+<p>在现有 <code>XIAO-ESP32S3-Projects</code> 中，建议单独建立：</p>
+
+<pre class="code"><code class="language-text">projects/
+└── audio_terminal/
+    │
+    ├── main/
+    │   └── app_main.c
+    │
+    ├── components/
+    │   ├── audio_bsp/
+    │   │   ├── audio_pin_config.h
+    │   │   └── audio_bsp.c
+    │   │
+    │   ├── audio_capture/
+    │   │   ├── i2s_rx.c
+    │   │   └── pcm_buffer.c
+    │   │
+    │   ├── audio_playback/
+    │   │   ├── i2s_tx.c
+    │   │   └── speaker.c
+    │   │
+    │   ├── audio_dsp/
+    │   │   ├── audio_gain.c
+    │   │   ├── audio_filter.c
+    │   │   ├── audio_vad.c
+    │   │   └── audio_fft.c
+    │   │
+    │   ├── audio_network/
+    │   │   ├── audio_udp.c
+    │   │   └── audio_websocket.c
+    │   │
+    │   └── audio_monitor/
+    │       ├── audio_stats.c
+    │       └── memory_monitor.c
+    │
+    ├── docs/
+    │   ├── wiring.md
+    │   ├── i2s_architecture.md
+    │   ├── pcm_format.md
+    │   └── audio_debug.md
+    │
+    └── README.md</code></pre>
+
+<p>这里建议先实现本地录音、播放，再添加网络功能。不要一开始就同时调试麦克风、功放、Wi-Fi 和语音识别，否则很难判断问题发生在哪一层。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十五、给 Codex 的本课开发任务</h2>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Codex：XIAO ESP32S3 音频基础系统</strong><button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制指令
+    </button></div>
+  开发要求：
+
+<ul><li>普通版 XIAO ESP32S3。</li><li>INMP441 数字麦克风。</li><li>MAX98357A 数字功放。</li><li>ESP-IDF 新版 I2S API。</li><li>PCM 数据转换。</li><li>RMS、增益和滤波。</li><li>FreeRTOS 音频任务。</li><li>双缓冲。</li><li>Wi-Fi 音频传输。</li></ul>
+  必须分阶段构建，不得一次性生成未经验证的完整系统。
+</div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十六、本课学习验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第十三课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十七、下一课：ESP32-S3 摄像头、图像处理与视觉系统</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十四课：摄像头驱动、图像采集与计算机视觉</h2><figure class="cg-figure"><img src="../tutorial/images/13-14.jpg" alt="Chapter 17 Camera Web Server — Basic-Starter-Kit-for-ESP32-S3-WROOM  documentation" loading="lazy"><figcaption><a href="https://basic-starter-kit-for-esp32-s3-wroom.readthedocs.io/en/latest/_images/25.1-2.png" target="_blank" rel="noopener">Chapter 17 Camera Web Server — Basic-Starter-Kit-for-ESP32-S3-WROOM  documentation</a> · 搜索词：ESP32 S3 camera OV2640 JPEG image capture development electronics project</figcaption></figure>
+  下一课将讲解：
+
+<ol><li>摄像头 CMOS 图像传感器原理。</li><li>OV2640、OV3660 摄像头。</li><li>SCCB 摄像头配置总线。</li><li>DVP 并行数据接口。</li><li>XCLK、PCLK、VSYNC、HREF。</li><li>ESP32-S3 LCD_CAM 控制器。</li><li>摄像头 DMA 采集。</li><li>RGB565、YUV422、JPEG 格式。</li><li>PSRAM 图像帧缓冲。</li><li>JPEG 压缩与解码。</li><li>HTTP 图片上传和 MJPEG 视频流。</li><li>图像裁剪、缩放和灰度处理。</li><li>摄像头与 Wi-Fi 的资源调度。</li></ol></div>
+
+
+<p>这里有一个硬件区别需要提前明确：</p>
+
+<p><strong>普通版 XIAO ESP32S3 并不自带 Sense 版的摄像头接口配置。</strong> 下一课会以普通版为主，研究外接摄像头所需的硬件接口、电路和引脚规划，不能直接照搬 XIAO ESP32S3 Sense 的接线方案。</p>
+
+<p>官方参考：</p>
+
+<ul><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/i2s.html" target="_blank" rel="noopener">ESP-IDF I2S 驱动<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://github.com/espressif/esp-dsp" target="_blank" rel="noopener">ESP-DSP 源码<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://github.com/espressif/esp-adf" target="_blank" rel="noopener">ESP-ADF 音频开发框架<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://github.com/espressif/esp32-camera" target="_blank" rel="noopener">ESP32 Camera 驱动源码<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+
+<p><strong>本阶段最值得完成的目标：</strong> 先用普通版 XIAO ESP32S3 + INMP441 + MAX98357A 做出真正能够录音和播放的设备。完成后，再加入 Wi-Fi、VAD 和语音识别。这样你就真正掌握了一条完整的嵌入式数字音频开发链路。</p>
+</div></section>
+<nav class="lesson-nav"><a href="12-第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集.html">← 第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集</a><span class="spacer"></span><a href="14-第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉.html">第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉 →</a></nav>
+</main></body></html>

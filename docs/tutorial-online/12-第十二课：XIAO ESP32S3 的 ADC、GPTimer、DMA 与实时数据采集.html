@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集 · <a href="index.html">课程目录</a> · <a href="../tutorial/12-第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集</h1>
+
+<p>前面我们已经学习了 GPIO、UART、I2C、SPI、LEDC 和 RMT。</p>
+
+<p>这一课进入嵌入式系统非常核心的能力：</p>
+
+<p><strong>如何让 XIAO ESP32S3 按照精确的时间间隔，持续采集外部模拟信号，并将数据交给 CPU 处理？</strong></p>
+
+<p>这项技术是很多智能硬件的基础，例如：</p>
+
+<ul><li>电池电压监测；</li><li>电流检测；</li><li>温度和光照采集；</li><li>麦克风信号采集；</li><li>电机运行监测；</li><li>电源质量监测；</li><li>高频传感器数据采集。</li></ul>
+
+<p>本课围绕六个核心模块展开：</p>
+
+<ol><li>ADC 模数转换。</li><li>SAR 逐次逼近转换。</li><li>ADC 校准和误差。</li><li>GPTimer 硬件定时器。</li><li>ADC 连续采样和 DMA。</li><li>环形缓冲区与实时数据处理。</li></ol>
+
+<hr class="cg-divider"/>
+
+<h2>一、ADC：为什么 ESP32-S3 需要模数转换？</h2>
+
+<p>CPU 只能处理数字数据。</p>
+
+<p>但是现实世界中的很多信号是模拟信号。</p>
+
+<p>例如：</p>
+
+<ul><li>电池输出 3.7V；</li><li>温度传感器输出 1.2V；</li><li>光敏传感器输出 0.8V；</li><li>电位器输出 2.1V。</li></ul>
+
+<p>这些电压不能直接作为普通数字数据交给 CPU。</p>
+
+<p>因此需要 ADC。</p>
+
+<p>ADC 全称 Analog-to-Digital Converter，即模数转换器。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/12-01.jpg" alt="Analog to Digital Converter ADC - Block Diagram &amp; Working" loading="lazy"><figcaption><a href="https://www.hackatronic.com/wp-content/uploads/2025/09/ADC-Analog-to-Digital-Converter.webp" target="_blank" rel="noopener">Analog to Digital Converter ADC - Block Diagram &amp; Working</a> · 搜索词：analog to digital converter ADC analog voltage input digital binary output waveform diagram</figcaption></figure>
+
+
+<h3>1. ADC 的工作流程</h3>
+
+<pre class="code"><code class="language-text">外部模拟信号
+      ↓
+输入电路
+      ↓
+ADC 采样
+      ↓
+量化
+      ↓
+编码
+      ↓
+数字数据
+      ↓
+CPU 处理</code></pre>
+
+<p>例如：</p>
+
+<p>输入电压为 1.65V。</p>
+
+<p>假设 ADC 参考范围是 0～3.3V，分辨率为 12 位。</p>
+
+<p>那么 ADC 将电压转换为一个数字值。</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mn>2</mn><mn>12</mn></msup><mo>=</mo><mn>4096</mn></mrow><annotation encoding="application/x-tex">2^{12}=4096</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8641em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">12</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">4096</span></span></span></span></span>
+
+
+<p>理论上可以表示 0～4095 共 4096 个量化等级。</p>
+
+<p>理想情况下：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>A</mi><mi>D</mi><mi>C</mi><mo>=</mo><mfrac><msub><mi>V</mi><mrow><mi>i</mi><mi>n</mi></mrow></msub><msub><mi>V</mi><mrow><mi>r</mi><mi>e</mi><mi>f</mi></mrow></msub></mfrac><mo>×</mo><mn>4095</mn></mrow><annotation encoding="application/x-tex">ADC=\frac{V_{in}}{V_{ref}}\times4095</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.3324em;vertical-align:-0.9721em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">in</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9721em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">4095</span></span></span></span></span>
+
+
+<p>代入：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>A</mi><mi>D</mi><mi>C</mi><mo>=</mo><mfrac><mn>1.65</mn><mn>3.3</mn></mfrac><mo>×</mo><mn>4095</mn></mrow><annotation encoding="application/x-tex">ADC=\frac{1.65}{3.3}\times4095</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">3.3</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1.65</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">4095</span></span></span></span></span>
+
+
+<p>得到约 2048。</p>
+
+<p>所以：</p>
+
+<pre class="code"><code class="language-text">输入：1.65V
+
+ADC：约 2048</code></pre>
+
+<p>注意，这是理想模型。实际 ESP32-S3 的 ADC 转换结果受到芯片非线性、衰减配置、校准、噪声和输入电路影响。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、SAR ADC：ESP32-S3 如何把电压转换成数字？</h2>
+
+<p>ESP32-S3 的 ADC 使用 SAR，即 Successive Approximation Register，逐次逼近型模数转换原理。</p>
+
+<p>这是理解 ADC 底层工作机制的重点。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/12-02.jpg" alt="Understanding and Implementing SAR ADC Schematic: A Comprehensive Guide" loading="lazy"><figcaption><a href="https://techschems.com/wp-content/img/8482_sar_adc_schematic.jpg" target="_blank" rel="noopener">Understanding and Implementing SAR ADC Schematic: A Comprehensive Guide</a> · 搜索词：SAR ADC successive approximation register comparator DAC block diagram conversion process</figcaption></figure>
+
+
+<h3>1. SAR ADC 的内部结构</h3>
+
+<p>主要包含：</p>
+
+<div class="table-wrap"><table><thead><tr><th>模块</th><th>作用</th></tr></thead><tbody><tr><td>采样保持电路</td><td>暂时保存输入电压</td></tr><tr><td>DAC</td><td>产生内部比较电压</td></tr><tr><td>比较器</td><td>比较输入电压和 DAC 电压</td></tr><tr><td>SAR 寄存器</td><td>逐位确定转换结果</td></tr><tr><td>控制逻辑</td><td>控制转换过程</td></tr></tbody></table></div>
+
+<h3>2. 逐次逼近过程</h3>
+
+<p>假设 ADC 是 4 位，输入电压对应的数字结果为 1010。</p>
+
+<p>SAR ADC 不会一次性直接得到结果，而是逐位判断。</p>
+
+<pre class="code"><code class="language-text">输入电压
+   ↓
+先测试最高位
+   ↓
+测试 1000
+   ↓
+再测试 1100
+   ↓
+再测试 1010
+   ↓
+最后测试 1011
+   ↓
+确定结果 1010</code></pre>
+
+<p>这是一个简化示意，实际 SAR 的比较和位判定过程由硬件自动完成。</p>
+
+<h3>3. ADC 分辨率意味着什么？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>分辨率</th><th>量化等级</th></tr></thead><tbody><tr><td>8 位</td><td>256</td></tr><tr><td>10 位</td><td>1024</td></tr><tr><td>12 位</td><td>4096</td></tr><tr><td>16 位</td><td>65536</td></tr></tbody></table></div>
+
+<p>分辨率越高，理论上可以区分越细微的电压变化。</p>
+
+<p>但必须注意：</p>
+
+<p><strong>ADC 位数不等于实际测量精度。</strong></p>
+
+<p>例如一个 12 位 ADC，并不代表它就能够准确测量到 12 位有效精度。</p>
+
+<p>实际精度还受：</p>
+
+<ul><li>参考电压；</li><li>ADC 线性度；</li><li>电源噪声；</li><li>输入阻抗；</li><li>PCB 布线；</li><li>温度；</li><li>校准算法；</li></ul>
+
+<p>等因素影响。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、XIAO ESP32S3 的 ADC 引脚规划</h2>
+
+<p>普通版 XIAO ESP32S3 有多个可以用于 ADC 的 GPIO。</p>
+
+<p>常见映射如下：</p>
+
+<div class="table-wrap"><table><thead><tr><th>XIAO 引脚</th><th>ESP32-S3 GPIO</th><th>ADC 通道用途</th></tr></thead><tbody><tr><td>D0</td><td>GPIO1</td><td>ADC1_CH0</td></tr><tr><td>D1</td><td>GPIO2</td><td>ADC1_CH1</td></tr><tr><td>D2</td><td>GPIO3</td><td>ADC1_CH2</td></tr><tr><td>D3</td><td>GPIO4</td><td>ADC1_CH3</td></tr></tbody></table></div>
+
+<p>具体可用性还要结合板卡版本和当前引脚占用核对。</p>
+
+<h3>1. ADC 为什么优先考虑 ADC1？</h3>
+
+<p>ESP32 系列部分芯片的 ADC2 与无线功能存在资源竞争或使用限制。</p>
+
+<p>ESP32-S3 的 ADC 使用规则应以其自身技术参考手册和当前 ESP-IDF 驱动为准。</p>
+
+<p>对于普通传感器采集项目，建议优先规划 ADC1 通道，减少不必要的资源冲突。</p>
+
+<h3>2. 电压输入范围</h3>
+
+<p>不能认为所有 GPIO 都能安全输入 0～3.3V 以外的电压。</p>
+
+<p>ESP32-S3 GPIO 不耐受 5V。</p>
+
+<p>如果测量 5V 电源，应当通过电阻分压等输入调理电路，将电压限制在允许范围内。</p>
+
+<p>例如：</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/12-03.jpg" alt="2. 전압 분배 법칙(Voltage Divider) 2편 — 실무 회로 설계의 3가지 핵심 패턴" loading="lazy"><figcaption><a href="https://img1.daumcdn.net/thumb/R1280x0/?fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2Fyxzy9%2FdJMcaiIW8gf%2FAAAAAAAAAAAAAAAAAAAAAH0jbLXtr-KI2v6FaKE2S1WSks88K-ClVt6NvQNwPnp3M09yZCfMDOWWK2D93RgU1JH27JCVJcxIyhabrM1CmldnFupGlZihdMQmChlq74At%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1772290799%26allow_ip%3D%26allow_referer%3D%26signature%3DODmS6hEV4nvx70KPRTIECLxyRM8%253D&amp;scode=mtistory2" target="_blank" rel="noopener">2. 전압 분배 법칙(Voltage Divider) 2편 — 실무 회로 설계의 3가지 핵심 패턴</a> · 搜索词：resistor voltage divider circuit analog input microcontroller ADC schematic</figcaption></figure>
+
+
+<p>使用两个电阻：</p>
+
+<pre class="code"><code class="language-text">待测电压
+   |
+  R1
+   |
+   ├──── ADC 输入
+   |
+  R2
+   |
+  GND</code></pre>
+
+<p>分压公式：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mrow><mi>A</mi><mi>D</mi><mi>C</mi></mrow></msub><mo>=</mo><msub><mi>V</mi><mrow><mi>I</mi><mi>N</mi></mrow></msub><mfrac><msub><mi>R</mi><mn>2</mn></msub><mrow><msub><mi>R</mi><mn>1</mn></msub><mo>+</mo><msub><mi>R</mi><mn>2</mn></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">V_{ADC}=V_{IN}\frac{R_2}{R_1+R_2}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">A</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">D</span><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.836em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0785em;">I</span><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.836em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>假设：</p>
+
+<ul><li>R1 = 10kΩ；</li><li>R2 = 10kΩ；</li><li>输入电压 = 5V。</li></ul>
+
+<p>那么：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mo>=</mo></msub><mn>5</mn><mo>×</mo><mfrac><mn>10</mn><mrow><mn>10</mn><mo>+</mo><mn>10</mn></mrow></mfrac></mrow><annotation encoding="application/x-tex">V_=5\times\frac{10}{10+10}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0908em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">10</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">10</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">10</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mo>=</mo></msub><mn>2.5</mn><mi>V</mi></mrow><annotation encoding="application/x-tex">V_=2.5V</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">2.5</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span></span></span></span></span>
+
+
+<p>这只是电阻分压的理论计算，实际还需要考虑电阻误差、输入阻抗、瞬态过压和 ADC 采样条件。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、ESP-IDF ADC 驱动实战</h2>
+
+<p>ESP-IDF 新版推荐使用 <code>esp_adc</code> 驱动接口。</p>
+
+<p>先创建 ADC 单次采样句柄。</p>
+
+<h3>1. ADC 初始化</h3>
+
+<pre class="code"><code class="language-c">#include &quot;esp_adc/adc_oneshot.h&quot;
+
+static adc_oneshot_unit_handle_t adc_handle;
+
+void adc_init(void)
+{
+    adc_oneshot_unit_init_cfg_t unit_config = {
+        .unit_id = ADC_UNIT_1,
+        .ulp_mode = ADC_ULP_MODE_DISABLE
+    };
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_new_unit(
+            &amp;unit_config,
+            &amp;adc_handle
+        )
+    );
+
+    adc_oneshot_chan_cfg_t channel_config = {
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT
+    };
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_config_channel(
+            adc_handle,
+            ADC_CHANNEL_0,
+            &amp;channel_config
+        )
+    );
+}</code></pre>
+
+<p>这里示例使用 ADC1_CH0，对应 GPIO1。</p>
+
+<h3>2. 读取 ADC 数据</h3>
+
+<pre class="code"><code class="language-c">int read_adc(void)
+{
+    int raw_value = 0;
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_read(
+            adc_handle,
+            ADC_CHANNEL_0,
+            &amp;raw_value
+        )
+    );
+
+    return raw_value;
+}</code></pre>
+
+<h3>3. 连续读取</h3>
+
+<pre class="code"><code class="language-c">void app_main(void)
+{
+    adc_init();
+
+    while (1) {
+
+        int value = read_adc();
+
+        printf(&quot;ADC RAW: %d\n&quot;, value);
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}</code></pre>
+
+<p>这样就完成了基本的 ADC 采集。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、ADC 校准：为什么读数不一定准确？</h2>
+
+<p>假设输入电压是 2.0V。</p>
+
+<p>理论上你希望得到对应的 ADC 数值。</p>
+
+<p>但是实际可能读到：</p>
+
+<pre class="code"><code class="language-text">理论值：2481
+
+实际值：2395</code></pre>
+
+<p>为什么？</p>
+
+<p>因为真实 ADC 存在误差。</p>
+
+<h3>1. 主要误差来源</h3>
+
+<div class="table-wrap"><table><thead><tr><th>误差类型</th><th>原因</th></tr></thead><tbody><tr><td>Offset Error</td><td>零点偏移</td></tr><tr><td>Gain Error</td><td>增益误差</td></tr><tr><td>INL</td><td>积分非线性</td></tr><tr><td>DNL</td><td>微分非线性</td></tr><tr><td>Noise</td><td>电气噪声</td></tr><tr><td>Reference Error</td><td>参考电压误差</td></tr></tbody></table></div>
+
+<h3>2. 使用 ESP-IDF 校准驱动</h3>
+
+<p>ESP-IDF 提供 ADC Calibration API。</p>
+
+<p>示例：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_adc/adc_cali.h&quot;
+#include &quot;esp_adc/adc_cali_scheme.h&quot;
+
+static adc_cali_handle_t cali_handle;
+
+void adc_calibration_init(void)
+{
+    adc_cali_curve_fitting_config_t config = {
+        .unit_id = ADC_UNIT_1,
+        .chan = ADC_CHANNEL_0,
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT
+    };
+
+    ESP_ERROR_CHECK(
+        adc_cali_create_scheme_curve_fitting(
+            &amp;config,
+            &amp;cali_handle
+        )
+    );
+}</code></pre>
+
+<p>转换成毫伏：</p>
+
+<pre class="code"><code class="language-c">int adc_to_mv(int raw_value)
+{
+    int voltage_mv = 0;
+
+    ESP_ERROR_CHECK(
+        adc_cali_raw_to_voltage(
+            cali_handle,
+            raw_value,
+            &amp;voltage_mv
+        )
+    );
+
+    return voltage_mv;
+}</code></pre>
+
+<p>实际工程中，需要检查芯片是否支持对应校准方案，并正确处理校准句柄创建失败及资源释放。</p>
+
+<h3>3. 为什么校准如此重要？</h3>
+
+<p>例如你想制作一个电池电压监控系统。</p>
+
+<p>如果电池实际电压是 4.0V，但 ADC 误差导致显示 3.8V，那么电池状态判断就会受到影响。</p>
+
+<p>所以：</p>
+
+<p><strong>对于测量类项目，不能只看 ADC RAW 值，应该考虑校准、分压电路和实测修正。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>六、GPTimer：如何实现精确的硬件定时？</h2>
+
+<p>前面使用：</p>
+
+<pre class="code"><code class="language-c">vTaskDelay(pdMS_TO_TICKS(100));</code></pre>
+
+<p>可以让任务等待一段时间。</p>
+
+<p>但是它并不适合所有高精度采样场景。</p>
+
+<p>如果你需要：</p>
+
+<ul><li>每 1ms 采样一次；</li><li>每 100μs 触发一次事件；</li><li>生成精确的控制周期；</li><li>定时触发数据处理；</li></ul>
+
+<p>就应该研究硬件定时器。</p>
+
+<p>ESP32-S3 提供 GPTimer。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/12-04.jpg" alt="Interrupts and Timers in Microcontrollers | Tutorials on Electronics | Next Electronics" loading="lazy"><figcaption><a href="https://www.next.gr/uploads/elec-tut-images/844_3_1.png" target="_blank" rel="noopener">Interrupts and Timers in Microcontrollers | Tutorials on Electronics | Next Electronics</a> · 搜索词：microcontroller general purpose hardware timer counter prescaler alarm interrupt diagram</figcaption></figure>
+
+
+<h3>1. GPTimer 的内部机制</h3>
+
+<p>主要包含：</p>
+
+<ul><li>时钟源；</li><li>计数器；</li><li>计数方向；</li><li>报警比较值；</li><li>中断机制。</li></ul>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">硬件时钟
+   ↓
+定时器计数器
+   ↓
+计数到设定值
+   ↓
+触发 Alarm
+   ↓
+产生中断
+   ↓
+通知 FreeRTOS 任务</code></pre>
+
+<h3>2. 定时器的时间计算</h3>
+
+<p>假设定时器分辨率为 1MHz。</p>
+
+<p>那么：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn><mi>M</mi><mi>H</mi><mi>z</mi><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mn>000</mn><mo separator="true">,</mo><mn>000</mn><mtext> 次/秒</mtext></mrow><annotation encoding="application/x-tex">1MHz=1,000,000\text{ 次/秒}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">1</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">000</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">000</span><span class="mord text"><span class="mord"> </span><span class="mord cjk_fallback">次</span><span class="mord">/</span><span class="mord cjk_fallback">秒</span></span></span></span></span></span>
+
+
+<p>每次计数对应：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1</mn><mi>μ</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">1\mu s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">1</span><span class="mord mathnormal">μ</span><span class="mord mathnormal">s</span></span></span></span></span>
+
+
+<p>如果希望每 1ms 触发一次：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>1000</mn><mi>μ</mi><mi>s</mi><mo>=</mo><mn>1000</mn><mtext> 次计数</mtext></mrow><annotation encoding="application/x-tex">1000\mu s=1000\text{ 次计数}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">1000</span><span class="mord mathnormal">μ</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">1000</span><span class="mord text"><span class="mord"> </span><span class="mord cjk_fallback">次计数</span></span></span></span></span></span>
+
+
+<p>因此报警值可以设置为 1000 个计数单位。</p>
+
+<h3>3. ESP-IDF GPTimer 初始化</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/gptimer.h&quot;
+
+static gptimer_handle_t timer_handle;
+
+void timer_init(void)
+{
+    gptimer_config_t config = {
+        .clk_src = GPTIMER_CLK_SRC_DEFAULT,
+        .direction = GPTIMER_COUNT_UP,
+        .resolution_hz = 1000000
+    };
+
+    ESP_ERROR_CHECK(
+        gptimer_new_timer(
+            &amp;config,
+            &amp;timer_handle
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        gptimer_enable(timer_handle)
+    );
+}</code></pre>
+
+<h3>4. 设置定时器报警</h3>
+
+<pre class="code"><code class="language-c">void timer_alarm_init(void)
+{
+    gptimer_alarm_config_t alarm_config = {
+        .alarm_count = 1000,
+        .reload_count = 0,
+        .flags.auto_reload_on_alarm = true
+    };
+
+    ESP_ERROR_CHECK(
+        gptimer_set_alarm_action(
+            timer_handle,
+            &amp;alarm_config
+        )
+    );
+}</code></pre>
+
+<p>还需要注册 Alarm 回调，并启动定时器，才能真正产生周期性事件。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、DMA：为什么不让 CPU 一直搬运数据？</h2>
+
+<p>现在进入本课最重要的技术之一。</p>
+
+<p>假设 ADC 每秒采集 20,000 个数据。</p>
+
+<p>如果每个数据都让 CPU 单独读取、保存和处理，那么 CPU 就会承担大量数据搬运工作。</p>
+
+<p>DMA 可以帮助外设和内存之间传输数据，减少 CPU 的参与。</p>
+
+<p>DMA 全称 Direct Memory Access，即直接内存访问。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/12-05.jpg" alt="1-8. DMA" loading="lazy"><figcaption><a href="https://media.licdn.com/dms/image/v2/D5612AQEuiCV4uZ_fbQ/article-cover_image-shrink_720_1280/B56Z5ipOo8KkAU-/0/1779771440473?e=2147483647&amp;t=l_5zBUI0AuCHyBnwogdTXILVFp9XhuIFDAypy_C5AIw&amp;v=beta" target="_blank" rel="noopener">1-8. DMA</a> · 搜索词：microcontroller ADC DMA direct memory access data transfer CPU RAM block diagram</figcaption></figure>
+
+
+<h3>1. 普通数据采集方式</h3>
+
+<pre class="code"><code class="language-text">ADC
+ ↓
+CPU 读取
+ ↓
+CPU 保存
+ ↓
+RAM</code></pre>
+
+<h3>2. DMA 数据采集方式</h3>
+
+<pre class="code"><code class="language-text">ADC
+ ↓
+DMA
+ ↓
+RAM 缓冲区
+ ↓
+CPU 批量处理</code></pre>
+
+<p>CPU 可以在 DMA 传输数据的同时执行其他任务。</p>
+
+<h3>3. DMA 的优势</h3>
+
+<ul><li>降低 CPU 搬运负担；</li><li>提高数据采集效率；</li><li>支持连续数据流；</li><li>适合音频和图像；</li><li>可以与中断配合；</li><li>适合实时采集系统。</li></ul>
+
+<p>不过 DMA 并不意味着 CPU 完全不参与。CPU 仍然需要配置 DMA、管理缓冲区、处理完成事件和解决数据同步问题。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、ADC Continuous：连续采样模式</h2>
+
+<p>前面使用的 <code>adc_oneshot_read()</code> 是单次采样模式。</p>
+
+<p>每次调用，程序读取一个 ADC 转换结果。</p>
+
+<p>但在音频、振动检测和电压波形分析中，我们通常需要连续采样。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">第 1 次：采样
+第 2 次：采样
+第 3 次：采样
+第 4 次：采样
+……</code></pre>
+
+<p>ESP-IDF 提供 ADC Continuous 驱动，可以配合 DMA 完成连续采样。</p>
+
+<h3>1. 单次采样与连续采样的区别</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><strong>单次采样模式</strong><div class="cg-box" style="--gap:1;--pad:0;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><span class="cg-badge color-info">CPU 主动读取</span><span class="cg-text is-secondary is-xs">适合低频传感器</span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+      CPU 调用 ADC API
+    </div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+      ADC 转换一次
+    </div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+      返回一个采样值
+    </div></div><hr class="cg-divider"/><strong>连续采样模式</strong><div class="cg-box" style="--gap:1;--pad:0;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><span class="cg-badge color-success">硬件连续采集</span><span class="cg-text is-secondary is-xs">适合数据流</span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+      ADC 按设定频率采样
+    </div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+      DMA 搬运转换结果
+    </div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+      连续数据缓冲区
+    </div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);">
+      CPU 批量读取和处理
+    </div></div></div>
+
+
+<h3>2. 连续采样适合什么场景？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>应用</th><th>建议采样频率示例</th></tr></thead><tbody><tr><td>电池电压监控</td><td>1～10Hz</td></tr><tr><td>温度传感器</td><td>1～10Hz</td></tr><tr><td>光照变化</td><td>10～100Hz</td></tr><tr><td>电机振动分析</td><td>1～10kHz，视分析需求</td></tr><tr><td>音频波形采集</td><td>常见 16kHz、44.1kHz 等</td></tr></tbody></table></div>
+
+<p>这些是应用场景示例，不代表 ESP32-S3 在所有配置下都能稳定达到对应采样质量。实际能力取决于 ADC 驱动、通道数量、采样率、缓冲区和系统负载。</p>
+
+<h3>3. ESP-IDF 连续 ADC 的工作机制</h3>
+
+<pre class="code"><code class="language-text">ADC 配置
+   ↓
+设置采样频率
+   ↓
+设置采样通道
+   ↓
+启动 ADC Continuous
+   ↓
+ADC 硬件连续转换
+   ↓
+DMA 写入内部缓冲区
+   ↓
+产生数据就绪事件
+   ↓
+FreeRTOS 任务读取数据
+   ↓
+数据处理</code></pre>
+
+<p>这里有一个重要区别：</p>
+
+<p><strong>ADC Continuous 驱动已经管理了底层连续采样和 DMA，不需要你自己再创建一套 DMA 控制器。</strong></p>
+
+<h3>4. ESP-IDF 连续 ADC 初始化示例</h3>
+
+<p>下面以 GPIO1，也就是 ADC1_CH0 为例。</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_adc/adc_continuous.h&quot;
+
+#define ADC_SAMPLE_RATE 10000
+
+static adc_continuous_handle_t adc_handle;
+
+void adc_continuous_init(void)
+{
+    adc_continuous_handle_cfg_t handle_config = {
+        .max_store_buf_size = 4096,
+        .conv_frame_size = 256
+    };
+
+    ESP_ERROR_CHECK(
+        adc_continuous_new_handle(
+            &amp;handle_config,
+            &amp;adc_handle
+        )
+    );
+
+    adc_digi_pattern_config_t pattern = {
+        .atten = ADC_ATTEN_DB_12,
+        .channel = ADC_CHANNEL_0,
+        .unit = ADC_UNIT_1,
+        .bit_width = ADC_BITWIDTH_12
+    };
+
+    adc_continuous_config_t config = {
+        .sample_freq_hz = ADC_SAMPLE_RATE,
+        .conv_mode = ADC_CONV_SINGLE_UNIT_1,
+        .format = ADC_DIGI_OUTPUT_FORMAT_TYPE2,
+        .pattern_num = 1,
+        .adc_pattern = &amp;pattern
+    };
+
+    ESP_ERROR_CHECK(
+        adc_continuous_config(
+            adc_handle,
+            &amp;config
+        )
+    );
+}</code></pre>
+
+<p>说明：</p>
+
+<ul><li><code>sample_freq_hz</code>：转换频率配置；</li><li><code>conv_frame_size</code>：每次读取的数据帧大小；</li><li><code>max_store_buf_size</code>：驱动内部缓冲区容量；</li><li><code>pattern_num</code>：采样通道配置数量；</li><li><code>adc_pattern</code>：采样通道及衰减配置。</li></ul>
+
+<p>这里使用的是 ESP32-S3 的单 ADC1 连续采样配置示例。具体的衰减枚举和输出格式要与你安装的 ESP-IDF 版本一致。</p>
+
+<h3>5. 启动和读取连续数据</h3>
+
+<pre class="code"><code class="language-c">void adc_continuous_start(void)
+{
+    ESP_ERROR_CHECK(
+        adc_continuous_start(adc_handle)
+    );
+}
+
+void adc_read_task(void *arg)
+{
+    uint8_t buffer[512];
+
+    while (1) {
+
+        uint32_t bytes_read = 0;
+
+        esp_err_t ret = adc_continuous_read(
+            adc_handle,
+            buffer,
+            sizeof(buffer),
+            &amp;bytes_read,
+            1000
+        );
+
+        if (ret == ESP_OK) {
+
+            printf(
+                &quot;ADC received: %lu bytes\n&quot;,
+                (unsigned long)bytes_read
+            );
+
+            // 后续解析采样数据
+        }
+
+        vTaskDelay(1);
+    }
+}</code></pre>
+
+<p>这里先只观察读取的数据量。不要直接把每个字节当成一个 ADC 数值，因为连续 ADC 输出通常包含通道和数据格式信息。</p>
+
+<h3>6. 如何解析 ADC 数据？</h3>
+
+<p>ESP-IDF 提供数据解析辅助宏，例如：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_adc/adc_continuous.h&quot;
+
+adc_digi_output_data_t *sample =
+    (adc_digi_output_data_t *)&amp;buffer[0];
+
+int raw_value = sample-&gt;type2.data;
+int channel = sample-&gt;type2.channel;</code></pre>
+
+<p>这种解析方式要与前面配置的 <code>ADC_DIGI_OUTPUT_FORMAT_TYPE2</code> 匹配，并且应检查缓冲区长度、结构体对齐和每条记录的有效性。</p>
+
+<p>连续采样的数据不能仅凭 <code>uint8_t</code> 数组直接推断数值。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、环形缓冲区：如何防止采样数据丢失？</h2>
+
+<p>现在我们已经有了 ADC 和 DMA。</p>
+
+<p>但是还有一个问题：</p>
+
+<p>如果 ADC 采集速度很快，而 CPU 处理速度比较慢，会发生什么？</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">ADC：每秒采集 10000 个数据
+
+CPU：每秒只能处理 5000 个数据</code></pre>
+
+<p>那么数据就会不断积压。</p>
+
+<p>最后可能出现：</p>
+
+<ul><li>缓冲区满；</li><li>新数据覆盖旧数据；</li><li>数据丢失；</li><li>采样任务阻塞；</li><li>系统内存耗尽。</li></ul>
+
+<p>解决这个问题，需要学习环形缓冲区。</p>
+
+<h3>1. 什么是环形缓冲区？</h3>
+
+<p>Ring Buffer，也叫 Circular Buffer。</p>
+
+<p>它是一块首尾相连的逻辑缓冲区。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/12-06.jpg" alt="eSDE-notes" loading="lazy"><figcaption><a href="https://mateuszmyalski.github.io/images/memory_scratch_pad_protocole/circular_buffer.jpg" target="_blank" rel="noopener">eSDE-notes</a> · 搜索词：circular ring buffer producer consumer head tail pointers embedded systems diagram</figcaption></figure>
+
+
+<p>假设缓冲区容量为 8：</p>
+
+<pre class="code"><code class="language-text">[0][1][2][3][4][5][6][7]</code></pre>
+
+<p>数据写到最后一个位置后，会重新回到开头。</p>
+
+<pre class="code"><code class="language-text">写入顺序：
+
+0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 0 → 1</code></pre>
+
+<h3>2. 环形缓冲区中的两个指针</h3>
+
+<div class="table-wrap"><table><thead><tr><th>指针</th><th>作用</th></tr></thead><tbody><tr><td>Head</td><td>写入位置</td></tr><tr><td>Tail</td><td>读取位置</td></tr></tbody></table></div>
+
+<p>生产者负责写数据。</p>
+
+<p>消费者负责读数据。</p>
+
+<pre class="code"><code class="language-text">ADC + DMA
+    ↓
+生产者
+    ↓
+Ring Buffer
+    ↓
+消费者
+    ↓
+滤波、计算、上传</code></pre>
+
+<h3>3. C 语言实现一个简单环形缓冲区</h3>
+
+<pre class="code"><code class="language-c">#include &lt;stdint.h&gt;
+#include &lt;stdbool.h&gt;
+
+#define BUFFER_SIZE 1024
+
+typedef struct {
+    uint16_t data[BUFFER_SIZE];
+
+    volatile uint32_t head;
+    volatile uint32_t tail;
+
+} ring_buffer_t;
+
+static ring_buffer_t adc_buffer;
+
+bool ring_write(uint16_t value)
+{
+    uint32_t next =
+        (adc_buffer.head + 1) % BUFFER_SIZE;
+
+    if (next == adc_buffer.tail) {
+        return false;
+    }
+
+    adc_buffer.data[adc_buffer.head] = value;
+
+    adc_buffer.head = next;
+
+    return true;
+}
+
+bool ring_read(uint16_t *value)
+{
+    if (adc_buffer.head == adc_buffer.tail) {
+        return false;
+    }
+
+    *value = adc_buffer.data[adc_buffer.tail];
+
+    adc_buffer.tail =
+        (adc_buffer.tail + 1) % BUFFER_SIZE;
+
+    return true;
+}</code></pre>
+
+<p>这个示例适合解释环形缓冲区的基本逻辑。</p>
+
+<p>但要注意：<code>volatile</code> 并不能保证多核并发安全，也不能替代互斥锁、临界区或原子操作。</p>
+
+<p>在真实 FreeRTOS 工程中，应根据生产者和消费者的执行环境选择适当的同步机制。</p>
+
+<h3>4. 如何知道缓冲区是否满了？</h3>
+
+<p>当：</p>
+
+<pre class="code"><code class="language-c">next == tail</code></pre>
+
+<p>就表示当前缓冲区没有剩余空间。</p>
+
+<p>可以选择：</p>
+
+<ul><li>丢弃新数据；</li><li>覆盖最旧数据；</li><li>暂停生产者；</li><li>提高消费者处理速度；</li><li>增大缓冲区。</li></ul>
+
+<p>对于实时采集系统，不能只考虑缓冲区大小，还必须保证长期平均消费速度不低于生产速度。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、数字滤波：如何让 ADC 数据更加稳定？</h2>
+
+<p>真实的 ADC 采样数据经常会出现波动。</p>
+
+<p>例如实际输入电压基本不变，但读数可能是：</p>
+
+<pre class="code"><code class="language-text">2040
+2043
+2038
+2045
+2041
+2039
+2044</code></pre>
+
+<p>这是因为存在噪声和测量误差。</p>
+
+<p>可以使用数字滤波。</p>
+
+<h3>1. 算术平均滤波</h3>
+
+<p>连续读取 8 次：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Y</mi><mo>=</mo><mfrac><mrow><msub><mi>X</mi><mn>1</mn></msub><mo>+</mo><msub><mi>X</mi><mn>2</mn></msub><mo>+</mo><mo>⋯</mo><mo>+</mo><msub><mi>X</mi><mn>8</mn></msub></mrow><mn>8</mn></mfrac></mrow><annotation encoding="application/x-tex">Y=\frac{X_1+X_2+\cdots+X_8}{8}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0463em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">8</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="minner">⋯</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">8</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">2040
+2043
+2038
+2045
+2041
+2039
+2044
+2042</code></pre>
+
+<p>平均值为：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>Y</mi><mo>=</mo><mn>2041.5</mn></mrow><annotation encoding="application/x-tex">Y=2041.5</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2041.5</span></span></span></span></span>
+
+
+<p>这样可以减少部分随机噪声。</p>
+
+<p>代码：</p>
+
+<pre class="code"><code class="language-c">uint32_t adc_average(uint16_t *data, uint32_t count)
+{
+    uint64_t sum = 0;
+
+    for (uint32_t i = 0; i &lt; count; i++) {
+        sum += data[i];
+    }
+
+    return (uint32_t)(sum / count);
+}</code></pre>
+
+<h3>2. 中值滤波</h3>
+
+<p>如果采样数据中偶尔出现特别大的异常值，可以使用中值滤波。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">2040
+2042
+2041
+3000
+2039</code></pre>
+
+<p>排序：</p>
+
+<pre class="code"><code class="language-text">2039
+2040
+2041
+2042
+3000</code></pre>
+
+<p>中值：</p>
+
+<pre class="code"><code class="language-text">2041</code></pre>
+
+<p>中值滤波对孤立异常值通常比简单平均更有效。</p>
+
+<h3>3. 一阶低通滤波</h3>
+
+<p>还有一种非常常用的滤波方法：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>Y</mi><mi>n</mi></msub><mo>=</mo><mi>α</mi><msub><mi>X</mi><mi>n</mi></msub><mo>+</mo><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="false">)</mo><msub><mi>Y</mi><mrow><mi>n</mi><mo>−</mo><mn>1</mn></mrow></msub></mrow><annotation encoding="application/x-tex">Y_n=\alpha X_n+(1-\alpha)Y_{n-1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mclose">)</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">n</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2083em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">X_n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：当前采样；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">Y_n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：当前滤波结果；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mrow><mi>n</mi><mo>−</mo><mn>1</mn></mrow></msub></mrow><annotation encoding="application/x-tex">Y_{n-1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8917em;vertical-align:-0.2083em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">n</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2083em;"><span></span></span></span></span></span></span></span></span></span>：上一次滤波结果；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span>：滤波系数。</li></ul>
+
+<p>代码：</p>
+
+<pre class="code"><code class="language-c">float low_pass_filter(
+    float input,
+    float previous,
+    float alpha
+)
+{
+    return alpha * input
+         + (1.0f - alpha) * previous;
+}</code></pre>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">filtered = low_pass_filter(
+    current,
+    filtered,
+    0.2f
+);</code></pre>
+
+<p><code>alpha</code> 越小，滤波结果越平滑，但响应越慢。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、ADC + GPTimer + DMA：完整实时采集架构</h2>
+
+<p>现在把本课知识结合起来。</p>
+
+<p>假设你要设计一个电压监控系统：</p>
+
+<ul><li>GPIO1 连接电压分压电路；</li><li>ADC 连续采样；</li><li>DMA 搬运数据；</li><li>FreeRTOS 任务批量读取；</li><li>滤波处理；</li><li>换算实际电压；</li><li>Wi-Fi 上传服务器。</li></ul>
+
+<p>推荐架构：</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">XIAO ESP32S3 实时采集系统</h2><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>外部模拟信号</strong><span class="cg-text is-secondary is-xs">电压 / 温度 / 光照</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>ADC 控制器</strong><span class="cg-text is-secondary is-xs">连续转换</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>DMA</strong><span class="cg-text is-secondary is-xs">自动搬运采样数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>采样缓冲区</strong><span class="cg-text is-secondary is-xs">保存连续数据帧</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>FreeRTOS 数据处理任务</strong><span class="cg-text is-secondary is-xs">平均滤波 / 中值滤波 / 低通滤波</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>电压换算和数据分析</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>Wi-Fi / MQTT / 本地显示</strong></div></div>
+
+
+<h3>1. GPTimer 在系统中负责什么？</h3>
+
+<p>这里需要特别区分：</p>
+
+<ul><li>GPTimer：通用硬件定时器，适合定时事件和时间测量。</li><li>ADC Continuous：负责连续 ADC 转换和底层采样数据搬运。</li><li>DMA：负责数据传输。</li><li>FreeRTOS：负责任务调度和数据处理。</li></ul>
+
+<p>不是所有 ADC 采样都必须由 GPTimer 触发。</p>
+
+<p>如果使用 ADC Continuous 驱动，应由驱动配置的采样机制管理转换频率。不要同时再用 GPTimer 去重复触发同一组 ADC 转换。</p>
+
+<h3>2. 数据处理任务设计</h3>
+
+<p>建议划分为：</p>
+
+<div class="table-wrap"><table><thead><tr><th>任务</th><th>主要工作</th></tr></thead><tbody><tr><td>ADC 采集</td><td>接收连续采样数据</td></tr><tr><td>Signal Process</td><td>滤波和电压换算</td></tr><tr><td>Network</td><td>数据上传</td></tr><tr><td>Monitor</td><td>监控内存和采样丢失情况</td></tr></tbody></table></div>
+
+<p>网络传输不能阻塞 ADC 数据消费任务。</p>
+
+<h3>3. 实时性如何评估？</h3>
+
+<p>需要记录：</p>
+
+<ul><li>实际采样率；</li><li>每帧采样数量；</li><li>DMA 或驱动缓冲区溢出次数；</li><li>数据处理耗时；</li><li>缓冲区峰值占用；</li><li>任务栈余量；</li><li>内部 RAM 余量。</li></ul>
+
+<p>这些指标比单纯看程序能否运行更加重要。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、实际项目：制作 XIAO ESP32S3 电压监测仪</h2>
+
+<p>这是本课最推荐完成的第一个综合实验。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/12-07.jpg" alt="BRUNO FUGA ADV" loading="lazy"><figcaption><a href="https://i.ytimg.com/vi/u-1TRpLGH04/maxresdefault.jpg" target="_blank" rel="noopener">BRUNO FUGA ADV</a> · 搜索词：ESP32 microcontroller analog voltage monitoring OLED display voltage divider potentiometer breadboard project</figcaption></figure>
+
+
+<h3>1. 实验硬件</h3>
+
+<div class="table-wrap"><table><thead><tr><th>元件</th><th>数量</th><th>作用</th></tr></thead><tbody><tr><td>XIAO ESP32S3 普通版</td><td>1</td><td>主控</td></tr><tr><td>10kΩ 电阻</td><td>2</td><td>电压分压</td></tr><tr><td>电位器</td><td>1</td><td>模拟电压输入</td></tr><tr><td>OLED SSD1306</td><td>1</td><td>显示电压</td></tr><tr><td>杜邦线</td><td>若干</td><td>连接</td></tr></tbody></table></div>
+
+<h3>2. 接线</h3>
+
+<p>先完成 ADC 实验：</p>
+
+<pre class="code"><code class="language-text">电位器一端 ─── 3V3
+
+电位器另一端 ─ GND
+
+电位器中间端 ─ D0 / GPIO1</code></pre>
+
+<p>之后连接 OLED：</p>
+
+<pre class="code"><code class="language-text">OLED VCC ─── 3V3
+OLED GND ─── GND
+OLED SDA ─── D4 / GPIO5
+OLED SCL ─── D5 / GPIO6</code></pre>
+
+<p>注意：电位器输出必须保持在 GPIO 允许的电压范围内。不要将外部 5V 直接接到 GPIO1。</p>
+
+<h3>3. 软件功能</h3>
+
+<pre class="code"><code class="language-text">启动设备
+   ↓
+初始化 ADC
+   ↓
+初始化 I2C
+   ↓
+初始化 OLED
+   ↓
+读取 ADC
+   ↓
+校准电压
+   ↓
+数字滤波
+   ↓
+显示电压
+   ↓
+循环运行</code></pre>
+
+<p>OLED 显示示例：</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>XIAO VOLTAGE MONITOR</strong><span class="cg-badge color-success">RUNNING</span></div><div class="cg-box radius-lg" style="--gap:2;--pad:3;background:#111827;"><span class="cg-text is-xs">INPUT VOLTAGE</span><h3 class="cg-title">2.50 V</h3><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#334155;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#4ADE80;"></div></div><div class="cg-row justify-between" style="--gap:2;align-items:center"><span class="cg-text is-xs">ADC RAW: 3100</span><span class="cg-text is-xs">FILTER: ON</span></div></div><div class="cg-caption">显示界面示意，不代表实际测量结果。</div></div>
+
+
+<h3>4. 实验验收标准</h3>
+
+<ul><li>ADC 可以持续读取。</li><li>调节电位器时电压显示跟随变化。</li><li>数字滤波后显示相对稳定。</li><li>OLED 不会因为 ADC 采样而明显卡顿。</li><li>串口能够输出原始值和校准值。</li><li>运行 30 分钟没有明显内存泄漏或异常重启。</li></ul>
+
+<hr class="cg-divider"/>
+
+<h2>十三、给 Codex 的本课开发任务</h2>
+
+<p>可以让 Codex 在现有 <code>XIAO-ESP32S3-Projects</code> 项目中创建独立实验工程。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Codex：ADC 实时采集实验</strong><button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制任务
+    </button></div><strong>要求：</strong>
+
+<ol><li>建立独立 ADC 实验。</li><li>实现单次和连续采样。</li><li>加入 ADC 校准。</li><li>实现三种数字滤波。</li><li>加入 FreeRTOS 数据处理任务。</li><li>使用 OLED 显示采样结果。</li><li>记录采样率和缓冲区溢出。</li><li>提供完整接线说明。</li></ol>
+  不允许修改已经验证的 BSP，不自动烧录。
+</div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十四、本课知识验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第十二课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十五、下一课：I2S 数字音频与音频 DSP 深入开发</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十三课：XIAO ESP32S3 数字音频系统</h2><div class="cg-image-ph"><span>ESP32 I2S digital microphone MAX98357A amplifier speaker audio development wiring diagram</span></div>
+  下一课重点：
+
+<ol><li>I2S 总线工作原理。</li><li>BCLK、WS、DIN、DOUT 信号。</li><li>I2S 主从模式。</li><li>I2S DMA 音频采集。</li><li>PCM 数据格式。</li><li>16bit、24bit、32bit 音频数据。</li><li>采样率与音质的关系。</li><li>数字音频增益。</li><li>FFT 频谱分析。</li><li>VAD 语音活动检测。</li><li>麦克风和功放驱动。</li><li>Wi-Fi 实时音频传输。</li><li>音频缓冲和丢帧处理。</li></ol></div>
+
+
+<p>这一课会把之前学习的 GPIO、DMA、FreeRTOS、环形缓冲区和数字信号处理全部串联起来。</p>
+
+<p><strong>最终目标：使用普通版 XIAO ESP32S3，外接 I2S 数字麦克风和数字功放，完成一套可以采集、处理、播放和传输声音的基础音频系统。</strong></p>
+
+<p>官方资料：</p>
+
+<ul><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/adc_oneshot.html" target="_blank" rel="noopener">ADC 单次采样<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/adc_continuous.html" target="_blank" rel="noopener">ADC 连续采样<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/gptimer.html" target="_blank" rel="noopener">GPTimer 定时器<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/i2s.html" target="_blank" rel="noopener">I2S 数字音频<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+
+<p><strong>学习路线建议：</strong> 现在不要只停留在看懂代码。每一课都尽量完成一个独立工程，并保留接线图、源码、编译日志和实测结果。最终你的 <code>XIAO-ESP32S3-Projects</code> 就会成为一套可以持续扩展的硬件驱动与产品开发实验平台。</p>
+</div></section>
+<nav class="lesson-nav"><a href="11-第十一课：ESP32-S3 外设控制器与底层驱动开发.html">← 第十一课：ESP32-S3 外设控制器与底层驱动开发</a><span class="spacer"></span><a href="13-第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP.html">第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP →</a></nav>
+</main></body></html>

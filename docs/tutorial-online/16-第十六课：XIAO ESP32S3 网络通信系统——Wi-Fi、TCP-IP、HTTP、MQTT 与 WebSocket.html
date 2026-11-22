@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP/IP、HTTP、MQTT 与 WebSocket</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP/IP、HTTP、MQTT 与 WebSocket · <a href="index.html">课程目录</a> · <a href="../tutorial/16-第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP-IP、HTTP、MQTT 与 WebSocket.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP/IP、HTTP、MQTT 与 WebSocket</h1>
+
+<p>前面我们已经掌握了 ESP32-S3 的硬件、FreeRTOS、DMA、音频、图像和边缘 AI。现在要解决一个关键问题：</p>
+
+<p><strong>如何让 XIAO ESP32S3 稳定地与 Mac、手机、局域网服务器以及云端 AI 服务通信？</strong></p>
+
+<p>本课仍然以普通版 Seeed XIAO ESP32S3 为主控，采用 ESP-IDF 开发。</p>
+
+<p>完成本课后，你应该能够独立设计一个具备 Wi-Fi 自动重连、HTTP 接口、MQTT 消息通信和 WebSocket 实时传输能力的嵌入式网络系统。</p>
+
+<hr class="cg-divider"/>
+
+<h2>一、先理解完整的网络通信架构</h2>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="cpu" style="color:currentColor;width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></svg></span><strong>XIAO ESP32S3</strong><span class="cg-text is-secondary is-xs">传感器 / 音频 / AI / FreeRTOS</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down-up" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:1;--pad:3;"><strong>ESP-IDF 网络系统</strong><span class="cg-text is-secondary is-xs">Wi-Fi Driver + esp_netif + lwIP</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down-up" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="wifi" style="color:currentColor;width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/></svg></span><strong>Wi-Fi 路由器</strong><span class="cg-text is-secondary is-xs">2.4GHz 无线网络</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down-up" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg></span></div><div class="cg-grid" style="--cols:3"><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:1;--pad:2;"><span class="cg-icon" data-icon="laptop" style="color:currentColor;width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2"/><path d="M2 20h20"/></svg></span><strong>Mac</strong><span class="cg-text is-secondary">调试 / HTTP</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:1;--pad:2;"><span class="cg-icon" data-icon="smartphone" style="color:currentColor;width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></span><strong>手机</strong><span class="cg-text is-secondary">控制 / WebSocket</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:1;--pad:2;"><span class="cg-icon" data-icon="cloud" style="color:currentColor;width:1.5rem;height:1.5rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></span><strong>服务器</strong><span class="cg-text is-secondary">MQTT / AI</span></div></div></div></div>
+
+
+<p>网络通信可以分成四层来理解：</p>
+
+<div class="table-wrap"><table><thead><tr><th>层次</th><th>技术</th><th>作用</th></tr></thead><tbody><tr><td>无线连接</td><td>Wi-Fi</td><td>连接无线局域网</td></tr><tr><td>网络层</td><td>IP</td><td>设备寻址和数据包转发</td></tr><tr><td>传输层</td><td>TCP / UDP</td><td>端到端数据传输</td></tr><tr><td>应用层</td><td>HTTP / MQTT / WebSocket</td><td>实现业务功能</td></tr></tbody></table></div>
+
+<p>这四层的关系非常重要。</p>
+
+<p>例如，HTTP 不是直接操作 Wi-Fi 天线，而是通常建立在 TCP/IP 之上。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、ESP32-S3 的 Wi-Fi 硬件原理</h2>
+
+<p>ESP32-S3 支持 2.4GHz Wi-Fi，主要用于连接 IEEE 802.11 b/g/n 无线网络。</p>
+
+<p>它不能直接连接仅支持 5GHz 或 6GHz 的无线网络。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/16-01.jpg" alt="ESP32-S3 2.4GHz Wi­-Fi &amp; BLUETOOTH LE SoCs - Espressif Systems | Mouser" loading="lazy"><figcaption><a href="https://th.mouser.com/images/marketingid/2022/microsites/0/ESP32-S3_BlockDiagram.png" target="_blank" rel="noopener">ESP32-S3 2.4GHz Wi­-Fi &amp; BLUETOOTH LE SoCs - Espressif Systems | Mouser</a> · 搜索词：Espressif ESP32-S3 WiFi RF antenna chip architecture diagram</figcaption></figure>
+
+
+<h3>1. Wi-Fi 数据如何发送？</h3>
+
+<p>简化流程：</p>
+
+<pre class="code"><code class="language-text">应用程序
+    ↓
+TCP/IP 协议栈
+    ↓
+Wi-Fi 驱动
+    ↓
+MAC 层
+    ↓
+PHY 物理层
+    ↓
+射频电路
+    ↓
+天线
+    ↓
+无线路由器</code></pre>
+
+<p>其中：</p>
+
+<p><strong>MAC 层</strong>负责无线帧的组织、地址和媒体访问控制。</p>
+
+<p><strong>PHY 层</strong>负责调制、编码和无线信号收发。</p>
+
+<p><strong>射频电路</strong>负责将数字信号转换为实际的无线电信号。</p>
+
+<h3>2. Wi-Fi 为什么会丢包？</h3>
+
+<p>无线环境存在很多干扰因素：</p>
+
+<ul><li>信号衰减；</li><li>其他 2.4GHz 设备干扰；</li><li>路由器拥塞；</li><li>墙体遮挡；</li><li>天线方向；</li><li>设备供电不稳定；</li><li>Wi-Fi 省电机制带来的调度变化。</li></ul>
+
+<p>所以嵌入式网络程序必须考虑断线、重试和超时。</p>
+
+<p>不能假设 Wi-Fi 永远在线。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、STA、AP 和 AP+STA 模式</h2>
+
+<p>ESP32-S3 主要支持以下 Wi-Fi 工作方式。</p>
+
+
+<div class="cg-box" style="--gap:3;--pad:0;"><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/16-02.jpg" alt="Menghubungkan ESP32 ke Jaringan Wi-Fi | Internet  of Things" loading="lazy"><figcaption><a href="https://www.pdk.sk.stikom-bali.ac.id/content/resources/20251112145112078YTO/mceclip51.png" target="_blank" rel="noopener">Menghubungkan ESP32 ke Jaringan Wi-Fi | Internet  of Things</a> · 搜索词：ESP32 WiFi station mode connecting to home router diagram</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>STA：Station 模式</strong>
+
+      XIAO 作为客户端连接现有路由器。适合连接家庭网络、Mac、MQTT 服务器和互联网。
+    </div></div><hr class="cg-divider"/><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/16-03.jpg" alt="HOW to Enable WIFI AP Mode with ESP32" loading="lazy"><figcaption><a href="https://docs.keyestudio.com/projects/KS5003-KS5004/en/latest/_images/35d90f1ce10814ea1897ba63f8bd7ad91.png" target="_blank" rel="noopener">HOW to Enable WIFI AP Mode with ESP32</a> · 搜索词：ESP32 access point AP mode phone connects directly ESP32 diagram</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>AP：Access Point 模式</strong>
+
+      XIAO 自己建立 Wi-Fi 热点，手机或电脑可以直接连接。适合设备首次配网和本地控制。
+    </div></div><hr class="cg-divider"/><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/16-04.jpg" alt="ESP-IDF : ESP32 as SoftAP - iCircuit" loading="lazy"><figcaption><a href="https://icircuit.net/wp-content/uploads/2017/09/ESP32-soft-ap.jpg" target="_blank" rel="noopener">ESP-IDF : ESP32 as SoftAP - iCircuit</a> · 搜索词：ESP32 AP STA simultaneous WiFi router smartphone network diagram</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>AP+STA：双模式</strong>
+
+      一边连接现有路由器，一边提供自己的热点。适合需要配置入口的设备，但共享无线硬件资源，需要考虑信道和性能限制。
+    </div></div></div>
+
+
+<h3>实际项目如何选择？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>项目</th><th>建议模式</th></tr></thead><tbody><tr><td>传感器数据上传</td><td>STA</td></tr><tr><td>智能语音终端</td><td>STA</td></tr><tr><td>手机首次配置设备</td><td>AP 或配网机制</td></tr><tr><td>无路由器的本地控制</td><td>AP</td></tr><tr><td>设备配置和联网同时运行</td><td>AP+STA</td></tr></tbody></table></div>
+
+<p>对于我们的 XIAO ESP32S3 项目，建议先掌握 STA，再学习 AP 配网。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、ESP-IDF Wi-Fi 软件架构</h2>
+
+<p>在 ESP-IDF 中，Wi-Fi 不是一个简单的 <code>connect()</code> 函数。</p>
+
+<p>它涉及多个组件。</p>
+
+<pre class="code"><code class="language-text">app_main()
+    │
+    ├── NVS
+    │
+    ├── esp_netif
+    │
+    ├── Event Loop
+    │
+    ├── Wi-Fi Driver
+    │
+    └── Application Tasks</code></pre>
+
+<h3>1. NVS</h3>
+
+<p>NVS 是非易失性存储系统。</p>
+
+<p>Wi-Fi 驱动和应用程序可能需要保存配置数据。</p>
+
+<h3>2. esp_netif</h3>
+
+<p><code>esp_netif</code> 是 ESP-IDF 的网络接口抽象层。</p>
+
+<p>它负责将 Wi-Fi 网络接口与 TCP/IP 协议栈连接起来。</p>
+
+<h3>3. Event Loop</h3>
+
+<p>事件循环负责通知应用程序：</p>
+
+<ul><li>Wi-Fi 已启动；</li><li>Wi-Fi 已连接；</li><li>Wi-Fi 已断开；</li><li>IP 地址已获取。</li></ul>
+
+<h3>4. lwIP</h3>
+
+<p>lwIP 是轻量级 TCP/IP 协议栈。</p>
+
+<p>它实现了大量网络协议功能，例如：</p>
+
+<ul><li>IPv4；</li><li>IPv6；</li><li>TCP；</li><li>UDP；</li><li>ICMP；</li><li>DNS；</li><li>DHCP 相关功能。</li></ul>
+
+<p>ESP-IDF 的 Socket API 就建立在相应网络协议栈能力之上。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、实战一：使用 ESP-IDF 连接 Wi-Fi</h2>
+
+<p>我们先实现一个最基础的 STA 工程。</p>
+
+<h3>1. 工程目录</h3>
+
+<pre class="code"><code class="language-text">wifi_basic/
+├── CMakeLists.txt
+├── main/
+│   ├── CMakeLists.txt
+│   └── app_main.c
+└── sdkconfig</code></pre>
+
+<h3>2. Wi-Fi 初始化代码</h3>
+
+<p>下面使用 ESP-IDF 5.x 风格的 API，演示连接流程和事件处理。</p>
+
+<pre class="code"><code class="language-c">#include &lt;string.h&gt;
+
+#include &quot;freertos/FreeRTOS.h&quot;
+#include &quot;freertos/task.h&quot;
+#include &quot;freertos/event_groups.h&quot;
+
+#include &quot;esp_wifi.h&quot;
+#include &quot;esp_event.h&quot;
+#include &quot;esp_netif.h&quot;
+#include &quot;esp_log.h&quot;
+#include &quot;nvs_flash.h&quot;
+
+#define WIFI_SSID &quot;YOUR_WIFI&quot;
+#define WIFI_PASS &quot;YOUR_PASSWORD&quot;
+
+#define WIFI_CONNECTED_BIT BIT0
+
+static const char *TAG = &quot;WIFI&quot;;
+
+static EventGroupHandle_t wifi_event_group;
+
+static void wifi_event_handler(
+    void *arg,
+    esp_event_base_t event_base,
+    int32_t event_id,
+    void *event_data
+)
+{
+    if (event_base == WIFI_EVENT) {
+
+        if (event_id == WIFI_EVENT_STA_START) {
+            esp_wifi_connect();
+        }
+
+        else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+
+            ESP_LOGW(TAG, &quot;Wi-Fi disconnected&quot;);
+
+            xEventGroupClearBits(
+                wifi_event_group,
+                WIFI_CONNECTED_BIT
+            );
+
+            esp_wifi_connect();
+        }
+    }
+
+    else if (
+        event_base == IP_EVENT &amp;&amp;
+        event_id == IP_EVENT_STA_GOT_IP
+    ) {
+        ip_event_got_ip_t *event =
+            (ip_event_got_ip_t *)event_data;
+
+        ESP_LOGI(
+            TAG,
+            &quot;IP: &quot; IPSTR,
+            IP2STR(&amp;event-&gt;ip_info.ip)
+        );
+
+        xEventGroupSetBits(
+            wifi_event_group,
+            WIFI_CONNECTED_BIT
+        );
+    }
+}
+
+void wifi_init_sta(void)
+{
+    wifi_event_group = xEventGroupCreate();
+    configASSERT(wifi_event_group != NULL);
+
+    esp_err_t err = nvs_flash_init();
+
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
+        err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+
+    ESP_ERROR_CHECK(err);
+
+    ESP_ERROR_CHECK(esp_netif_init());
+
+    ESP_ERROR_CHECK(
+        esp_event_loop_create_default()
+    );
+
+    esp_netif_t *sta_netif =
+        esp_netif_create_default_wifi_sta();
+
+    configASSERT(sta_netif != NULL);
+
+    wifi_init_config_t cfg =
+        WIFI_INIT_CONFIG_DEFAULT();
+
+    ESP_ERROR_CHECK(esp_wifi_init(&amp;cfg));
+
+    ESP_ERROR_CHECK(
+        esp_event_handler_register(
+            WIFI_EVENT,
+            ESP_EVENT_ANY_ID,
+            wifi_event_handler,
+            NULL
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        esp_event_handler_register(
+            IP_EVENT,
+            IP_EVENT_STA_GOT_IP,
+            wifi_event_handler,
+            NULL
+        )
+    );
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASS,
+            .threshold.authmode =
+                WIFI_AUTH_WPA2_PSK
+        }
+    };
+
+    ESP_ERROR_CHECK(
+        esp_wifi_set_mode(WIFI_MODE_STA)
+    );
+
+    ESP_ERROR_CHECK(
+        esp_wifi_set_config(
+            WIFI_IF_STA,
+            &amp;wifi_config
+        )
+    );
+
+    ESP_ERROR_CHECK(esp_wifi_start());
+}
+
+void app_main(void)
+{
+    wifi_init_sta();
+
+    xEventGroupWaitBits(
+        wifi_event_group,
+        WIFI_CONNECTED_BIT,
+        pdFALSE,
+        pdTRUE,
+        portMAX_DELAY
+    );
+
+    ESP_LOGI(TAG, &quot;Network ready&quot;);
+}</code></pre>
+
+<p>这段代码演示了 Wi-Fi 初始化、事件回调、获取 IP 和等待连接。</p>
+
+<p>它还不是完整的产品级网络管理器。特别是断线后立即无限重连，在密码错误或路由器长期不可用时并不理想。</p>
+
+<p>另外，示例中直接填写 SSID 和密码只是为了教学。实际项目应使用配置机制、NVS 或安全配网流程，不要将真实密码提交到 GitHub。</p>
+
+<h3>3. 编译与烧录</h3>
+
+<p>在 Mac 的 ESP-IDF 环境中：</p>
+
+<pre class="code"><code class="language-bash">idf.py set-target esp32s3
+
+idf.py build
+
+idf.py -p /dev/cu.usbmodemXXXX flash monitor</code></pre>
+
+<p>实际串口名称需要根据 Mac 上识别到的设备确定。</p>
+
+<h3>4. 预期日志</h3>
+
+<pre class="code"><code class="language-text">I WIFI: Wi-Fi started
+I WIFI: Connected to AP
+I WIFI: IP: 192.168.1.105
+I WIFI: Network ready</code></pre>
+
+<p>IP 地址只是示例，实际由网络分配。</p>
+
+<hr class="cg-divider"/>
+
+<h2>六、DHCP、DNS、IP 地址到底是什么？</h2>
+
+<p>这是很多嵌入式开发者容易混淆的知识点。</p>
+
+<h3>1. IP 地址</h3>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">192.168.1.105</code></pre>
+
+<p>这是设备在某个网络中的 IP 地址。</p>
+
+<p>Mac 可能是：</p>
+
+<pre class="code"><code class="language-text">192.168.1.20</code></pre>
+
+<p>如果两者位于允许互相通信的网络中，就可以通过 IP 地址访问对方。</p>
+
+<h3>2. DHCP</h3>
+
+<p>DHCP 用于自动分配网络参数。</p>
+
+<p>通常包括：</p>
+
+<ul><li>IP 地址；</li><li>子网掩码；</li><li>默认网关；</li><li>DNS 服务器。</li></ul>
+
+<h3>3. DNS</h3>
+
+<p>DNS 负责将域名解析为 IP 地址。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">example.com
+     ↓
+DNS 查询
+     ↓
+服务器 IP</code></pre>
+
+<h3>4. 网关</h3>
+
+<p>默认网关通常是路由器。</p>
+
+<p>当 XIAO 需要访问其他网络中的服务器时，数据包一般需要通过网关转发。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、TCP 和 UDP：两个最重要的传输协议</h2>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">TCP</h2><span class="cg-icon" data-icon="shield-check" style="color:#16a34a;width:1.75rem;height:1.75rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span><strong>可靠、有序的字节流</strong>
+
+      适合 HTTP、MQTT、WebSocket 等应用。
+    </div></div><div class="cg-grid-item"><div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">UDP</h2><span class="cg-icon" data-icon="zap" style="color:var(--text-secondary);width:1.75rem;height:1.75rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span><strong>无连接的数据报</strong>
+
+      适合低延迟音频、设备发现及允许应用自行处理丢包的场景。
+    </div></div></div>
+
+
+<h3>1. TCP 为什么可靠？</h3>
+
+<p>TCP 通过：</p>
+
+<ul><li>序列号；</li><li>确认应答；</li><li>重传；</li><li>流量控制；</li><li>拥塞控制；</li></ul>
+
+<p>提供可靠、有序的字节流传输。</p>
+
+<p>但 TCP 不保留应用消息边界。</p>
+
+<p>例如发送两次：</p>
+
+<pre class="code"><code class="language-text">HELLO
+WORLD</code></pre>
+
+<p>接收端可能一次读取：</p>
+
+<pre class="code"><code class="language-text">HELLOWORLD</code></pre>
+
+<p>也可能分多次读取。</p>
+
+<p>因此使用 Socket 编程时，需要自己设计消息长度或分隔协议。</p>
+
+<h3>2. UDP 为什么适合部分实时音频？</h3>
+
+<p>因为 UDP 不要求传输层对丢失数据包进行可靠重传。</p>
+
+<p>对于实时语音，过晚到达的旧音频可能已经没有播放价值。</p>
+
+<p>但是 UDP 并不保证低延迟，也不保证到达、顺序或不重复。</p>
+
+<p>实际系统通常还需要：</p>
+
+<ul><li>序列号；</li><li>时间戳；</li><li>抖动缓冲；</li><li>丢包统计；</li><li>必要的错误恢复。</li></ul>
+
+<h3>3. 如何选择？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>场景</th><th>推荐</th></tr></thead><tbody><tr><td>配置设备</td><td>TCP / HTTP</td></tr><tr><td>传感器数据上传</td><td>MQTT / TCP</td></tr><tr><td>网页控制</td><td>HTTP</td></tr><tr><td>实时双向控制</td><td>WebSocket</td></tr><tr><td>实时音频实验</td><td>UDP 或合适的实时传输方案</td></tr><tr><td>文件上传</td><td>HTTP / TCP</td></tr></tbody></table></div>
+
+<hr class="cg-divider"/>
+
+<h2>八、Socket 编程：网络通信的底层接口</h2>
+
+<p>Socket 可以理解为应用程序使用 TCP/IP 网络能力的接口。</p>
+
+<p>一个典型 TCP 客户端流程：</p>
+
+<pre class="code"><code class="language-text">socket()
+   ↓
+connect()
+   ↓
+send()
+   ↓
+recv()
+   ↓
+close()</code></pre>
+
+<p>一个 TCP 服务器流程：</p>
+
+<pre class="code"><code class="language-text">socket()
+   ↓
+bind()
+   ↓
+listen()
+   ↓
+accept()
+   ↓
+recv() / send()
+   ↓
+close()</code></pre>
+
+<h3>TCP 客户端示例</h3>
+
+<pre class="code"><code class="language-c">#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+
+#include &quot;esp_log.h&quot;
+
+void tcp_client_example(void)
+{
+    int sock = socket(
+        AF_INET,
+        SOCK_STREAM,
+        IPPROTO_IP
+    );
+
+    if (sock &lt; 0) {
+        ESP_LOGE(&quot;TCP&quot;, &quot;Socket creation failed&quot;);
+        return;
+    }
+
+    struct sockaddr_in dest = {
+        .sin_family = AF_INET,
+        .sin_port = htons(5000)
+    };
+
+    inet_pton(
+        AF_INET,
+        &quot;192.168.1.20&quot;,
+        &amp;dest.sin_addr
+    );
+
+    if (connect(
+        sock,
+        (struct sockaddr *)&amp;dest,
+        sizeof(dest)
+    ) &lt; 0) {
+
+        ESP_LOGE(&quot;TCP&quot;, &quot;Connection failed&quot;);
+        close(sock);
+        return;
+    }
+
+    const char *message = &quot;Hello from XIAO&quot;;
+
+    ssize_t sent = send(
+        sock,
+        message,
+        strlen(message),
+        0
+    );
+
+    if (sent &lt; 0) {
+        ESP_LOGE(&quot;TCP&quot;, &quot;Send failed&quot;);
+    }
+
+    close(sock);
+}</code></pre>
+
+<p>这是最小演示。实际项目还需要处理部分发送、连接超时、断线恢复和 DNS 解析。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、HTTP：让 Mac 浏览器直接访问 XIAO ESP32S3</h2>
+
+<p>HTTP 是非常适合嵌入式设备的应用协议。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">GET /status</code></pre>
+
+<p>ESP32-S3 返回：</p>
+
+<pre class="code"><code class="language-json">{
+  &quot;device&quot;: &quot;XIAO ESP32S3&quot;,
+  &quot;status&quot;: &quot;online&quot;,
+  &quot;temperature&quot;: 26.5
+}</code></pre>
+
+<h3>1. HTTP 服务器架构</h3>
+
+<pre class="code"><code class="language-text">Mac 浏览器
+    ↓
+HTTP GET /status
+    ↓
+Wi-Fi
+    ↓
+ESP-IDF HTTP Server
+    ↓
+应用程序
+    ↓
+JSON 响应</code></pre>
+
+<h3>2. ESP-IDF HTTP Server</h3>
+
+<p>主要头文件：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_http_server.h&quot;</code></pre>
+
+<p>一个简单的状态接口：</p>
+
+<pre class="code"><code class="language-c">static esp_err_t status_handler(
+    httpd_req_t *req
+)
+{
+    const char *json =
+        &quot;{\&quot;device\&quot;:\&quot;XIAO ESP32S3\&quot;,&quot;
+        &quot;\&quot;status\&quot;:\&quot;online\&quot;}&quot;;
+
+    httpd_resp_set_type(
+        req,
+        &quot;application/json&quot;
+    );
+
+    return httpd_resp_sendstr(req, json);
+}</code></pre>
+
+<p>注册接口：</p>
+
+<pre class="code"><code class="language-c">httpd_uri_t status_uri = {
+    .uri = &quot;/status&quot;,
+    .method = HTTP_GET,
+    .handler = status_handler,
+    .user_ctx = NULL
+};</code></pre>
+
+<p>启动服务器：</p>
+
+<pre class="code"><code class="language-c">httpd_handle_t server = NULL;
+
+httpd_config_t config =
+    HTTPD_DEFAULT_CONFIG();
+
+ESP_ERROR_CHECK(
+    httpd_start(&amp;server, &amp;config)
+);
+
+ESP_ERROR_CHECK(
+    httpd_register_uri_handler(
+        server,
+        &amp;status_uri
+    )
+);</code></pre>
+
+<p>这三个片段需要放在同一个完整工程中，确保服务器句柄和 URI 结构体的生命周期有效。</p>
+
+<h3>3. 在 Mac 上测试</h3>
+
+<p>假设 XIAO IP 为：</p>
+
+<pre class="code"><code class="language-text">192.168.1.105</code></pre>
+
+<p>打开浏览器：</p>
+
+<pre class="code"><code class="language-text">http://192.168.1.105/status</code></pre>
+
+<p>或者终端：</p>
+
+<pre class="code"><code class="language-bash">curl http://192.168.1.105/status</code></pre>
+
+<p>即可查看设备状态。</p>
+
+<p>注意：HTTP 明文接口适合受控局域网实验。不要未经身份验证和安全防护就将设备管理接口直接暴露到公网。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、MQTT：物联网设备最常用的通信协议之一</h2>
+
+<p>MQTT 使用发布订阅模式。</p>
+
+<p>与 HTTP 不同，设备不一定需要直接知道其他设备的 IP 地址。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>MQTT Broker</strong><span class="cg-text is-secondary is-xs">消息代理服务器</span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down-up" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="cpu" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></svg></span><strong>XIAO ESP32S3</strong><span class="cg-text is-secondary is-xs">发布传感器数据</span></div></div><div class="cg-grid-item"><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down-up" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:1;--pad:3;"><span class="cg-icon" data-icon="laptop" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2"/><path d="M2 20h20"/></svg></span><strong>Mac / 服务器</strong><span class="cg-text is-secondary is-xs">订阅数据与发送控制</span></div></div></div></div>
+
+
+<h3>1. Topic 是什么？</h3>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">xiao/device01/temperature</code></pre>
+
+<p>设备发布：</p>
+
+<pre class="code"><code class="language-text">26.5</code></pre>
+
+<p>Mac 订阅这个 Topic，就可以收到温度。</p>
+
+<p>再例如：</p>
+
+<pre class="code"><code class="language-text">xiao/device01/command</code></pre>
+
+<p>Mac 发布：</p>
+
+<pre class="code"><code class="language-json">{&quot;led&quot;:true}</code></pre>
+
+<p>XIAO 订阅后执行对应操作。</p>
+
+<h3>2. MQTT QoS</h3>
+
+<div class="table-wrap"><table><thead><tr><th>QoS</th><th>含义</th></tr></thead><tbody><tr><td>0</td><td>最多一次</td></tr><tr><td>1</td><td>至少一次，可能重复</td></tr><tr><td>2</td><td>恰好一次，按协议交付语义</td></tr></tbody></table></div>
+
+<p>QoS 1 和 QoS 2 都不能代替应用层的命令去重、权限验证和状态确认。</p>
+
+<h3>3. MQTT 在 ESP-IDF 中如何使用？</h3>
+
+<p>ESP-MQTT 提供了客户端接口，例如：</p>
+
+<pre class="code"><code class="language-c">esp_mqtt_client_handle_t client =
+    esp_mqtt_client_init(&amp;mqtt_cfg);
+
+esp_mqtt_client_start(client);</code></pre>
+
+<p>连接成功后：</p>
+
+<pre class="code"><code class="language-c">esp_mqtt_client_publish(
+    client,
+    &quot;xiao/device01/status&quot;,
+    &quot;online&quot;,
+    0,
+    1,
+    0
+);</code></pre>
+
+<p>实际使用前需要配置 Broker URI、认证信息、事件回调，并检查当前 ESP-IDF 工程是否已经引入兼容版本的 <code>esp-mqtt</code> 组件。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、WebSocket：适合实时双向数据通信</h2>
+
+<p>WebSocket 与普通 HTTP 请求响应不同。</p>
+
+<p>建立连接后，客户端和服务器可以持续双向发送消息。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">Mac
+  ↕
+WebSocket
+  ↕
+XIAO ESP32S3</code></pre>
+
+<p>非常适合：</p>
+
+<ul><li>实时设备状态；</li><li>音频数据；</li><li>控制命令；</li><li>传感器波形；</li><li>实时日志；</li><li>网页控制面板。</li></ul>
+
+<h3>HTTP 与 WebSocket 对比</h3>
+
+<div class="table-wrap"><table><thead><tr><th>项目</th><th>HTTP</th><th>WebSocket</th></tr></thead><tbody><tr><td>典型交互</td><td>请求响应</td><td>持续双向通信</td></tr><tr><td>实时推送</td><td>需要额外机制</td><td>原生支持</td></tr><tr><td>连接方式</td><td>可以复用连接</td><td>长连接</td></tr><tr><td>适合</td><td>配置、查询、文件</td><td>实时状态和数据流</td></tr></tbody></table></div>
+
+<h3>1. WebSocket 音频数据传输</h3>
+
+<p>结合第十三课：</p>
+
+<pre class="code"><code class="language-text">INMP441
+   ↓
+I2S
+   ↓
+PCM Buffer
+   ↓
+WebSocket
+   ↓
+Mac</code></pre>
+
+<p>例如每 20ms 发送 640 字节 PCM。</p>
+
+<p>但必须考虑 TCP 背压和发送队列长度，否则网络慢时音频延迟可能不断积累。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、TLS：为什么联网设备需要加密？</h2>
+
+<p>如果通过普通 HTTP 发送：</p>
+
+<pre class="code"><code class="language-text">Wi-Fi SSID
+设备令牌
+用户数据</code></pre>
+
+<p>数据可能在不可信网络路径上被读取或篡改。</p>
+
+<p>TLS 可以提供：</p>
+
+<ul><li>通信加密；</li><li>完整性保护；</li><li>服务器身份验证。</li></ul>
+
+<h3>1. 常见协议</h3>
+
+<div class="table-wrap"><table><thead><tr><th>未加密</th><th>加密版本</th></tr></thead><tbody><tr><td>HTTP</td><td>HTTPS</td></tr><tr><td>MQTT</td><td>MQTT over TLS</td></tr><tr><td>WebSocket</td><td>WSS</td></tr></tbody></table></div>
+
+<h3>2. ESP32-S3 如何验证服务器？</h3>
+
+<p>常见做法是使用可信 CA 证书链验证服务器证书。</p>
+
+<p>必须检查：</p>
+
+<ul><li>证书是否可信；</li><li>证书是否过期；</li><li>服务器域名是否匹配；</li><li>设备时间是否正确。</li></ul>
+
+<p>不要为了让 HTTPS 连接成功而在产品中关闭证书验证。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十三、Wi-Fi 自动重连：产品稳定性的关键</h2>
+
+<p>我们在前面看到：</p>
+
+<pre class="code"><code class="language-c">esp_wifi_connect();</code></pre>
+
+<p>但实际产品不能无限快速重试。</p>
+
+<p>推荐使用退避重连策略。</p>
+
+<h3>1. 重连时间示例</h3>
+
+<div class="table-wrap"><table><thead><tr><th>失败次数</th><th>下次重连等待</th></tr></thead><tbody><tr><td>1</td><td>1 秒</td></tr><tr><td>2</td><td>2 秒</td></tr><tr><td>3</td><td>4 秒</td></tr><tr><td>4</td><td>8 秒</td></tr><tr><td>5 及以后</td><td>最长 30 秒</td></tr></tbody></table></div>
+
+<p>实际可加入少量随机抖动，避免大量设备同时重连。</p>
+
+<h3>2. 网络状态机</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>INIT</strong><span class="cg-text is-secondary is-xs">初始化 Wi-Fi</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>CONNECTING</strong><span class="cg-text is-secondary is-xs">尝试连接路由器</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>CONNECTED</strong><span class="cg-text is-secondary is-xs">获得 IP，业务可以运行</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>DISCONNECTED</strong><span class="cg-text is-secondary is-xs">停止依赖网络的业务</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>BACKOFF</strong><span class="cg-text is-secondary is-xs">等待后重试，返回 CONNECTING</span></div></div>
+
+
+<p>注意：Wi-Fi 连接成功和获得 IP 是两个不同事件。获得 IP 也不代表互联网、DNS 或目标服务器一定可用。</p>
+
+<p>因此网络管理器还需要处理服务器连接失败和服务级重连。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十四、FreeRTOS 网络任务如何设计？</h2>
+
+<p>推荐不要把所有网络操作放在 <code>app_main()</code> 中。</p>
+
+<p>一个完整的 XIAO ESP32S3 网络系统可以这样划分：</p>
+
+<pre class="code"><code class="language-text">app_main
+   │
+   ├── WiFi Manager
+   │
+   ├── HTTP Server
+   │
+   ├── MQTT Client
+   │
+   ├── WebSocket Task
+   │
+   ├── Sensor Task
+   │
+   ├── Audio Task
+   │
+   └── Monitor Task</code></pre>
+
+<h3>1. 任务之间如何通信？</h3>
+
+<p>建议通过：</p>
+
+<ul><li>FreeRTOS Queue；</li><li>Event Group；</li><li>Ring Buffer；</li><li>Mutex；</li><li>Task Notification。</li></ul>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">Sensor Task
+     ↓
+FreeRTOS Queue
+     ↓
+MQTT Task
+     ↓
+Broker</code></pre>
+
+<p>这样即使 MQTT 连接短暂断开，也不会直接阻塞传感器采集任务。</p>
+
+<p>但队列必须设置容量上限，并明确满队列时是丢弃旧数据、丢弃新数据，还是暂存到持久化存储。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十五、综合项目：XIAO ESP32S3 网络控制中心</h2>
+
+<p>这是本课推荐完成的实际工程。</p>
+
+<h3>功能目标</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><div class="cg-box" style="--gap:1;--pad:0;"><strong>XIAO ESP32S3</strong><span class="cg-text is-secondary is-xs">网络设备控制中心 · 界面示意</span></div><span class="cg-badge color-success">Online</span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">Wi-Fi 信号</span><h3 class="cg-title">-52 dBm</h3></div></div><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">运行时间</span><h3 class="cg-title">02:35:18</h3></div></div><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">空闲内存</span><h3 class="cg-title">186 KB</h3></div></div><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">MQTT 状态</span><h3 class="cg-title">Connected</h3></div></div></div><hr class="cg-divider"/><strong>计划提供的 HTTP 接口</strong>
+  <div class="table-wrap"><table><tbody><tr><td><span class="cg-text is-secondary">GET</span></td><td><code>/status</code></td><td>设备状态</td></tr><tr><td><span class="cg-text is-secondary">GET</span></td><td><code>/memory</code></td><td>内存信息</td></tr><tr><td><span class="cg-text is-secondary">GET</span></td><td><code>/wifi</code></td><td>网络状态</td></tr><tr><td><span class="cg-text is-secondary">POST</span></td><td><code>/control</code></td><td>设备控制</td></tr></tbody></table></div><div class="cg-caption">以上数值为界面演示数据，不是当前设备的实测状态。</div></div>
+
+
+<h3>工程目录</h3>
+
+<pre class="code"><code class="language-text">projects/
+└── network_control_center/
+    ├── main/
+    │   └── app_main.c
+    │
+    ├── components/
+    │   ├── wifi_manager/
+    │   ├── http_server/
+    │   ├── mqtt_client/
+    │   ├── websocket/
+    │   ├── device_control/
+    │   └── system_monitor/
+    │
+    ├── docs/
+    │   ├── architecture.md
+    │   ├── api.md
+    │   ├── network_security.md
+    │   └── testing.md
+    │
+    └── README.md</code></pre>
+
+<h3>开发顺序</h3>
+
+<p>建议严格按照以下顺序：</p>
+
+<ol><li>Wi-Fi STA 连接并获得 IP。</li><li>实现断线自动重连。</li><li>实现 HTTP <code>/status</code>。</li><li>实现 HTTP <code>/memory</code>。</li><li>连接本地 MQTT Broker。</li><li>实现 MQTT 发布与订阅。</li><li>实现 WebSocket 实时状态推送。</li><li>添加 TLS、认证和访问控制。</li><li>运行长期稳定性测试。</li></ol>
+
+<hr class="cg-divider"/>
+
+<h2>十六、网络数据量与缓冲区计算器</h2>
+
+<p>在实际开发中，必须提前计算数据吞吐量和缓冲区需求。</p>
+
+<p>例如 16kHz、16bit、单声道音频，每秒约 32KB。</p>
+
+<p>下面可以调整参数，观察 PCM 原始数据量及缓冲区需求。</p>
+
+
+
+
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><h2 class="cg-title">PCM 网络传输计算器</h2><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-label">采样率</div></div><div class="cg-grid-item"><div class="cg-label">采样位数</div></div><div class="cg-grid-item"><div class="cg-label">声道数</div></div></div><div class="cg-box" style="--gap:1;--pad:0;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><div class="cg-label">缓冲时长</div><span class="cg-text is-secondary"> ms</span></div></div><hr class="cg-divider"/><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">原始数据速率</span><h3 class="cg-title">— KB/s</h3></div></div><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">缓冲区需求</span><h3 class="cg-title">— KiB</h3></div></div></div><div class="cg-caption">按紧密排列的 PCM 数据计算，不包含网络协议开销、数据包头、DMA 缓冲区或内存对齐。I2S 实际槽宽也可能大于有效采样位数。</div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十七、给 Codex 的本课开发任务</h2>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Codex：构建网络控制中心</strong><button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制任务
+    </button></div>
+  本课的 Codex 任务重点不是一次性生成大量网络代码，而是建立能够长期运行、可测试、可扩展的网络通信基础组件。
+</div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十八、本课知识验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第十六课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十九、下一课：ESP32-S3 低功耗、RTC、Watchdog 与电源管理</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十七课：XIAO ESP32S3 低功耗与可靠性设计</h2><div class="cg-image-ph"><span>ESP32-S3 battery powered IoT development board lithium battery low power deep sleep electronics</span></div>
+  下一课将学习：
+
+<ol><li>ESP32-S3 电源域与时钟域。</li><li>Active、Modem Sleep、Light Sleep、Deep Sleep。</li><li>RTC 控制器和 RTC 内存。</li><li>GPIO 唤醒与定时器唤醒。</li><li>Wi-Fi 省电机制。</li><li>CPU 动态频率调整。</li><li>电池供电与功耗计算。</li><li>Watchdog 看门狗。</li><li>Brownout 欠压检测。</li><li>异常复位原因分析。</li><li>NVS 数据保存。</li><li>低功耗设备状态机。</li><li>电源故障和系统可靠性测试。</li></ol></div>
+
+
+<p><strong>第十六课的核心成果：</strong> 建立一套可复用的 Wi-Fi、HTTP、MQTT、WebSocket 网络基础组件，为后续音频终端、AI 设备、远程控制和 OTA 升级提供稳定的通信能力。</p>
+
+<p>官方参考资料：</p>
+
+<ul><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/wifi.html" target="_blank" rel="noopener">ESP-IDF Wi-Fi 开发指南<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/network/esp_netif.html" target="_blank" rel="noopener">ESP-NETIF 网络接口<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/protocols/esp_http_server.html" target="_blank" rel="noopener">ESP HTTP Server<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-mqtt/en/latest/esp32s3/" target="_blank" rel="noopener">ESP-MQTT 官方文档<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+
+<p>下一课将从电源、电池、休眠和故障恢复出发，解决一个真正产品化的问题：<strong>如何让 XIAO ESP32S3 不仅能够运行，而且能够低功耗、长期、稳定地运行。</strong></p>
+</div></section>
+<nav class="lesson-nav"><a href="15-第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理.html">← 第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理</a><span class="spacer"></span><a href="17-第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性.html">第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性 →</a></nav>
+</main></body></html>

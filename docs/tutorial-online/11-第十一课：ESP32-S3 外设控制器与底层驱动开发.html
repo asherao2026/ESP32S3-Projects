@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第十一课：ESP32-S3 外设控制器与底层驱动开发</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第十一课：ESP32-S3 外设控制器与底层驱动开发 · <a href="index.html">课程目录</a> · <a href="../tutorial/11-第十一课：ESP32-S3 外设控制器与底层驱动开发.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第十一课：ESP32-S3 外设控制器与底层驱动开发</h1>
+
+<p>这一课开始进入真正的硬件驱动开发。</p>
+
+<p>前面我们学习了 CPU、寄存器、中断、DMA、FreeRTOS、内存、网络和固件构建。现在要把这些知识结合起来，理解 ESP32-S3 如何控制外部电路。</p>
+
+<p>本课始终以 <strong>Seeed XIAO ESP32S3 普通版</strong> 为开发对象，不把 Sense 版的摄像头接口配置混入普通版。</p>
+
+<p>本课重点：</p>
+
+<ol><li>GPIO Matrix 和 IO MUX。</li><li>GPIO 寄存器与输入输出。</li><li>UART 串口控制器。</li><li>I2C 通信控制器。</li><li>SPI 控制器。</li><li>LEDC PWM。</li><li>RMT 脉冲控制。</li><li>ADC 模数转换。</li><li>GPTimer 定时器。</li><li>DMA 与外设数据传输。</li><li>如何独立开发 ESP-IDF 驱动。</li></ol>
+
+<hr class="cg-divider"/>
+
+<h2>一、ESP32-S3 外设系统的整体架构</h2>
+
+<p>首先要理解：ESP32-S3 并不是 CPU 直接控制所有外部设备。</p>
+
+<p>芯片内部集成了大量专用外设控制器。</p>
+
+<p>例如：</p>
+
+<ul><li>GPIO 控制器负责输入输出电平；</li><li>UART 控制器负责串行通信；</li><li>I2C 控制器负责 I2C 总线；</li><li>SPI 控制器负责高速串行通信；</li><li>LEDC 控制器负责 PWM；</li><li>ADC 控制器负责模拟信号转换；</li><li>RMT 控制器负责精确脉冲序列；</li><li>GPTimer 负责硬件定时。</li></ul>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-01.jpg" alt="Espressif Providing Support for the AIoT Market with its Dual-Core ESP32-S3 - Embedded Computing Design" loading="lazy"><figcaption><a href="https://data.embeddedcomputing.com/uploads/resize/1256/756/external/data.embeddedcomputing.com/uploads/articles/primary_images/1614971006.png" target="_blank" rel="noopener">Espressif Providing Support for the AIoT Market with its Dual-Core ESP32-S3 - Embedded Computing Design</a> · 搜索词：ESP32-S3 SoC internal peripheral architecture block diagram GPIO UART SPI I2C ADC LEDC RMT DMA CPU</figcaption></figure>
+
+
+<h3>1. CPU 与外设之间如何协作？</h3>
+
+<p>例如，你想让 XIAO ESP32S3 点亮一个 LED。</p>
+
+<p>整个过程大致是：</p>
+
+<pre class="code"><code class="language-text">C 语言程序
+    ↓
+ESP-IDF GPIO API
+    ↓
+GPIO 驱动
+    ↓
+GPIO 寄存器
+    ↓
+GPIO 输出控制电路
+    ↓
+GPIO 引脚输出高电平
+    ↓
+LED 电路
+    ↓
+LED 点亮</code></pre>
+
+<p>CPU 并不需要自己产生每一个电压变化，而是配置外设寄存器，由 GPIO 硬件完成输出。</p>
+
+<h3>2. 什么是寄存器？</h3>
+
+<p>寄存器是芯片内部用于配置和控制硬件的特殊存储单元。</p>
+
+<p>例如 GPIO 输出寄存器可以控制引脚输出状态。</p>
+
+<p>一个外设通常具有：</p>
+
+<div class="table-wrap"><table><thead><tr><th>寄存器类型</th><th>作用</th></tr></thead><tbody><tr><td>Configuration</td><td>配置工作模式</td></tr><tr><td>Control</td><td>控制外设运行</td></tr><tr><td>Status</td><td>读取工作状态</td></tr><tr><td>Data</td><td>读取或写入数据</td></tr><tr><td>Interrupt</td><td>配置和清除中断</td></tr></tbody></table></div>
+
+<p>你之前学习过 CPU 寄存器，这里需要区分：</p>
+
+<ul><li>CPU 通用寄存器：CPU 执行指令时使用。</li><li>外设寄存器：控制芯片内部硬件模块。</li></ul>
+
+<hr class="cg-divider"/>
+
+<h2>二、GPIO Matrix：ESP32-S3 为什么可以灵活分配引脚？</h2>
+
+<p>这是 ESP32-S3 很有特色的硬件设计。</p>
+
+<p>普通微控制器有时会将某个外设功能固定在特定引脚上。</p>
+
+<p>ESP32-S3 具有 GPIO Matrix，可以将许多外设信号灵活路由到可用 GPIO。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-02.jpg" alt="GPIO Matrix and Pin Mux -  -  — Arduino ESP32 latest documentation" loading="lazy"><figcaption><a href="https://docs.espressif.com/projects/arduino-esp32/en/latest/_images/tutorial_peripheral_diagram.png" target="_blank" rel="noopener">GPIO Matrix and Pin Mux -  -  — Arduino ESP32 latest documentation</a> · 搜索词：ESP32 GPIO matrix IO MUX signal routing peripheral GPIO diagram</figcaption></figure>
+
+
+<h3>1. GPIO Matrix 的作用</h3>
+
+<p>假设你有一个 UART 外设：</p>
+
+<pre class="code"><code class="language-text">UART TX
+UART RX</code></pre>
+
+<p>GPIO Matrix 可以将 UART 信号路由到合适的 GPIO 引脚。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">UART TX ───── GPIO43
+UART RX ───── GPIO44</code></pre>
+
+<p>又可以在其他条件允许时配置成：</p>
+
+<pre class="code"><code class="language-text">UART TX ───── GPIO1
+UART RX ───── GPIO2</code></pre>
+
+<p>这里是信号路由示意，不表示所有引脚组合都适合实际电路。</p>
+
+<h3>2. IO MUX 是什么？</h3>
+
+<p>IO MUX 是引脚功能复用控制器。</p>
+
+<p>它负责选择引脚使用的功能，例如：</p>
+
+<ul><li>GPIO；</li><li>UART；</li><li>SPI；</li><li>I2C；</li><li>特定外设信号。</li></ul>
+
+<p>GPIO Matrix 和 IO MUX 配合，使 ESP32-S3 可以灵活安排外设信号。</p>
+
+<h3>3. XIAO ESP32S3 的引脚对应关系</h3>
+
+<p>普通版 XIAO ESP32S3 常用引脚：</p>
+
+<div class="table-wrap"><table><thead><tr><th>XIAO 引脚</th><th>ESP32-S3 GPIO</th><th>常见用途</th></tr></thead><tbody><tr><td>D0</td><td>GPIO1</td><td>GPIO / ADC</td></tr><tr><td>D1</td><td>GPIO2</td><td>GPIO / ADC</td></tr><tr><td>D2</td><td>GPIO3</td><td>GPIO / ADC</td></tr><tr><td>D3</td><td>GPIO4</td><td>GPIO / ADC</td></tr><tr><td>D4</td><td>GPIO5</td><td>I2C SDA</td></tr><tr><td>D5</td><td>GPIO6</td><td>I2C SCL</td></tr><tr><td>D6</td><td>GPIO43</td><td>UART TX</td></tr><tr><td>D7</td><td>GPIO44</td><td>UART RX</td></tr><tr><td>D8</td><td>GPIO7</td><td>SPI SCK</td></tr><tr><td>D9</td><td>GPIO8</td><td>SPI MISO</td></tr><tr><td>D10</td><td>GPIO9</td><td>SPI MOSI</td></tr></tbody></table></div>
+
+<p>实际使用前仍需检查板卡原理图、板载电路、USB 和启动相关功能，以及当前项目的引脚占用。</p>
+
+<p><strong>重要原则：一个 GPIO 不应该同时被两个互相冲突的外设占用。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>三、GPIO 底层原理：让 XIAO ESP32S3 控制 LED</h2>
+
+<p>先从最简单的 GPIO 开始。</p>
+
+<p>GPIO 有两种主要工作模式：</p>
+
+<ul><li>Input：输入；</li><li>Output：输出。</li></ul>
+
+<h3>1. GPIO 输出原理</h3>
+
+<p>当 GPIO 配置为输出模式时：</p>
+
+<pre class="code"><code class="language-text">CPU
+ ↓
+GPIO 输出寄存器
+ ↓
+GPIO 驱动电路
+ ↓
+引脚输出高电平或低电平</code></pre>
+
+<p>例如：</p>
+
+<ul><li>输出高电平：接近芯片供电电压；</li><li>输出低电平：接近 GND。</li></ul>
+
+<p>ESP32-S3 GPIO 属于 3.3V 逻辑，不能把 5V 信号直接输入普通 GPIO。</p>
+
+<h3>2. 实际接线</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-03.jpg" alt="2.1 Hello, LED! — SunFounder Pico 2 W Starter Kit for Raspberry Pi Pico 2 W  documentation" loading="lazy"><figcaption><a href="https://docs.sunfounder.com/projects/pico-2w-kit/en/latest/_images/wiring_led.png" target="_blank" rel="noopener">2.1 Hello, LED! — SunFounder Pico 2 W Starter Kit for Raspberry Pi Pico 2 W  documentation</a> · 搜索词：microcontroller GPIO LED series resistor breadboard wiring diagram</figcaption></figure>
+
+
+<p>使用：</p>
+
+<ul><li>XIAO ESP32S3；</li><li>LED；</li><li>330Ω 电阻；</li><li>杜邦线。</li></ul>
+
+<p>接线：</p>
+
+<pre class="code"><code class="language-text">XIAO GPIO1
+     |
+    330Ω
+     |
+    LED 正极
+     |
+    LED 负极
+     |
+    GND</code></pre>
+
+<p>电阻可以使用 220Ω～1kΩ 的合适值，但还需要考虑 LED 正向压降和 GPIO 输出电流限制。</p>
+
+<h3>3. ESP-IDF GPIO 示例</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/gpio.h&quot;
+#include &quot;freertos/FreeRTOS.h&quot;
+#include &quot;freertos/task.h&quot;
+
+#define LED_GPIO GPIO_NUM_1
+
+void app_main(void)
+{
+    gpio_config_t config = {
+        .pin_bit_mask = 1ULL &lt;&lt; LED_GPIO,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+
+    ESP_ERROR_CHECK(gpio_config(&amp;config));
+
+    while (1) {
+
+        gpio_set_level(LED_GPIO, 1);
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+
+        gpio_set_level(LED_GPIO, 0);
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}</code></pre>
+
+<p>运行后 LED 每 500ms 切换一次状态。</p>
+
+<h3>4. GPIO 输入原理</h3>
+
+<p>例如连接一个按钮：</p>
+
+<pre class="code"><code class="language-text">3.3V
+ |
+上拉电阻
+ |
+GPIO 输入 ─── 按钮 ─── GND</code></pre>
+
+<p>按钮松开时，GPIO 读取高电平。</p>
+
+<p>按钮按下时，GPIO 读取低电平。</p>
+
+<p>代码：</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/gpio.h&quot;
+
+#define BUTTON_GPIO GPIO_NUM_2
+
+void button_init(void)
+{
+    gpio_config_t config = {
+        .pin_bit_mask = 1ULL &lt;&lt; BUTTON_GPIO,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+
+    ESP_ERROR_CHECK(gpio_config(&amp;config));
+}
+
+int button_read(void)
+{
+    return gpio_get_level(BUTTON_GPIO);
+}</code></pre>
+
+<p>注意：实际按钮还需要考虑硬件或软件消抖，避免一次按下产生多次触发。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、GPIO 中断：如何不用不断读取按钮？</h2>
+
+<p>前面我们使用：</p>
+
+<pre class="code"><code class="language-c">gpio_get_level(BUTTON_GPIO);</code></pre>
+
+<p>不断检查按钮状态，这叫轮询。</p>
+
+<p>但还有一种更高效的方法：GPIO 中断。</p>
+
+<h3>1. 中断工作机制</h3>
+
+<p>当按钮状态变化时，GPIO 硬件可以触发中断。</p>
+
+<pre class="code"><code class="language-text">按钮按下
+   ↓
+GPIO 电平发生变化
+   ↓
+GPIO 中断控制器
+   ↓
+CPU 接收中断
+   ↓
+执行中断服务函数
+   ↓
+通知业务任务</code></pre>
+
+<h3>2. ESP-IDF GPIO 中断示例</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/gpio.h&quot;
+#include &quot;freertos/FreeRTOS.h&quot;
+#include &quot;freertos/queue.h&quot;
+
+#define BUTTON_GPIO GPIO_NUM_2
+
+static QueueHandle_t button_queue;
+
+static void IRAM_ATTR button_isr_handler(void *arg)
+{
+    uint32_t pin = (uint32_t)arg;
+
+    BaseType_t higher_priority_task_woken = pdFALSE;
+
+    xQueueSendFromISR(
+        button_queue,
+        &amp;pin,
+        &amp;higher_priority_task_woken
+    );
+
+    if (higher_priority_task_woken) {
+        portYIELD_FROM_ISR();
+    }
+}
+
+static void button_task(void *arg)
+{
+    uint32_t pin;
+
+    while (1) {
+
+        if (xQueueReceive(
+                button_queue,
+                &amp;pin,
+                portMAX_DELAY
+            ) == pdTRUE) {
+
+            printf(&quot;Button GPIO: %lu\n&quot;,
+                   (unsigned long)pin);
+        }
+    }
+}
+
+void app_main(void)
+{
+    button_queue = xQueueCreate(10, sizeof(uint32_t));
+
+    gpio_config_t config = {
+        .pin_bit_mask = 1ULL &lt;&lt; BUTTON_GPIO,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_NEGEDGE
+    };
+
+    ESP_ERROR_CHECK(gpio_config(&amp;config));
+
+    ESP_ERROR_CHECK(gpio_install_isr_service(ESP_INTR_FLAG_IRAM));
+
+    ESP_ERROR_CHECK(
+        gpio_isr_handler_add(
+            BUTTON_GPIO,
+            button_isr_handler,
+            (void *)BUTTON_GPIO
+        )
+    );
+
+    xTaskCreate(
+        button_task,
+        &quot;button_task&quot;,
+        2048,
+        NULL,
+        5,
+        NULL
+    );
+}</code></pre>
+
+<p>这是用于学习中断和队列机制的示例。正式使用时需要考虑队列创建失败、重复中断、按键消抖和 ISR 所调用函数的 IRAM 安全性。</p>
+
+<h3>3. 为什么中断函数不能执行复杂操作？</h3>
+
+<p>中断服务函数应该尽可能短。</p>
+
+<p>不要在中断中：</p>
+
+<ul><li>等待 Wi-Fi；</li><li>执行 HTTP 请求；</li><li>操作文件系统；</li><li>长时间延时；</li><li>执行复杂图像处理。</li></ul>
+
+<p>推荐方式：</p>
+
+<p><strong>中断负责通知，FreeRTOS 任务负责处理。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>五、UART：串口通信控制器的工作原理</h2>
+
+<p>UART 是嵌入式开发中最常用的通信接口之一。</p>
+
+<p>在 XIAO ESP32S3 开发中，它主要用于：</p>
+
+<ul><li>与电脑进行串口通信；</li><li>连接 GPS 模块；</li><li>连接串口传感器；</li><li>连接其他 MCU；</li><li>与外部通信模块交换数据；</li><li>输出系统调试日志。</li></ul>
+
+<h3>1. UART 是什么？</h3>
+
+<p>UART 全称 Universal Asynchronous Receiver/Transmitter，即通用异步收发器。</p>
+
+<p>它主要使用两根数据线：</p>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>功能</th></tr></thead><tbody><tr><td>TX</td><td>发送数据</td></tr><tr><td>RX</td><td>接收数据</td></tr><tr><td>GND</td><td>两个设备共地</td></tr></tbody></table></div>
+
+<p>典型连接：</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-04.jpg" alt="UART详解 | MCU加油站" loading="lazy"><figcaption><a href="https://mcu.eetrend.com/files/2020-03/wen_zhang_/100048421-93639-1.jpg" target="_blank" rel="noopener">UART详解 | MCU加油站</a> · 搜索词：UART serial communication TX RX GND microcontroller two devices wiring diagram</figcaption></figure>
+
+
+<p>连接规则：</p>
+
+<pre class="code"><code class="language-text">XIAO TX  ───── 外部设备 RX
+
+XIAO RX  ───── 外部设备 TX
+
+XIAO GND ───── 外部设备 GND</code></pre>
+
+<p>TX 必须交叉连接到对方 RX。</p>
+
+<h3>2. UART 为什么叫异步通信？</h3>
+
+<p>因为 UART 不需要像 SPI 那样额外传输时钟线。</p>
+
+<p>发送方和接收方提前约定相同的通信参数：</p>
+
+<ul><li>波特率；</li><li>数据位；</li><li>校验位；</li><li>停止位。</li></ul>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">115200
+8N1</code></pre>
+
+<p>含义：</p>
+
+<div class="table-wrap"><table><thead><tr><th>参数</th><th>数值</th></tr></thead><tbody><tr><td>波特率</td><td>115200</td></tr><tr><td>数据位</td><td>8</td></tr><tr><td>校验位</td><td>无</td></tr><tr><td>停止位</td><td>1</td></tr></tbody></table></div>
+
+<h3>3. UART 一帧数据如何传输？</h3>
+
+<p>假设要发送字符 <code>A</code>。</p>
+
+<p>ASCII 编码：</p>
+
+<pre class="code"><code class="language-text">A = 0x41 = 01000001</code></pre>
+
+<p>UART 通常使用：</p>
+
+<pre class="code"><code class="language-text">空闲状态：高电平
+
+起始位：0
+
+数据位：01000001（通常低位先发送）
+
+停止位：1</code></pre>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-05.jpg" alt="UART Basics – ECE353: Introduction to Microprocessor Systems – UW–Madison" loading="lazy"><figcaption><a href="https://ece353.engr.wisc.edu/wp-content/uploads/sites/607/2014/11/dataFrame-8N1.jpg" target="_blank" rel="noopener">UART Basics – ECE353: Introduction to Microprocessor Systems – UW–Madison</a> · 搜索词：UART serial frame start bit 8 data bits stop bit timing diagram 8N1</figcaption></figure>
+
+
+<p>UART 接收端通过起始位识别一帧数据，然后根据约定的波特率采样数据位。</p>
+
+<h3>4. 波特率如何影响通信？</h3>
+
+<p>波特率表示每秒传输的符号数。</p>
+
+<p>对于普通 UART，每个符号通常对应一个比特时间。</p>
+
+<p>例如：</p>
+
+<p>115200 baud：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>T</mi><mo>=</mo><mfrac><mn>1</mn><mn>115200</mn></mfrac></mrow><annotation encoding="application/x-tex">T=\frac{1}{115200}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">115200</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>约为 8.68 微秒。</p>
+
+<p>如果使用 8N1，每个字节需要：</p>
+
+<ul><li>1 个起始位；</li><li>8 个数据位；</li><li>1 个停止位。</li></ul>
+
+<p>共 10 个比特时间。</p>
+
+<p>因此理论传输速度：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>115200</mn><mo>÷</mo><mn>10</mn><mo>=</mo><mn>11520</mn></mrow><annotation encoding="application/x-tex">115200\div10=11520</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">115200</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">÷</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">10</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">11520</span></span></span></span></span>
+
+
+<p>约 11520 字节/秒，不考虑其他协议开销。</p>
+
+<h3>5. UART 内部硬件架构</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-06.jpg" alt="Universal Asynchronous Receive Transmit (UART) | WIZnet Document System" loading="lazy"><figcaption><a href="https://docs.wiznet.io/assets/images/uart_block_diagram-50abce4a05d13a3cc80cdb7b8d4eb63d.jpg" target="_blank" rel="noopener">Universal Asynchronous Receive Transmit (UART) | WIZnet Document System</a> · 搜索词：UART peripheral internal block diagram baud rate generator transmit FIFO receive FIFO shift register</figcaption></figure>
+
+
+<p>UART 控制器通常包含：</p>
+
+<ul><li>波特率发生器；</li><li>发送 FIFO；</li><li>接收 FIFO；</li><li>移位寄存器；</li><li>状态寄存器；</li><li>中断控制逻辑。</li></ul>
+
+<p>CPU 不需要自己逐位产生 UART 波形。</p>
+
+<p>只需要把数据写入发送 FIFO，UART 硬件就会自动完成串行发送。</p>
+
+<h3>6. ESP-IDF UART 初始化</h3>
+
+<p>下面以 UART1 为例。</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/uart.h&quot;
+#include &quot;driver/gpio.h&quot;
+
+#define UART_PORT UART_NUM_1
+#define UART_TX GPIO_NUM_43
+#define UART_RX GPIO_NUM_44
+
+void uart_init(void)
+{
+    uart_config_t config = {
+        .baud_rate = 115200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT
+    };
+
+    ESP_ERROR_CHECK(
+        uart_driver_install(
+            UART_PORT,
+            2048,
+            2048,
+            0,
+            NULL,
+            0
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        uart_param_config(
+            UART_PORT,
+            &amp;config
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        uart_set_pin(
+            UART_PORT,
+            UART_TX,
+            UART_RX,
+            UART_PIN_NO_CHANGE,
+            UART_PIN_NO_CHANGE
+        )
+    );
+}</code></pre>
+
+<p>这里 GPIO43、GPIO44 是 XIAO 常见的 UART TX/RX 引脚示例，使用前要确认没有被 USB 或其他功能占用。</p>
+
+<h3>7. UART 发送数据</h3>
+
+<pre class="code"><code class="language-c">void uart_send_example(void)
+{
+    const char *message = &quot;Hello XIAO ESP32S3!\r\n&quot;;
+
+    uart_write_bytes(
+        UART_PORT,
+        message,
+        strlen(message)
+    );
+}</code></pre>
+
+<h3>8. UART 接收数据</h3>
+
+<pre class="code"><code class="language-c">void uart_receive_example(void)
+{
+    uint8_t buffer[128];
+
+    while (1) {
+
+        int length = uart_read_bytes(
+            UART_PORT,
+            buffer,
+            sizeof(buffer) - 1,
+            pdMS_TO_TICKS(1000)
+        );
+
+        if (length &gt; 0) {
+
+            buffer[length] = &#x27;\0&#x27;;
+
+            printf(&quot;UART RX: %s\n&quot;, buffer);
+        }
+    }
+}</code></pre>
+
+<p>这里使用字符串方式显示数据，只适合文本协议。对于二进制数据，应按实际长度处理，不要假设接收到的数据以 <code>\0</code> 结束。</p>
+
+<h3>9. UART 实际应用</h3>
+
+<p>假设连接一个 GPS 模块：</p>
+
+<pre class="code"><code class="language-text">GPS TX
+  ↓
+XIAO RX
+  ↓
+UART 接收
+  ↓
+解析 NMEA 数据
+  ↓
+获取经纬度
+  ↓
+业务程序</code></pre>
+
+<p>GPS 常见 NMEA 数据：</p>
+
+<pre class="code"><code class="language-text">$GPRMC,123519,A,4807.038,N,01131.000,E,...</code></pre>
+
+<p>ESP32-S3 接收后，可以解析经纬度、速度和时间。</p>
+
+<hr class="cg-divider"/>
+
+<h2>六、I2C：多设备共用两根线的通信原理</h2>
+
+<p>I2C 是非常重要的传感器通信接口。</p>
+
+<p>它特别适合：</p>
+
+<ul><li>OLED 显示屏；</li><li>温湿度传感器；</li><li>气压传感器；</li><li>RTC 时钟；</li><li>IO 扩展芯片；</li><li>EEPROM。</li></ul>
+
+<h3>1. I2C 为什么只需要两根线？</h3>
+
+<p>I2C 使用：</p>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>作用</th></tr></thead><tbody><tr><td>SDA</td><td>数据线</td></tr><tr><td>SCL</td><td>时钟线</td></tr></tbody></table></div>
+
+<p>多个设备可以连接在同一条总线上。</p>
+
+
+<div class="cg-image-ph"><span>I2C bus multiple slave devices shared SDA SCL pull up resistors wiring diagram</span></div>
+
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">             XIAO ESP32S3
+                  |
+          ┌───────┴───────┐
+          |               |
+         SDA             SCL
+          |               |
+     ┌────┼────┐     ┌────┼────┐
+     |    |    |     |    |    |
+   OLED  RTC  温度传感器 共用总线</code></pre>
+
+<p>设备通过地址区分。</p>
+
+<h3>2. I2C 地址是什么？</h3>
+
+<p>每个 I2C 从设备通常有自己的地址。</p>
+
+<p>例如：</p>
+
+<div class="table-wrap"><table><thead><tr><th>设备</th><th>常见地址</th></tr></thead><tbody><tr><td>SSD1306 OLED</td><td>0x3C</td></tr><tr><td>AHT20</td><td>0x38</td></tr><tr><td>BMP280</td><td>0x76 或 0x77</td></tr><tr><td>PCF8574</td><td>0x20～0x27，取决于配置</td></tr></tbody></table></div>
+
+<p>这些是常见地址示例，具体要以模块配置和数据手册为准。</p>
+
+<h3>3. I2C 工作时序</h3>
+
+<p>一次典型 I2C 写操作：</p>
+
+<pre class="code"><code class="language-text">START
+  ↓
+从设备地址 + 写方向
+  ↓
+ACK
+  ↓
+寄存器地址
+  ↓
+ACK
+  ↓
+数据
+  ↓
+ACK
+  ↓
+STOP</code></pre>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-08.jpg" alt="volt-X / How ESP32 BLE Works: Bluetooth Low Energy &amp; GATT | Volt X" loading="lazy"><figcaption><a href="https://www.volt-x.dev/_next/image?q=75&amp;url=https%3A%2F%2Fqoibkmtvaikabpjamxzs.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Fcontent-images%2Fhow-esp32-ble-works%2Fdiagram-advertising.png&amp;w=3840" target="_blank" rel="noopener">volt-X / How ESP32 BLE Works: Bluetooth Low Energy &amp; GATT | Volt X</a> · 搜索词：I2C communication timing diagram start stop ACK NACK address data SDA SCL</figcaption></figure>
+
+
+<p>这里需要理解几个关键概念：</p>
+
+<ul><li>START：开始通信；</li><li>STOP：结束通信；</li><li>ACK：接收方确认；</li><li>NACK：接收方未确认；</li><li>Address：从设备地址；</li><li>Data：实际传输数据。</li></ul>
+
+<h3>4. 为什么 I2C 需要上拉电阻？</h3>
+
+<p>I2C SDA 和 SCL 通常使用开漏或开集电极结构。</p>
+
+<p>设备可以主动拉低总线，但不直接主动输出高电平。</p>
+
+<p>总线通过上拉电阻恢复到高电平。</p>
+
+<pre class="code"><code class="language-text">3.3V
+ |
+上拉电阻
+ |
+SDA ───── 多个设备</code></pre>
+
+<p>因此没有合适的上拉电阻，I2C 可能无法正常通信。</p>
+
+<p>很多开发模块已经集成上拉电阻，但多个模块同时连接时，上拉电阻可能并联得过小，需要检查总线实际电气情况。</p>
+
+<h3>5. XIAO ESP32S3 I2C 接线</h3>
+
+<p>普通版 XIAO 常用：</p>
+
+<div class="table-wrap"><table><thead><tr><th>XIAO</th><th>GPIO</th><th>I2C</th></tr></thead><tbody><tr><td>D4</td><td>GPIO5</td><td>SDA</td></tr><tr><td>D5</td><td>GPIO6</td><td>SCL</td></tr><tr><td>3V3</td><td>—</td><td>电源</td></tr><tr><td>GND</td><td>—</td><td>地</td></tr></tbody></table></div>
+
+
+<div class="cg-image-ph"><span>Seeed XIAO ESP32S3 SSD1306 OLED I2C wiring SDA SCL D4 D5</span></div>
+
+
+<h3>6. ESP-IDF I2C 主机初始化</h3>
+
+<p>ESP-IDF 5.x 推荐使用新的 I2C Master API。</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/i2c_master.h&quot;
+
+#define I2C_SDA GPIO_NUM_5
+#define I2C_SCL GPIO_NUM_6
+
+static i2c_master_bus_handle_t bus_handle;
+
+void i2c_init(void)
+{
+    i2c_master_bus_config_t bus_config = {
+        .i2c_port = I2C_NUM_0,
+        .sda_io_num = I2C_SDA,
+        .scl_io_num = I2C_SCL,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true
+    };
+
+    ESP_ERROR_CHECK(
+        i2c_new_master_bus(
+            &amp;bus_config,
+            &amp;bus_handle
+        )
+    );
+}</code></pre>
+
+<p>注意：内部上拉只能作为辅助，实际硬件通常应根据总线电容和速率配置外部上拉电阻。</p>
+
+<h3>7. 添加一个 I2C 设备</h3>
+
+<pre class="code"><code class="language-c">static i2c_master_dev_handle_t oled_handle;
+
+void oled_device_add(void)
+{
+    i2c_device_config_t device_config = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = 0x3C,
+        .scl_speed_hz = 400000
+    };
+
+    ESP_ERROR_CHECK(
+        i2c_master_bus_add_device(
+            bus_handle,
+            &amp;device_config,
+            &amp;oled_handle
+        )
+    );
+}</code></pre>
+
+<h3>8. 向 I2C 设备发送数据</h3>
+
+<pre class="code"><code class="language-c">uint8_t data[] = {
+    0x00,
+    0xAE
+};
+
+ESP_ERROR_CHECK(
+    i2c_master_transmit(
+        oled_handle,
+        data,
+        sizeof(data),
+        1000
+    )
+);</code></pre>
+
+<p>这个示例发送的是 OLED 常见的显示关闭命令，不是完整 OLED 初始化程序。</p>
+
+<h3>9. I2C 调试方法</h3>
+
+<p>如果 OLED 没有显示，按照以下顺序检查：</p>
+
+<ol><li>检查 3.3V 供电。</li><li>检查 GND 是否共地。</li><li>检查 SDA 和 SCL 是否接反。</li><li>检查 I2C 地址。</li><li>检查上拉电阻。</li><li>检查通信速率。</li><li>使用逻辑分析仪查看 START、ACK 和 STOP。</li></ol>
+
+<p><strong>掌握逻辑分析仪，是从普通嵌入式开发走向底层驱动开发的重要一步。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>七、SPI：高速外设通信的工作原理</h2>
+
+<p>SPI 是 ESP32-S3 中非常重要的高速通信接口。</p>
+
+<p>如果以后要连接：</p>
+
+<ul><li>TFT 彩色显示屏；</li><li>LCD；</li><li>外部 Flash；</li><li>SD 卡；</li><li>高速 ADC；</li><li>其他 MCU；</li></ul>
+
+<p>通常都会接触 SPI。</p>
+
+<h3>1. SPI 的四根信号线</h3>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>全称</th><th>功能</th></tr></thead><tbody><tr><td>SCLK</td><td>Serial Clock</td><td>时钟</td></tr><tr><td>MOSI</td><td>Master Out Slave In</td><td>主机发送数据</td></tr><tr><td>MISO</td><td>Master In Slave Out</td><td>主机接收数据</td></tr><tr><td>CS</td><td>Chip Select</td><td>选择从设备</td></tr></tbody></table></div>
+
+
+<div class="cg-image-ph"><span>SPI master slave communication wiring SCLK MOSI MISO CS diagram</span></div>
+
+
+<h3>2. SPI 工作过程</h3>
+
+<p>假设 XIAO ESP32S3 要向 TFT 屏幕发送数据：</p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3
+     |
+     | SCLK
+     | MOSI
+     | CS
+     ↓
+   TFT 屏幕</code></pre>
+
+<p>工作流程：</p>
+
+<ol><li>主机拉低 CS。</li><li>主机产生 SCLK 时钟。</li><li>主机通过 MOSI 发送数据。</li><li>从设备根据时钟采样数据。</li><li>通信结束，CS 拉高。</li></ol>
+
+<p>SPI 是同步通信，时钟由主机提供。</p>
+
+<h3>3. SPI 的四种工作模式</h3>
+
+<p>SPI 有四种常见模式：</p>
+
+<div class="table-wrap"><table><thead><tr><th>模式</th><th>CPOL</th><th>CPHA</th></tr></thead><tbody><tr><td>Mode 0</td><td>0</td><td>0</td></tr><tr><td>Mode 1</td><td>0</td><td>1</td></tr><tr><td>Mode 2</td><td>1</td><td>0</td></tr><tr><td>Mode 3</td><td>1</td><td>1</td></tr></tbody></table></div>
+
+<p>CPOL 决定时钟空闲电平。</p>
+
+<p>CPHA 决定在哪个时钟边沿采样。</p>
+
+<p>如果主机和从设备模式不一致，就可能出现数据错误。</p>
+
+<h3>4. XIAO ESP32S3 常用 SPI 引脚</h3>
+
+<div class="table-wrap"><table><thead><tr><th>XIAO 引脚</th><th>GPIO</th><th>功能</th></tr></thead><tbody><tr><td>D8</td><td>GPIO7</td><td>SCK</td></tr><tr><td>D9</td><td>GPIO8</td><td>MISO</td></tr><tr><td>D10</td><td>GPIO9</td><td>MOSI</td></tr></tbody></table></div>
+
+<p>CS 通常选择另外一个可用 GPIO。</p>
+
+<p>这些是常见 SPI 引脚映射，实际工程还应检查板级引脚定义和外设占用。</p>
+
+<h3>5. ESP-IDF SPI 初始化</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/spi_master.h&quot;
+
+#define PIN_NUM_MOSI GPIO_NUM_9
+#define PIN_NUM_MISO GPIO_NUM_8
+#define PIN_NUM_CLK  GPIO_NUM_7
+#define PIN_NUM_CS   GPIO_NUM_1
+
+static spi_device_handle_t spi_handle;
+
+void spi_init(void)
+{
+    spi_bus_config_t bus_config = {
+        .mosi_io_num = PIN_NUM_MOSI,
+        .miso_io_num = PIN_NUM_MISO,
+        .sclk_io_num = PIN_NUM_CLK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 4096
+    };
+
+    ESP_ERROR_CHECK(
+        spi_bus_initialize(
+            SPI2_HOST,
+            &amp;bus_config,
+            SPI_DMA_CH_AUTO
+        )
+    );
+
+    spi_device_interface_config_t device_config = {
+        .clock_speed_hz = 10 * 1000 * 1000,
+        .mode = 0,
+        .spics_io_num = PIN_NUM_CS,
+        .queue_size = 4
+    };
+
+    ESP_ERROR_CHECK(
+        spi_bus_add_device(
+            SPI2_HOST,
+            &amp;device_config,
+            &amp;spi_handle
+        )
+    );
+}</code></pre>
+
+<h3>6. SPI 发送数据</h3>
+
+<pre class="code"><code class="language-c">void spi_send_example(void)
+{
+    uint8_t data[] = {
+        0xAA,
+        0x55,
+        0x12,
+        0x34
+    };
+
+    spi_transaction_t transaction = {
+        .length = sizeof(data) * 8,
+        .tx_buffer = data
+    };
+
+    ESP_ERROR_CHECK(
+        spi_device_transmit(
+            spi_handle,
+            &amp;transaction
+        )
+    );
+}</code></pre>
+
+<h3>7. SPI 为什么比 I2C 快？</h3>
+
+<p>主要原因：</p>
+
+<ul><li>SPI 使用专用时钟线；</li><li>不需要每个字节都进行 I2C 地址和 ACK 处理；</li><li>支持较高时钟频率；</li><li>可以使用 DMA 连续传输大量数据。</li></ul>
+
+<p>但是实际速度还受外设、线路长度、信号完整性、驱动和 DMA 缓冲区限制。</p>
+
+<h3>8. SPI 和 I2C 应该如何选择？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>对比</th><th>I2C</th><th>SPI</th></tr></thead><tbody><tr><td>信号线</td><td>2 根</td><td>通常 3～4 根</td></tr><tr><td>设备识别</td><td>地址</td><td>CS</td></tr><tr><td>通信时钟</td><td>SCL</td><td>SCLK</td></tr><tr><td>典型速度</td><td>100/400kHz 等</td><td>通常数 MHz 到数十 MHz，视设备而定</td></tr><tr><td>适用设备</td><td>传感器、OLED</td><td>TFT、SD 卡、Flash</td></tr><tr><td>硬件复杂度</td><td>较低</td><td>较高</td></tr></tbody></table></div>
+
+<p>对于 XIAO 项目：</p>
+
+<ul><li>小型传感器优先考虑 I2C；</li><li>彩色屏幕优先考虑 SPI；</li><li>大量数据传输优先考虑 SPI + DMA。</li></ul>
+
+<hr class="cg-divider"/>
+
+<h2>八、LEDC：PWM 脉冲宽度调制</h2>
+
+<p>LEDC 是 ESP32-S3 的 PWM 控制器。</p>
+
+<p>它可以让 GPIO 输出一定频率和占空比的脉冲。</p>
+
+<p>常见应用：</p>
+
+<ul><li>LED 亮度控制；</li><li>电机调速；</li><li>蜂鸣器；</li><li>舵机控制；</li><li>风扇控制。</li></ul>
+
+<h3>1. PWM 是什么？</h3>
+
+<p>PWM 全称 Pulse Width Modulation。</p>
+
+<p>例如：</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-11.jpg" alt="10. 아두이노 LED 실습 (3) with PWM 제어" loading="lazy"><figcaption><a href="https://blog.kakaocdn.net/dna/dHXfVy/btqFOLWfRzm/AAAAAAAAAAAAAAAAAAAAACjGNOINwfKawTisD4IBIiMp55c8JtE1dKPGK0AQJbZo/img.png?allow_ip=&amp;allow_referer=&amp;credential=yqXZFxpELC7KVnFOS48ylbz2pIh7yKj8&amp;expires=1777561199&amp;signature=PW8k8hvjnyaJWNls84JezZY1svs%3D" target="_blank" rel="noopener">10. 아두이노 LED 실습 (3) with PWM 제어</a> · 搜索词：PWM pulse width modulation 25 50 75 percent duty cycle waveform diagram</figcaption></figure>
+
+
+<p>占空比定义：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mo>=</mo><mfrac><msub><mi>T</mi><mrow><mi>O</mi><mi>N</mi></mrow></msub><mi>T</mi></mfrac><mo>×</mo><mn>100</mn><mi mathvariant="normal">%</mi></mrow><annotation encoding="application/x-tex">D=\frac{T_{ON}}{T}\times100\%</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0463em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">O</span><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">100%</span></span></span></span></span>
+
+
+<p>例如：</p>
+
+<ul><li>25%：高电平占周期的四分之一；</li><li>50%：高低电平时间相等；</li><li>75%：高电平占周期的四分之三。</li></ul>
+
+<h3>2. LED 为什么可以通过 PWM 调节亮度？</h3>
+
+<p>当 LED 以足够高的频率快速开关，人眼感知的是平均亮度。</p>
+
+<p>例如：</p>
+
+<div class="table-wrap"><table><thead><tr><th>占空比</th><th>视觉效果</th></tr></thead><tbody><tr><td>10%</td><td>较暗</td></tr><tr><td>30%</td><td>较低亮度</td></tr><tr><td>50%</td><td>中等亮度</td></tr><tr><td>80%</td><td>较亮</td></tr><tr><td>100%</td><td>持续点亮</td></tr></tbody></table></div>
+
+<h3>3. ESP-IDF LEDC 初始化</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/ledc.h&quot;
+
+#define PWM_GPIO GPIO_NUM_1
+
+void pwm_init(void)
+{
+    ledc_timer_config_t timer_config = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = LEDC_TIMER_10_BIT,
+        .timer_num = LEDC_TIMER_0,
+        .freq_hz = 5000,
+        .clk_cfg = LEDC_AUTO_CLK
+    };
+
+    ESP_ERROR_CHECK(
+        ledc_timer_config(&amp;timer_config)
+    );
+
+    ledc_channel_config_t channel_config = {
+        .gpio_num = PWM_GPIO,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = LEDC_CHANNEL_0,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = LEDC_TIMER_0,
+        .duty = 0,
+        .hpoint = 0
+    };
+
+    ESP_ERROR_CHECK(
+        ledc_channel_config(&amp;channel_config)
+    );
+}</code></pre>
+
+<h3>4. 调节 PWM 占空比</h3>
+
+<p>10 位分辨率意味着：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mn>2</mn><mn>10</mn></msup><mo>=</mo><mn>1024</mn></mrow><annotation encoding="application/x-tex">2^{10}=1024</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8641em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">10</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1024</span></span></span></span></span>
+
+
+<p>占空比取值范围为 0～1023。</p>
+
+<pre class="code"><code class="language-c">void set_brightness(uint32_t duty)
+{
+    if (duty &gt; 1023) {
+        duty = 1023;
+    }
+
+    ESP_ERROR_CHECK(
+        ledc_set_duty(
+            LEDC_LOW_SPEED_MODE,
+            LEDC_CHANNEL_0,
+            duty
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        ledc_update_duty(
+            LEDC_LOW_SPEED_MODE,
+            LEDC_CHANNEL_0
+        )
+    );
+}</code></pre>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">set_brightness(512);</code></pre>
+
+<p>大约就是 50% 占空比。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、RMT：精确控制脉冲和时序</h2>
+
+<p>RMT 是 ESP32-S3 一个非常实用的外设。</p>
+
+<p>它适合生成和接收精确的数字脉冲序列。</p>
+
+<p>典型应用：</p>
+
+<ul><li>WS2812 RGB 灯带；</li><li>红外遥控；</li><li>红外接收；</li><li>单线通信；</li><li>特定时序协议。</li></ul>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/11-12.jpg" alt="การใช้งานโมดูล WS2812 RGB LED (NeoPixel) - IoT Engineering Education" loading="lazy"><figcaption><a href="https://iot-kmutnb.github.io/blogs/displays/neopixel_rgb_leds/ws2812b_timing.png" target="_blank" rel="noopener">การใช้งานโมดูล WS2812 RGB LED (NeoPixel) - IoT Engineering Education</a> · 搜索词：ESP32 RMT WS2812 LED strip digital timing signal waveform</figcaption></figure>
+
+
+<h3>1. 为什么 RMT 很有用？</h3>
+
+<p>假设需要控制 WS2812 灯珠。</p>
+
+<p>它要求非常精确的高低电平时间。</p>
+
+<p>如果完全依赖 CPU：</p>
+
+<pre class="code"><code class="language-text">GPIO 拉高
+等待一段时间
+GPIO 拉低
+等待一段时间</code></pre>
+
+<p>可能因为任务切换或中断导致时序不稳定。</p>
+
+<p>RMT 可以将脉冲时序交给硬件完成。</p>
+
+<p>CPU 只需要准备好脉冲数据。</p>
+
+<h3>2. RMT 的工作原理</h3>
+
+<pre class="code"><code class="language-text">应用程序
+    ↓
+准备脉冲数据
+    ↓
+RMT 编码
+    ↓
+RMT 内部存储和 DMA（按配置）
+    ↓
+硬件自动输出脉冲
+    ↓
+外部设备</code></pre>
+
+<h3>3. 为什么 WS2812 适合 RMT？</h3>
+
+<p>WS2812 使用单线数据传输。</p>
+
+<p>每个数据位通过高电平和低电平的持续时间来表示 0 或 1。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">逻辑 0：
+
+高电平较短
+低电平较长
+
+逻辑 1：
+
+高电平较长
+低电平较短</code></pre>
+
+<p>RMT 可以准确控制这些时间。</p>
+
+<h3>4. ESP-IDF RMT 开发</h3>
+
+<p>新版 ESP-IDF 使用：</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/rmt_tx.h&quot;
+#include &quot;driver/rmt_encoder.h&quot;</code></pre>
+
+<p>主要步骤：</p>
+
+<ol><li>创建 RMT TX Channel。</li><li>配置 GPIO。</li><li>配置时钟分辨率。</li><li>创建编码器。</li><li>准备发送数据。</li><li>调用发送 API。</li><li>等待发送完成。</li></ol>
+
+<p>官方资料：</p>
+
+<p><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/rmt.html" target="_blank" rel="noopener">ESP-IDF RMT 官方文档<span class="cg-ext" aria-hidden="true">↗</span></a></p>
+
+<hr class="cg-divider"/>
+
+<h2>十、本课的知识关联：如何选择正确的外设？</h2>
+
+<p>现在我们已经学习了 GPIO、UART、I2C、SPI、PWM 和 RMT。</p>
+
+<p>实际开发时，可以按照下面的原则选择：</p>
+
+<div class="table-wrap"><table><thead><tr><th>需求</th><th>推荐外设</th></tr></thead><tbody><tr><td>控制普通 LED</td><td>GPIO</td></tr><tr><td>读取按钮</td><td>GPIO / 中断</td></tr><tr><td>连接 GPS</td><td>UART</td></tr><tr><td>连接温湿度传感器</td><td>I2C</td></tr><tr><td>连接 OLED</td><td>I2C 或 SPI</td></tr><tr><td>连接 TFT 彩屏</td><td>SPI</td></tr><tr><td>控制 LED 亮度</td><td>LEDC</td></tr><tr><td>控制 WS2812</td><td>RMT</td></tr><tr><td>控制舵机</td><td>LEDC</td></tr><tr><td>高速传输数据</td><td>SPI + DMA</td></tr><tr><td>数字音频</td><td>I2S + DMA</td></tr></tbody></table></div>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><strong>一个实际智能设备的外设规划</strong><figure class="cg-figure"><img src="../tutorial/images/11-13.jpg" alt="体验ROCO小智物联控制GPIO外接硬件*LED/舵机/继电器- Makelog(造物记)" loading="lazy"><figcaption><a href="https://makelogimg.dfrobot.com.cn/makelog/5a197745e455e06a216f8a4f/e843afab015bcf73ea2ff7fbcf929ec9.jpg" target="_blank" rel="noopener">体验ROCO小智物联控制GPIO外接硬件*LED/舵机/继电器- Makelog(造物记)</a> · 搜索词：ESP32 S3 development board connected OLED display microphone speaker sensors LED breadboard project</figcaption></figure>
+  假设开发一台桌面智能终端：
+
+<ul><li>OLED：显示设备状态；</li><li>I2C：读取温湿度；</li><li>I2S：录制语音；</li><li>SPI：连接彩色屏幕；</li><li>UART：连接外部通信模块；</li><li>LEDC：控制指示灯亮度；</li><li>RMT：控制 RGB 灯带；</li><li>GPIO 中断：处理按键。</li></ul></div>
+
+
+<p>这里最重要的是先做好 GPIO 资源规划，不能只看软件 API 是否支持，还要考虑物理引脚是否足够。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、本课实践任务</h2>
+
+<p>建议按照顺序在普通版 XIAO ESP32S3 上完成。</p>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>外设驱动实验清单</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<h2>十二、下一课：ADC、GPTimer、DMA 与硬件实时控制</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十二课：模拟信号采集与实时数据处理</h2><figure class="cg-figure"><img src="../tutorial/images/11-14.jpg" alt="第4节 ADC 模拟输入 | 微雪文档平台" loading="lazy"><figcaption><a href="https://docs.waveshare.net/assets/images/04-ADC-75daf0aa10b419028e4d596708f3fbf0.webp" target="_blank" rel="noopener">第4节 ADC 模拟输入 | 微雪文档平台</a> · 搜索词：ESP32 ADC analog sensor sampling oscilloscope waveform DMA timer microcontroller diagram</figcaption></figure>
+  下一课将深入学习：
+
+<ol><li>ADC 的工作原理。</li><li>SAR ADC 逐次逼近转换过程。</li><li>ESP32-S3 ADC1 与 ADC2。</li><li>ADC 校准与非线性误差。</li><li>电压、电流和传感器采集。</li><li>GPTimer 硬件定时器。</li><li>定时器中断与任务通知。</li><li>ADC 连续采样。</li><li>DMA 数据搬运。</li><li>环形缓冲区和实时数据处理。</li><li>如何构建稳定的数据采集系统。</li></ol></div>
+
+
+<p>这一课将把前面学习的 ADC、寄存器、中断、FreeRTOS 和 DMA 真正组合起来。</p>
+
+<p><strong>最终目标：让 XIAO ESP32S3 不只是能够控制外设，还能稳定、准确、连续地采集外部世界的数据。</strong></p>
+</div></section>
+<nav class="lesson-nav"><a href="10-第十课：ESP-IDF 工程构建、编译器、链接器与底层调试.html">← 第十课：ESP-IDF 工程构建、编译器、链接器与底层调试</a><span class="spacer"></span><a href="12-第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集.html">第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集 →</a></nav>
+</main></body></html>

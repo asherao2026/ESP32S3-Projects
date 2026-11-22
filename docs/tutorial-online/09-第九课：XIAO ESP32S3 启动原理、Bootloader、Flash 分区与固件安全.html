@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全 · <a href="index.html">课程目录</a> · <a href="../tutorial/09-第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全</h1>
+
+<p>前面八课，我们已经学习了 XIAO ESP32S3 的主要开发技术：</p>
+
+<ul><li>CPU、寄存器、中断和时钟；</li><li>SRAM、Flash 和 PSRAM；</li><li>GPIO、I2C、SPI、UART、ADC；</li><li>FreeRTOS 多任务；</li><li>Wi-Fi、BLE、MQTT 和 OTA；</li><li>摄像头、I2S 音频、DMA 和 JPEG。</li></ul>
+
+<p>现在进入嵌入式开发中非常重要的一部分：</p>
+
+<p><strong>一块 ESP32-S3 开发板上电之后，究竟是如何找到并运行你的程序的？</strong></p>
+
+<p>理解这部分之后，你就能理解：</p>
+
+<ol><li>为什么需要 Bootloader？</li><li>为什么固件要烧录到特定 Flash 地址？</li><li>为什么 ESP32-S3 有分区表？</li><li>OTA 为什么需要两个固件分区？</li><li>程序升级失败后如何恢复？</li><li>如何防止别人随意读取和修改固件？</li></ol>
+
+<hr class="cg-divider"/>
+
+<h2>一、XIAO ESP32S3 上电后发生了什么？</h2>
+
+<p>先看整个启动过程。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/09-01.jpg" alt="Ideas for Developers :: ESP32 부팅 시퀀스(booting sequence), 부트로더(bootloader)" loading="lazy"><figcaption><a href="https://blog.kakaocdn.net/dna/1jSW6/btrbkW7bC3k/AAAAAAAAAAAAAAAAAAAAAAzlenBWuNGcI4AjTr9KBZjFaqErYzYqnZ6k6q6MgVY9/img.png?allow_ip=&amp;allow_referer=&amp;credential=yqXZFxpELC7KVnFOS48ylbz2pIh7yKj8&amp;expires=1777561199&amp;signature=747H6Kgr8aHN3mfX54V6PwXfSSo%3D" target="_blank" rel="noopener">Ideas for Developers :: ESP32 부팅 시퀀스(booting sequence), 부트로더(bootloader)</a> · 搜索词：ESP32 S3 boot process ROM bootloader second stage bootloader partition table application firmware startup flow diagram</figcaption></figure>
+
+
+<p>当你给 XIAO ESP32S3 接通 USB 或外部电源后，并不是直接运行 <code>app_main()</code>。</p>
+
+<p>它需要经过多个阶段。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>① Power ON</strong><span class="cg-text is-secondary is-xs">芯片上电、复位释放</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>② Boot ROM</strong><span class="cg-text is-secondary is-xs">芯片内部固化的第一阶段启动代码</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>③ Second Stage Bootloader</strong><span class="cg-text is-secondary is-xs">从外部 Flash 加载启动程序</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>④ Partition Table</strong><span class="cg-text is-secondary is-xs">读取 Flash 分区布局</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>⑤ Application Firmware</strong><span class="cg-text is-secondary is-xs">选择并加载应用固件</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>⑥ ESP-IDF System Initialization</strong><span class="cg-text is-secondary is-xs">初始化系统、驱动、FreeRTOS</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.12);"><strong>⑦ app_main()</strong><span class="cg-text is-secondary is-xs">执行你的应用程序</span></div></div>
+
+
+<h3>1. 第一阶段：Boot ROM</h3>
+
+<p>Boot ROM 是 ESP32-S3 芯片内部的只读启动代码。</p>
+
+<p>它由芯片制造商固化，通常不能像普通应用程序一样修改。</p>
+
+<p>主要负责：</p>
+
+<ul><li>读取启动配置；</li><li>判断启动模式；</li><li>初始化必要的硬件；</li><li>从 SPI Flash 加载第二阶段 Bootloader；</li><li>在下载模式下支持固件烧录。</li></ul>
+
+<p>例如你使用 USB 烧录程序时，芯片可以进入下载模式，由烧录工具通过 ROM 下载协议与芯片通信。</p>
+
+<h3>2. 第二阶段：Bootloader</h3>
+
+<p>Second Stage Bootloader 存放在外部 Flash 中。</p>
+
+<p>它比 Boot ROM 更灵活，可以由 ESP-IDF 工程生成。</p>
+
+<p>它主要负责：</p>
+
+<ul><li>读取分区表；</li><li>确定应用程序位置；</li><li>处理 OTA 启动分区；</li><li>验证固件（取决于安全配置）；</li><li>加载应用程序；</li><li>将控制权交给应用程序入口。</li></ul>
+
+<h3>3. 第三阶段：Application</h3>
+
+<p>Bootloader 选择应用固件后，会完成必要的映射和启动准备，将执行流程交给应用程序。</p>
+
+<p>随后 ESP-IDF 完成 C 运行环境和系统初始化，创建主任务，最终调用：</p>
+
+<pre class="code"><code class="language-c">void app_main(void)
+{
+    printf(&quot;XIAO ESP32S3 Started!\n&quot;);
+}</code></pre>
+
+<p>这就是你平时编写的程序入口。</p>
+
+<p>注意：<code>app_main()</code> 并不是芯片真正的第一条执行指令，它是在 ROM、Bootloader 和 ESP-IDF 初始化之后才执行的。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、ESP32-S3 的 Flash 究竟是什么？</h2>
+
+<p>XIAO ESP32S3 使用外部 SPI Flash 保存固件和配置数据。</p>
+
+<p>普通版 XIAO ESP32S3 常见规格为：</p>
+
+<ul><li>8MB Flash；</li><li>8MB PSRAM；</li><li>ESP32-S3R8 核心模组。</li></ul>
+
+<p>具体项目仍然应该以板卡版本和实际芯片识别结果为准。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/09-02.jpg" alt="S3 ESP32 WROOM Çip N16R8 Diğer fixaj" loading="lazy"><figcaption><a href="https://shop.fixaj.com/s3-esp32-wroom-cip-n16r8-diger-fixaj-15305-48-B.jpg" target="_blank" rel="noopener">S3 ESP32 WROOM Çip N16R8 Diğer fixaj</a> · 搜索词：SPI NOR flash memory chip embedded ESP32 development board close up</figcaption></figure>
+
+
+<h3>1. Flash 和 RAM 的区别</h3>
+
+<div class="table-wrap"><table><thead><tr><th>特性</th><th>Flash</th><th>SRAM</th><th>PSRAM</th></tr></thead><tbody><tr><td>断电保存</td><td>是</td><td>否</td><td>否</td></tr><tr><td>主要用途</td><td>固件、配置、文件</td><td>实时运行数据</td><td>大型运行缓存</td></tr><tr><td>访问速度</td><td>相对较慢</td><td>快</td><td>通常低于内部 SRAM</td></tr><tr><td>擅长频繁读写</td><td>不适合直接当普通 RAM</td><td>适合</td><td>适合</td></tr><tr><td>擅长保存程序</td><td>是</td><td>否</td><td>通常不作为固件存储</td></tr></tbody></table></div>
+
+<p>这里特别注意：</p>
+
+<p>Flash 不是 RAM。</p>
+
+<p>程序虽然存储在 Flash 中，但运行时 ESP32-S3 可以通过 Flash 映射机制访问代码和只读数据。</p>
+
+<p>PSRAM 则主要用于运行时数据缓存。</p>
+
+<h3>2. Flash 为什么不能像 RAM 一样随意修改？</h3>
+
+<p>SPI NOR Flash 的写入和擦除具有特殊限制：</p>
+
+<ul><li>读取可以按字节进行；</li><li>编程通常要求遵循页编程规则；</li><li>擦除以扇区或更大的块为单位；</li><li>不能简单地把任意一个 bit 从 0 改成 1。</li></ul>
+
+<p>通常需要先擦除对应区域，再写入新数据。</p>
+
+<p>因此不能把 Flash 当成普通 C 数组：</p>
+
+<pre class="code"><code class="language-c">char *p = (char *)0x3F0000;
+
+p[0] = 123; // 不能这样直接写 Flash</code></pre>
+
+<p>要使用 ESP-IDF 提供的 Flash API、NVS 或文件系统。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、Partition Table：Flash 分区表是什么？</h2>
+
+<p>这是本课最核心的知识。</p>
+
+<p>假设你的开发板拥有 8MB Flash。</p>
+
+<p>如果将整个 Flash 都当成一个固件区域，那么就很难同时实现：</p>
+
+<ul><li>保存设备配置；</li><li>保存文件；</li><li>保存 OTA 固件；</li><li>保留旧版本固件；</li><li>存储设备校准数据。</li></ul>
+
+<p>因此需要把 Flash 划分成多个区域。</p>
+
+<p>这就是 Partition Table。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/09-03.jpg" alt="What Is Partition Table Entry at Fred Mounce blog" loading="lazy"><figcaption><a href="https://espressif.github.io/esp32-c3-book-en/Pics/D11Z/11-2.png" target="_blank" rel="noopener">What Is Partition Table Entry at Fred Mounce blog</a> · 搜索词：ESP32 flash partition table nvs otadata phy_init factory ota_0 ota_1 spiffs layout diagram</figcaption></figure>
+
+
+<h3>1. 常见 Flash 分区</h3>
+
+<div class="table-wrap"><table><thead><tr><th>分区</th><th>类型</th><th>作用</th></tr></thead><tbody><tr><td>NVS</td><td>data</td><td>保存 Wi-Fi、设备配置等</td></tr><tr><td>otadata</td><td>data</td><td>保存 OTA 启动选择信息</td></tr><tr><td>phy_init</td><td>data</td><td>保存无线 PHY 初始化数据</td></tr><tr><td>factory</td><td>app</td><td>出厂固件</td></tr><tr><td>ota_0</td><td>app</td><td>OTA 固件槽位 0</td></tr><tr><td>ota_1</td><td>app</td><td>OTA 固件槽位 1</td></tr><tr><td>spiffs</td><td>data</td><td>文件存储</td></tr><tr><td>littlefs</td><td>data</td><td>文件存储</td></tr></tbody></table></div>
+
+<p>不是每个项目都需要这些分区。</p>
+
+<p>例如普通联网设备可以只使用 NVS、otadata、两个 OTA 分区和 PHY 初始化分区。</p>
+
+<h3>2. 一个 8MB Flash 分区示意</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><strong>8MB Flash 概念布局</strong><div class="cg-box" style="--gap:1;--pad:0;"><div class="cg-box radius-sm" style="--gap:2;--pad:2;background:#64748b;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Bootloader</strong><span class="cg-text is-xs">约 32KB</span></div></div><div class="cg-box radius-sm" style="--gap:2;--pad:2;background:#0D9488;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Partition Table</strong><span class="cg-text is-xs">4KB</span></div></div><div class="cg-box radius-sm" style="--gap:2;--pad:2;background:#2563EB;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>NVS / OTA Data / PHY</strong><span class="cg-text is-xs">配置区</span></div></div><div class="cg-box radius-sm" style="--gap:2;--pad:3;background:#16A34A;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>OTA_0</strong><span class="cg-text is-xs">固件槽位</span></div></div><div class="cg-box radius-sm" style="--gap:2;--pad:3;background:#9333EA;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>OTA_1</strong><span class="cg-text is-xs">固件槽位</span></div></div><div class="cg-box radius-sm" style="--gap:2;--pad:3;background:#D97706;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>LittleFS / SPIFFS</strong><span class="cg-text is-xs">文件存储</span></div></div></div><div class="cg-caption">概念布局，不是可以直接烧录的实际地址表。各区域大小必须根据固件体积、Flash 实际容量和文件需求计算。</div></div>
+
+
+<h3>3. 为什么 OTA 需要两个分区？</h3>
+
+<p>假设设备当前运行：</p>
+
+<pre class="code"><code class="language-text">OTA_0：固件 V1.0
+OTA_1：空闲</code></pre>
+
+<p>现在你准备升级到 V1.1。</p>
+
+<p>不能直接覆盖正在运行的 V1.0。</p>
+
+<p>因为一旦下载失败或断电，设备可能无法正常启动。</p>
+
+<p>正确方式：</p>
+
+<pre class="code"><code class="language-text">当前运行 OTA_0
+       ↓
+下载 V1.1
+       ↓
+写入 OTA_1
+       ↓
+校验固件
+       ↓
+设置 OTA_1 为下次启动
+       ↓
+重启设备
+       ↓
+运行 V1.1</code></pre>
+
+<p>如果新固件启动失败并且启用了回滚机制，就可以恢复到 V1.0。</p>
+
+<p>这就是双分区 OTA 的基本原理。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、实际创建自己的 Flash 分区表</h2>
+
+<p>现在我们不只理解概念，还要学习如何在 ESP-IDF 中配置分区。</p>
+
+<p>ESP-IDF 使用 CSV 文件描述分区布局。</p>
+
+<p>例如创建：</p>
+
+<pre class="code"><code class="language-text">partitions.csv</code></pre>
+
+<h3>1. 一个适合 8MB Flash 的教学分区方案</h3>
+
+<p>下面是一个示例：</p>
+
+
+<pre class="code"><code class="language-csv"># Name,    Type, SubType, Offset,   Size,    Flags
+nvs,       data, nvs,     0x9000,   0x6000,
+otadata,   data, ota,     0xF000,   0x2000,
+phy_init,  data, phy,     0x11000,  0x1000,
+ota_0,     app,  ota_0,   0x20000,  0x280000,
+ota_1,     app,  ota_1,   0x2A0000, 0x280000,
+littlefs,  data, spiffs,  0x520000,0x2E0000,</code></pre>
+
+
+<p>这个例子总共使用 8MB Flash 的地址空间。</p>
+
+<div class="table-wrap"><table><thead><tr><th>分区</th><th>起始地址</th><th>大小</th></tr></thead><tbody><tr><td>NVS</td><td>0x9000</td><td>24KB</td></tr><tr><td>OTA Data</td><td>0xF000</td><td>8KB</td></tr><tr><td>PHY Init</td><td>0x11000</td><td>4KB</td></tr><tr><td>OTA_0</td><td>0x20000</td><td>2.5MB</td></tr><tr><td>OTA_1</td><td>0x2A0000</td><td>2.5MB</td></tr><tr><td>文件系统</td><td>0x520000</td><td>2.875MB</td></tr></tbody></table></div>
+
+<p>注意：</p>
+
+<ul><li>这是教学用分区布局，不是所有项目的通用最佳方案。</li><li><code>spiffs</code> 是分区子类型名称，实际使用 LittleFS 时需要相应文件系统组件支持。</li><li>OTA 固件必须能完整装入两个 OTA 分区。</li><li>还要为 Bootloader、分区表和其他系统数据保留空间。</li><li>实际构建时必须确认所有分区没有重叠，并且符合擦除扇区对齐要求。</li></ul>
+
+<h3>2. 如何让 ESP-IDF 使用这个文件？</h3>
+
+<p>打开：</p>
+
+<pre class="code"><code class="language-bash">idf.py menuconfig</code></pre>
+
+<p>进入：</p>
+
+<pre class="code"><code class="language-text">Partition Table
+    ↓
+Partition Table
+    ↓
+Custom partition table CSV
+    ↓
+partitions.csv</code></pre>
+
+<p>然后保存配置。</p>
+
+<p>也可以检查 <code>sdkconfig</code> 中的配置：</p>
+
+<pre class="code"><code class="language-text">CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=&quot;partitions.csv&quot;</code></pre>
+
+<h3>3. 编译并查看分区表</h3>
+
+<p>在项目目录执行：</p>
+
+<pre class="code"><code class="language-bash">idf.py build</code></pre>
+
+<p>编译后检查：</p>
+
+<pre class="code"><code class="language-text">build/
+├── bootloader/
+├── partition_table/
+│   └── partition-table.bin
+├── app.bin
+└── project.elf</code></pre>
+
+<p>还可以使用：</p>
+
+<pre class="code"><code class="language-bash">idf.py partition-table</code></pre>
+
+<p>查看最终分区表。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、NVS：为什么设备断电后还能记住 Wi-Fi 密码？</h2>
+
+<p>NVS 是 Non-Volatile Storage，即非易失性存储。</p>
+
+<p>它基于 Flash，用来保存设备配置。</p>
+
+<p>例如：</p>
+
+<ul><li>Wi-Fi SSID；</li><li>Wi-Fi 密码；</li><li>设备名称；</li><li>工作模式；</li><li>用户设置；</li><li>设备校准参数。</li></ul>
+
+<h3>1. NVS 工作原理</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>应用程序</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>NVS API</strong><span class="cg-text is-secondary is-xs">nvs_set_str / nvs_get_str / nvs_commit</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>NVS 分区</strong><span class="cg-text is-secondary is-xs">Flash 持久化存储</span></div></div>
+
+
+<h3>2. NVS 写入示例</h3>
+
+<pre class="code"><code class="language-c">#include &quot;nvs.h&quot;
+#include &quot;nvs_flash.h&quot;
+#include &quot;esp_err.h&quot;
+
+void save_device_name(void)
+{
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    nvs_handle_t handle;
+
+    ESP_ERROR_CHECK(
+        nvs_open(&quot;device&quot;, NVS_READWRITE, &amp;handle)
+    );
+
+    ESP_ERROR_CHECK(
+        nvs_set_str(
+            handle,
+            &quot;name&quot;,
+            &quot;XIAO_ESP32S3&quot;
+        )
+    );
+
+    ESP_ERROR_CHECK(nvs_commit(handle));
+
+    nvs_close(handle);
+}</code></pre>
+
+<h3>3. NVS 读取示例</h3>
+
+<pre class="code"><code class="language-c">void read_device_name(void)
+{
+    nvs_handle_t handle;
+
+    ESP_ERROR_CHECK(
+        nvs_open(&quot;device&quot;, NVS_READONLY, &amp;handle)
+    );
+
+    size_t required_size = 0;
+
+    esp_err_t err = nvs_get_str(
+        handle,
+        &quot;name&quot;,
+        NULL,
+        &amp;required_size
+    );
+
+    if (err == ESP_OK &amp;&amp; required_size &gt; 0) {
+
+        char name[64];
+
+        if (required_size &lt;= sizeof(name)) {
+
+            ESP_ERROR_CHECK(
+                nvs_get_str(
+                    handle,
+                    &quot;name&quot;,
+                    name,
+                    &amp;required_size
+                )
+            );
+
+            printf(&quot;Device name: %s\n&quot;, name);
+        }
+    }
+
+    nvs_close(handle);
+}</code></pre>
+
+<p>注意，真实工程还应该统一处理 <code>ESP_ERR_NVS_NOT_FOUND</code>、分区初始化失败和 NVS 分区需要升级或擦除的情况。</p>
+
+<h3>4. NVS 为什么不建议频繁写入？</h3>
+
+<p>Flash 有擦写寿命。</p>
+
+<p>如果你每隔 10ms 就把传感器数据写入 NVS，会造成大量写入操作。</p>
+
+<p>建议：</p>
+
+<ul><li>配置变化时写入；</li><li>重要状态变化时写入；</li><li>传感器实时数据放 RAM；</li><li>大量日志使用文件系统或专用存储方案；</li><li>需要高频记录时考虑外部存储器。</li></ul>
+
+<p><strong>NVS 更适合保存设备状态和配置，而不是作为实时数据记录器。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>六、OTA 回滚：升级失败后如何恢复？</h2>
+
+<p>这部分是产品开发非常重要的知识。</p>
+
+<p>假设：</p>
+
+<ul><li>OTA_0 当前运行 V1.0；</li><li>OTA_1 准备升级 V1.1。</li></ul>
+
+<p>新固件下载成功，不代表升级已经真正成功。</p>
+
+<p>因为新固件可能存在：</p>
+
+<ul><li>初始化失败；</li><li>Wi-Fi 无法连接；</li><li>外设驱动错误；</li><li>内存不足；</li><li>看门狗复位；</li><li>业务程序异常。</li></ul>
+
+<p>因此需要固件自检。</p>
+
+<h3>1. OTA 回滚工作机制</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>当前固件 V1.0</strong><span class="cg-badge color-success">正常运行</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>下载 V1.1 到 OTA_1</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>切换启动分区并重启</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-md" style="--gap:1;--pad:3;background:rgba(22,163,74,0.12);"><strong>自检成功</strong><span class="cg-icon" data-icon="check-circle" style="color:#16a34a;width:1.75rem;height:1.75rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></span><span class="cg-text is-secondary is-xs">确认 V1.1 有效</span></div></div><div class="cg-grid-item"><div class="cg-box radius-md" style="--gap:1;--pad:3;background:rgba(220,38,38,0.10);"><strong>自检失败</strong><span class="cg-icon" data-icon="alert-circle" style="color:currentColor;width:1.75rem;height:1.75rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span><span class="cg-text is-secondary is-xs">回滚到 V1.0</span></div></div></div></div>
+
+
+<h3>2. ESP-IDF 回滚配置</h3>
+
+<p>在 <code>menuconfig</code> 中找到：</p>
+
+<pre class="code"><code class="language-text">Component config
+    ↓
+ESP System Settings
+    ↓
+Bootloader config
+    ↓
+Enable app rollback support</code></pre>
+
+<p>对应配置通常是：</p>
+
+<pre class="code"><code class="language-text">CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y</code></pre>
+
+<p>具体菜单位置会随 ESP-IDF 版本变化。</p>
+
+<h3>3. 新固件启动自检</h3>
+
+<p>在 <code>app_main()</code> 中，可以使用：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_ota_ops.h&quot;
+#include &quot;esp_system.h&quot;
+#include &quot;esp_log.h&quot;
+
+static const char *TAG = &quot;OTA&quot;;
+
+void app_main(void)
+{
+    const esp_partition_t *running =
+        esp_ota_get_running_partition();
+
+    esp_ota_img_states_t state;
+
+    if (esp_ota_get_state_partition(
+            running,
+            &amp;state
+        ) == ESP_OK) {
+
+        if (state == ESP_OTA_IMG_PENDING_VERIFY) {
+
+            ESP_LOGI(TAG, &quot;New firmware, self testing&quot;);
+
+            bool test_ok = true;
+
+            // 这里应执行真实硬件和系统自检
+            // 例如 NVS、GPIO、关键外设、业务初始化
+
+            if (test_ok) {
+                ESP_ERROR_CHECK(
+                    esp_ota_mark_app_valid_cancel_rollback()
+                );
+            } else {
+                ESP_ERROR_CHECK(
+                    esp_ota_mark_app_invalid_rollback_and_reboot()
+                );
+            }
+        }
+    }
+}</code></pre>
+
+<p>这里的 <code>test_ok = true</code> 只是示例，不能直接用于生产设备。</p>
+
+<p>实际产品应该根据硬件初始化、系统稳定性和关键业务功能判断升级是否成功。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、Secure Boot：如何防止未经授权的固件运行？</h2>
+
+<p>现在进入嵌入式设备安全。</p>
+
+<p>假设你的设备已经部署在用户手中。</p>
+
+<p>有人可能尝试：</p>
+
+<ul><li>修改 Flash 固件；</li><li>刷入恶意固件；</li><li>替换 Bootloader；</li><li>读取程序内部的密钥；</li><li>修改设备控制逻辑。</li></ul>
+
+<p>Secure Boot 就是用于保护启动链的重要机制。</p>
+
+<h3>1. Secure Boot 工作原理</h3>
+
+<p>ESP32-S3 支持 Secure Boot V2。</p>
+
+<p>它使用数字签名验证启动代码和应用固件。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>Boot ROM</strong><span class="cg-text is-secondary is-xs">启动安全验证流程</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>验证 Bootloader 签名</strong><span class="cg-text is-secondary is-xs">确认可信启动代码</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>验证应用固件</strong><span class="cg-text is-secondary is-xs">检查数字签名和可信性</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.12);"><strong>执行经过验证的固件</strong></div></div>
+
+
+<p>如果固件签名不正确，安全启动机制会阻止其正常启动。</p>
+
+<h3>2. 数字签名是什么？</h3>
+
+<p>可以简单理解为：</p>
+
+<p>开发者使用私钥给固件生成签名。</p>
+
+<p>设备使用对应的可信公钥验证签名。</p>
+
+<pre class="code"><code class="language-text">开发电脑
+   ↓
+固件 firmware.bin
+   ↓
+私钥签名
+   ↓
+signed firmware
+   ↓
+烧录到 XIAO ESP32S3
+   ↓
+设备验证签名
+   ↓
+验证成功才允许执行</code></pre>
+
+<p>私钥必须保存在安全的位置，不能直接放进公开 GitHub 仓库。</p>
+
+<h3>3. Secure Boot 和普通 OTA 的区别</h3>
+
+<div class="table-wrap"><table><thead><tr><th>功能</th><th>普通 OTA</th><th>Secure Boot</th></tr></thead><tbody><tr><td>下载新固件</td><td>支持</td><td>不负责下载</td></tr><tr><td>验证数据完整性</td><td>可配置</td><td>结合签名验证</td></tr><tr><td>验证固件来源</td><td>不一定</td><td>通过可信签名链</td></tr><tr><td>阻止未授权固件</td><td>不一定</td><td>是其主要目标</td></tr><tr><td>解决断电升级</td><td>需要 OTA 分区和回滚</td><td>不负责解决</td></tr></tbody></table></div>
+
+<p>生产设备建议把 OTA、Secure Boot 和固件签名结合起来。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、Flash Encryption：防止别人直接读取固件</h2>
+
+<p>Secure Boot 主要解决固件是否可信。</p>
+
+<p>Flash Encryption 主要解决 Flash 中的数据保护。</p>
+
+<p>ESP32-S3 支持基于硬件加密机制的 Flash Encryption。</p>
+
+<h3>1. 工作原理</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>Flash 写入数据</strong><span class="cg-text is-secondary is-xs">固件、敏感数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>Flash Encryption</strong><span class="cg-text is-secondary is-xs">使用硬件密钥加密机制</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(59,130,246,0.12);"><strong>Flash 中保存密文</strong><span class="cg-text is-secondary is-xs">直接读取无法得到明文固件</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>芯片读取时自动解密</strong><span class="cg-text is-secondary is-xs">正常执行固件</span></div></div>
+
+
+<h3>2. 两种安全技术的区别</h3>
+
+<div class="table-wrap"><table><thead><tr><th>技术</th><th>解决的问题</th></tr></thead><tbody><tr><td>Secure Boot</td><td>谁可以运行固件</td></tr><tr><td>Flash Encryption</td><td>如何保护 Flash 数据</td></tr><tr><td>HTTPS</td><td>网络传输如何加密</td></tr><tr><td>MQTT Authentication</td><td>谁可以连接消息服务器</td></tr><tr><td>OTA Signature</td><td>谁可以发布升级固件</td></tr></tbody></table></div>
+
+<p>这几项并不互相替代。</p>
+
+<h3>3. 一个重要提醒</h3>
+
+<p>Secure Boot 和 Flash Encryption 都涉及 eFuse 配置。</p>
+
+<p>部分 eFuse 一旦烧写就无法恢复。</p>
+
+<p>因此不要为了学习而直接在自己的开发板上执行永久性安全配置。</p>
+
+<p>建议先使用 ESP-IDF 官方安全启动测试流程，熟悉签名、密钥、烧录和恢复机制，再考虑正式启用。</p>
+
+<p>官方资料：</p>
+
+<p><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/security/secure-boot-v2.html" target="_blank" rel="noopener">ESP32-S3 Secure Boot V2<span class="cg-ext" aria-hidden="true">↗</span></a><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/security/flash-encryption.html" target="_blank" rel="noopener">ESP32-S3 Flash Encryption<span class="cg-ext" aria-hidden="true">↗</span></a></p>
+
+<hr class="cg-divider"/>
+
+<h2>九、ESP-IDF 编译出来的文件分别是什么？</h2>
+
+<p>这是以后使用 Codex 开发和管理固件必须掌握的知识。</p>
+
+<p>当你执行：</p>
+
+<pre class="code"><code class="language-bash">idf.py build</code></pre>
+
+<p>ESP-IDF 不只是生成一个 BIN 文件，而是生成多个不同用途的文件。</p>
+
+<div class="table-wrap"><table><thead><tr><th>文件</th><th>用途</th></tr></thead><tbody><tr><td><code>bootloader.bin</code></td><td>第二阶段 Bootloader</td></tr><tr><td><code>partition-table.bin</code></td><td>Flash 分区表</td></tr><tr><td><code>app.bin</code></td><td>应用固件</td></tr><tr><td><code>project.elf</code></td><td>包含调试信息的 ELF 文件</td></tr><tr><td><code>project.map</code></td><td>链接地址和内存占用信息</td></tr><tr><td><code>flasher_args.json</code></td><td>烧录地址和文件信息</td></tr><tr><td><code>sdkconfig</code></td><td>工程配置</td></tr></tbody></table></div>
+
+<h3>1. BIN 和 ELF 有什么区别？</h3>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><span class="cg-icon" data-icon="file-binary" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M2 15h2v4H2z"/><path d="M9 15h2v4H9z"/></svg></span><strong>BIN 文件</strong><span class="cg-text is-secondary is-xs">适合烧录到 Flash 的固件二进制数据。</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><span class="cg-icon" data-icon="file-code" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg></span><strong>ELF 文件</strong><span class="cg-text is-secondary is-xs">包含程序段、符号和调试信息，适合 GDB 分析。</span></div></div></div>
+
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-bash">idf.py build</code></pre>
+
+<p>生成：</p>
+
+<pre class="code"><code class="language-text">build/
+├── bootloader/
+│   └── bootloader.bin
+├── partition_table/
+│   └── partition-table.bin
+├── xiao_firmware.bin
+├── xiao_firmware.elf
+├── xiao_firmware.map
+└── flasher_args.json</code></pre>
+
+<p>其中：</p>
+
+<ul><li>BIN 用于烧录和 OTA；</li><li>ELF 用于调试；</li><li>MAP 用于分析代码和内存布局。</li></ul>
+
+<h3>2. 如何查看固件大小？</h3>
+
+<p>ESP-IDF 提供：</p>
+
+<pre class="code"><code class="language-bash">idf.py size</code></pre>
+
+<p>查看整体占用。</p>
+
+<pre class="code"><code class="language-bash">idf.py size-components</code></pre>
+
+<p>查看不同组件占用。</p>
+
+<pre class="code"><code class="language-bash">idf.py size-files</code></pre>
+
+<p>查看不同目标文件占用。</p>
+
+<p>例如，你发现 MQTT、TLS、图像处理库占用过多，就可以进一步分析对应组件。</p>
+
+<h3>3. 如何检查固件是否超过 OTA 分区？</h3>
+
+<p>假设 OTA 分区为 2.5MB。</p>
+
+<p>编译出来的 <code>app.bin</code> 如果超过这个容量，就无法正常写入对应 OTA 分区。</p>
+
+<p>因此每次正式构建都应检查：</p>
+
+<pre class="code"><code class="language-text">Application binary size
+       ↓
+OTA partition size
+       ↓
+是否能够容纳
+       ↓
+是否预留增长空间</code></pre>
+
+<p>不要等到产品升级时才发现新固件装不进去。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、如何调试 ESP32-S3 的启动过程？</h2>
+
+<p>掌握启动原理之后，下一步就是学会分析启动日志。</p>
+
+<h3>1. 打开串口日志</h3>
+
+<p>可以使用：</p>
+
+<pre class="code"><code class="language-bash">idf.py monitor</code></pre>
+
+<p>或者：</p>
+
+<pre class="code"><code class="language-bash">idf.py -p /dev/cu.usbmodemXXXX monitor</code></pre>
+
+<p>Mac 上可以先检查串口：</p>
+
+<pre class="code"><code class="language-bash">ls /dev/cu.*</code></pre>
+
+<p>然后找到对应 XIAO ESP32S3 的串口设备。</p>
+
+<h3>2. 典型启动日志</h3>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">ESP-ROM:esp32s3-20210327
+
+Build:Mar 27 2021
+
+rst:0x1 (POWERON)
+
+boot:0x8 (SPI_FAST_FLASH_BOOT)
+
+I (30) boot: ESP-IDF v5.x
+
+I (40) boot: Partition Table:
+
+I (60) boot: nvs
+
+I (70) boot: otadata
+
+I (80) boot: ota_0
+
+I (100) cpu_start: Starting scheduler
+
+I (150) app_main: XIAO ESP32S3 Started!</code></pre>
+
+<p>不同芯片版本和 ESP-IDF 版本输出会不同，这里只是示意。</p>
+
+<h3>3. 常见启动故障</h3>
+
+<div class="table-wrap"><table><thead><tr><th>现象</th><th>可能原因</th></tr></thead><tbody><tr><td>找不到启动固件</td><td>Flash 内容或烧录地址错误</td></tr><tr><td>Invalid partition table</td><td>分区表损坏或布局错误</td></tr><tr><td>Invalid image</td><td>固件格式、完整性或签名错误</td></tr><tr><td>OTA 启动失败</td><td>分区空间不足或镜像异常</td></tr><tr><td>Boot loop</td><td>程序异常、看门狗或启动配置问题</td></tr><tr><td>Brownout</td><td>电源电压不稳定</td></tr></tbody></table></div>
+
+<h3>4. 如何分析崩溃地址？</h3>
+
+<p>ESP32-S3 出现异常时，串口可能打印：</p>
+
+<pre class="code"><code class="language-text">Guru Meditation Error
+
+Core 0 panic&#x27;ed
+
+Backtrace: 0x4037xxxx:0x3fcexxxx ...</code></pre>
+
+<p>可以使用：</p>
+
+<pre class="code"><code class="language-bash">idf.py monitor</code></pre>
+
+<p>配合当前工程的 ELF 文件解析回溯。</p>
+
+<p>也可以使用：</p>
+
+<pre class="code"><code class="language-bash">xtensa-esp32s3-elf-addr2line \
+    -e build/xiao_firmware.elf \
+    -a -f -p 0x4037xxxx</code></pre>
+
+<p>这样可以将异常地址映射到具体函数和源码位置。</p>
+
+<p>注意：地址必须替换成日志中真实的地址，而且必须使用产生该固件的同一版本 ELF 文件，否则解析结果可能不准确。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、把这些知识整合成一套 XIAO ESP32S3 产品固件架构</h2>
+
+<p>现在可以把前面九课的内容组合起来。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><h2 class="cg-title">XIAO ESP32S3 产品固件整体架构</h2><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>Application Layer</strong><span class="cg-text is-secondary is-xs">设备业务、用户逻辑、设备状态机</span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>Network</strong><span class="cg-text is-secondary is-xs">Wi-Fi / BLE / MQTT / OTA</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>Multimedia</strong><span class="cg-text is-secondary is-xs">Camera / I2S / JPEG / DSP</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>System</strong><span class="cg-text is-secondary is-xs">FreeRTOS / NVS / Event</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>Drivers</strong><span class="cg-text is-secondary is-xs">GPIO / I2C / SPI / UART</span></div></div></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>ESP-IDF Runtime</strong><span class="cg-text is-secondary is-xs">Bootloader / Scheduler / Drivers / Memory</span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>Flash + SRAM + PSRAM</strong><span class="cg-text is-secondary is-xs">固件、配置、运行数据、缓存</span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>ESP32-S3 Hardware</strong><span class="cg-text is-secondary is-xs">CPU / Wi-Fi / BLE / GPIO / DMA / I2S</span></div></div>
+
+
+<h3>推荐的工程目录</h3>
+
+<pre class="code"><code class="language-text">XIAO-ESP32S3-Projects/
+│
+├── boards/
+│   └── xiao_esp32s3/
+│       ├── board_config.h
+│       ├── pins.h
+│       └── partitions.csv
+│
+├── bootloader/
+│
+├── main/
+│   └── app_main.c
+│
+├── components/
+│   ├── xiao_bsp/
+│   ├── system_manager/
+│   ├── network_manager/
+│   ├── audio_manager/
+│   ├── camera_manager/
+│   ├── storage_manager/
+│   └── security_manager/
+│
+├── configs/
+│   ├── sdkconfig.defaults
+│   └── firmware_config.h
+│
+├── docs/
+│   ├── boot_process.md
+│   ├── flash_partition.md
+│   ├── ota_design.md
+│   ├── security_design.md
+│   └── firmware_release.md
+│
+└── tools/
+    ├── build.sh
+    ├── flash.sh
+    └── inspect_firmware.sh</code></pre>
+
+<p>这是一种推荐的组织方式。ESP-IDF 的 Bootloader 通常由构建系统生成，不需要把它当作普通应用组件手动维护。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、本课实战：自己检查 XIAO ESP32S3 的固件</h2>
+
+<p>建议使用现有的 ESP-IDF 工程进行实验。</p>
+
+<h3>实验一：检查芯片和 Flash 信息</h3>
+
+<pre class="code"><code class="language-c">#include &quot;esp_chip_info.h&quot;
+#include &quot;esp_flash.h&quot;
+#include &quot;esp_log.h&quot;
+
+void print_chip_info(void)
+{
+    esp_chip_info_t chip_info;
+
+    esp_chip_info(&amp;chip_info);
+
+    uint32_t flash_size = 0;
+
+    esp_flash_get_size(
+        NULL,
+        &amp;flash_size
+    );
+
+    printf(&quot;CPU cores: %d\n&quot;, chip_info.cores);
+
+    printf(
+        &quot;Flash size: %lu MB\n&quot;,
+        (unsigned long)(flash_size / (1024 * 1024))
+    );
+
+    printf(
+        &quot;Revision: %d\n&quot;,
+        chip_info.revision
+    );
+}</code></pre>
+
+<p>这可以帮助确认实际芯片信息和 Flash 容量。</p>
+
+<h3>实验二：读取当前运行分区</h3>
+
+<pre class="code"><code class="language-c">#include &quot;esp_ota_ops.h&quot;
+#include &quot;esp_partition.h&quot;
+
+void print_running_partition(void)
+{
+    const esp_partition_t *partition =
+        esp_ota_get_running_partition();
+
+    if (partition != NULL) {
+
+        printf(&quot;Partition: %s\n&quot;,
+               partition-&gt;label);
+
+        printf(&quot;Address: 0x%lx\n&quot;,
+               (unsigned long)partition-&gt;address);
+
+        printf(&quot;Size: %lu\n&quot;,
+               (unsigned long)partition-&gt;size);
+    }
+}</code></pre>
+
+<h3>实验三：检查 NVS</h3>
+
+<p>完成以下操作：</p>
+
+<ol><li>写入设备名称。</li><li>断电。</li><li>重新上电。</li><li>读取设备名称。</li><li>确认数据仍然存在。</li></ol>
+
+<h3>实验四：制作 OTA 测试固件</h3>
+
+<p>建议先使用两个简单版本：</p>
+
+<ul><li>V1.0：串口输出 <code>Firmware V1.0</code>。</li><li>V1.1：串口输出 <code>Firmware V1.1</code>。</li></ul>
+
+<p>完成：</p>
+
+<ol><li>烧录 V1.0。</li><li>使用 OTA 下载 V1.1。</li><li>检查启动分区变化。</li><li>验证 V1.1 是否正常运行。</li><li>再测试回滚机制。</li></ol>
+
+<p>不要一开始就在真实设备上启用 Secure Boot 和永久性 eFuse 配置。</p>
+
+<h2>十三、本课学习验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第九课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">理解 Boot ROM 和 Bootloader</span><span class="cg-text is-secondary is-xs">能够解释芯片从上电到 app_main 的启动过程。</span></div></span></label><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">查看 Flash 容量</span><span class="cg-text is-secondary is-xs">使用 ESP-IDF 获取真实 Flash 大小。</span></div></span></label><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">创建自定义分区表</span><span class="cg-text is-secondary is-xs">能够配置 NVS、OTA_0、OTA_1 和文件系统。</span></div></span></label><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">完成 NVS 读写</span><span class="cg-text is-secondary is-xs">断电后配置仍然保留。</span></div></span></label><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">查看 ELF 和 BIN 文件</span><span class="cg-text is-secondary is-xs">理解固件、调试文件和 MAP 文件的区别。</span></div></span></label><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">检查启动日志</span><span class="cg-text is-secondary is-xs">能够定位常见启动失败原因。</span></div></span></label><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">完成 OTA 升级实验</span><span class="cg-text is-secondary is-xs">实现 V1.0 到 V1.1 的升级。</span></div></span></label><label class="cg-check"><input type="checkbox" disabled/><span><div class="cg-box" style="--gap:2;--pad:0;"><span class="cg-text is-strong">理解安全启动和 Flash Encryption</span><span class="cg-text is-secondary is-xs">能够区分固件认证与 Flash 数据加密。</span></div></span></label></div>
+
+
+<h2>十四、下一课：ESP-IDF 工程构建、链接器与底层调试</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十课：从 C 代码到 ESP32-S3 可执行固件</h2><figure class="cg-figure"><img src="../tutorial/images/09-04.jpg" alt="STM32 Round-Robin Task Scheduler in Bare Metal C | Kshitij Vaze posted on the topic | LinkedIn" loading="lazy"><figcaption><a href="https://media.licdn.com/dms/image/v2/D5622AQHwg1bNx_OUMg/feedshare-shrink_800/B56ZtajLl5K8Ag-/0/1766750731641?e=2147483647&amp;t=5KgAeuzVOF0qeFMweiTSQhd6OQ4KZQRbQXAHFVDVd6o&amp;v=beta" target="_blank" rel="noopener">STM32 Round-Robin Task Scheduler in Bare Metal C | Kshitij Vaze posted on the topic | LinkedIn</a> · 搜索词：embedded firmware compilation pipeline C compiler linker ELF BIN ESP32 microcontroller diagram</figcaption></figure>
+  下一课将深入学习：
+
+<ol><li>C 代码如何变成机器指令。</li><li>GCC 编译器和 Xtensa 指令集。</li><li>预处理、编译、汇编和链接。</li><li>CMake 与 ESP-IDF 构建系统。</li><li>静态库和动态库的区别。</li><li>ELF 文件结构。</li><li>Linker Script 链接脚本。</li><li>IRAM、DRAM、Flash 和 PSRAM 的内存布局。</li><li>GDB、OpenOCD 和 JTAG 调试。</li><li>如何分析内存溢出、异常和性能瓶颈。</li></ol></div>
+
+
+<p><strong>第十课的目标：</strong> 不仅知道怎么写 ESP32-S3 程序，还能理解编译器如何生成机器代码、程序如何分配到芯片内存，以及如何通过调试器定位底层问题。</p>
+
+<p>这一步完成之后，你就开始具备独立分析 ESP-IDF 底层工程的能力，而不只是使用现成示例开发。</p>
+
+<p>官方资料：</p>
+
+<ul><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/startup.html" target="_blank" rel="noopener">ESP-IDF 启动流程<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/partition-tables.html" target="_blank" rel="noopener">Flash 分区表<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/storage/nvs_flash.html" target="_blank" rel="noopener">NVS 存储<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/tools/idf-size.html" target="_blank" rel="noopener">固件大小分析<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+
+<p><strong>学习建议：</strong> 目前先不要急于做复杂产品。把启动、分区、NVS、OTA 和编译调试这些基础打牢，后面你在 <code>XIAO-ESP32S3-Projects</code> 中管理和改造 GitHub 开源项目时，就能更准确地判断一个项目是否真正适合 XIAO ESP32S3。</p>
+</div></section>
+<nav class="lesson-nav"><a href="08-第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理.html">← 第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理</a><span class="spacer"></span><a href="10-第十课：ESP-IDF 工程构建、编译器、链接器与底层调试.html">第十课：ESP-IDF 工程构建、编译器、链接器与底层调试 →</a></nav>
+</main></body></html>

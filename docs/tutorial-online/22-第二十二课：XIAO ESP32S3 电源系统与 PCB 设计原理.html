@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理 · <a href="index.html">课程目录</a> · <a href="../tutorial/22-第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理</h1>
+
+<p>本课开始进入真正的硬件工程设计。</p>
+
+<p>前面第二十一课，我们学习了 GPIO、ADC、PWM、I2C、SPI、UART 和 I2S。</p>
+
+<p>现在要解决一个更基础、但也更容易导致硬件损坏的问题：</p>
+
+<p><strong>如何给 XIAO ESP32S3 设计稳定、可靠、安全的电源系统？</strong></p>
+
+<p>假设你正在设计一台智能语音终端，里面包含：</p>
+
+<ul><li>XIAO ESP32S3 普通版；</li><li>I2S 数字麦克风；</li><li>音频功放；</li><li>扬声器；</li><li>OLED 显示屏；</li><li>Wi-Fi 无线通信；</li><li>锂电池；</li><li>USB 充电接口。</li></ul>
+
+<p>为什么有些设备会出现：</p>
+
+<ul><li>Wi-Fi 发送时突然重启；</li><li>扬声器播放时 ESP32-S3 断电；</li><li>ADC 读数不断跳动；</li><li>麦克风产生明显噪声；</li><li>电池明明有电，设备却无法启动；</li><li>USB 插上后，电路板某个器件异常发热？</li></ul>
+
+<p>这些问题往往不是软件错误，而是电源设计问题。</p>
+
+<p>本课将从电源原理、计算、实际电路、PCB 布局、测试和 Codex 协作六个方面展开。</p>
+
+<hr class="cg-divider"/>
+
+<h2>一、先理解 XIAO ESP32S3 的电源结构</h2>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-01.jpg" alt="Comparison of Sleep Currents for XIAO ESP32C6, S3, and C3 - XIAO - Seeed Studio Forum" loading="lazy"><figcaption><a href="https://forum.seeedstudio.com/uploads/default/original/2X/5/50bd56aee6e732787e8a255af207b6289fd05b31.jpeg" target="_blank" rel="noopener">Comparison of Sleep Currents for XIAO ESP32C6, S3, and C3 - XIAO - Seeed Studio Forum</a> · 搜索词：Seeed Studio XIAO ESP32S3 standard board power circuit schematic USB battery pinout</figcaption></figure>
+
+
+<p>XIAO ESP32S3 普通版开发板可以通过 USB 等支持的供电方式工作，也提供与电源相关的接口。</p>
+
+<p>首先需要区分三个概念：</p>
+
+<div class="table-wrap"><table><thead><tr><th>名称</th><th>含义</th></tr></thead><tbody><tr><td>USB 5V / VBUS</td><td>USB 接口提供的电源</td></tr><tr><td>3V3</td><td>板载稳压后的 3.3V 电源轨</td></tr><tr><td>BAT</td><td>与板载电池电源电路相关的接口</td></tr></tbody></table></div>
+
+<p>这里有一个非常重要的区别：</p>
+
+<p><strong>XIAO ESP32S3 的 3V3 引脚不是可以随意输入 5V 的电源接口。</strong></p>
+
+<p>必须根据实际供电路径和官方电路确认允许的电压。</p>
+
+<h3>1. 电源系统的基本工作路径</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">典型电源架构</h2><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><span class="cg-icon" data-icon="usb" style="color:currentColor;width:1.75rem;height:1.75rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="1"/><circle cx="4" cy="20" r="1"/><path d="M4.7 19.3 19 5"/><path d="m21 3-3 1 2 2Z"/><path d="M9.26 7.68 5 12l2 5"/><path d="m10 14 5 2 4-4"/></svg></span><strong>USB 输入</strong><span class="cg-text is-secondary is-xs">5V 电源</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><span class="cg-icon" data-icon="battery" style="color:currentColor;width:1.75rem;height:1.75rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="10" x="2" y="7" rx="2"/><path d="M22 11v2"/><path d="M6 11v2"/><path d="M10 11v2"/><path d="M14 11v2"/></svg></span><strong>锂电池</strong><span class="cg-text is-secondary is-xs">单节电池电压</span></div></div></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>电源管理与稳压电路</strong><span class="cg-text is-secondary is-xs">保护、充电、稳压、供电路径</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>3.3V 电源轨</strong></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:2;"><strong>ESP32-S3</strong></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:2;"><strong>传感器</strong></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:2;"><strong>OLED</strong></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:2;"><strong>其他外围电路</strong></div></div></div></div>
+
+
+<p>上图是理解电源系统的通用架构，不代表 XIAO 板载电路的精确拓扑。</p>
+
+<p>实际设计时，应以官方原理图确认 USB、BAT、3V3、充电管理和稳压器之间的连接关系。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、为什么 ESP32-S3 需要稳定的 3.3V 电源？</h2>
+
+<p>ESP32-S3 内部包含：</p>
+
+<ul><li>双核 CPU；</li><li>SRAM；</li><li>Wi-Fi 射频；</li><li>Bluetooth LE；</li><li>GPIO；</li><li>ADC；</li><li>I2S；</li><li>SPI；</li><li>USB 控制器。</li></ul>
+
+<p>这些模块在工作时会消耗电流。</p>
+
+<p>尤其是 Wi-Fi 无线发射阶段，电流需求可能快速变化。</p>
+
+<h3>1. 电源电压为什么会突然下降？</h3>
+
+<p>假设电源输出 3.3V。</p>
+
+<p>设备正常工作时：</p>
+
+<pre class="code"><code class="language-text">3.3V ───────────────────</code></pre>
+
+<p>当 Wi-Fi 开始发射时，瞬间电流增加。</p>
+
+<p>如果稳压器响应不足、电源路径阻抗过大或电容配置不合理：</p>
+
+<pre class="code"><code class="language-text">3.3V ──────\___/────────</code></pre>
+
+<p>电压可能短暂下降。</p>
+
+<p>当电压下降到芯片工作允许范围之外，就可能出现：</p>
+
+<ul><li>Brownout；</li><li>系统复位；</li><li>Wi-Fi 断开；</li><li>音频数据异常；</li><li>外设重新初始化。</li></ul>
+
+<h3>2. 什么是 Brownout？</h3>
+
+<p>Brownout 是欠压检测机制。</p>
+
+<p>当芯片供电电压低于设定的安全阈值时，系统可能触发欠压复位。</p>
+
+<p>ESP-IDF 可以读取复位原因：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_system.h&quot;
+#include &quot;esp_log.h&quot;
+
+void print_reset_reason(void)
+{
+    esp_reset_reason_t reason =
+        esp_reset_reason();
+
+    ESP_LOGI(
+        &quot;POWER&quot;,
+        &quot;Reset reason: %d&quot;,
+        (int)reason
+    );
+}</code></pre>
+
+<p>如果怀疑电源问题，应结合示波器测量电压波形，而不是只依靠软件日志。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、LDO 稳压器：最容易理解的稳压电路</h2>
+
+<p>LDO 的全称是 Low Dropout Regulator，即低压差线性稳压器。</p>
+
+<p>它的作用是把较高的输入电压稳定为较低的输出电压。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">5V 输入
+   |
+   ↓
+LDO
+   |
+   ↓
+3.3V 输出</code></pre>
+
+<h3>1. LDO 的工作原理</h3>
+
+<p>LDO 通过内部调整元件控制输出电压。</p>
+
+<p>当负载变化时，内部控制环路调整输出，使电压尽量保持稳定。</p>
+
+<h3>2. LDO 的功耗计算</h3>
+
+<p>线性稳压器的主要损耗为：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mo>=</mo><mo stretchy="false">(</mo><msub><mi>V</mi><mo>−</mo></msub><msub><mi>V</mi><mo stretchy="false">)</mo></msub><mo>×</mo><mi>I</mi></mrow><annotation encoding="application/x-tex">P=(V_-V_)\times I</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.1052em;vertical-align:-0.3552em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2583em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mbin mtight">−</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2083em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mclose mtight">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span></span></span></span></span>
+
+
+<p>假设：</p>
+
+<ul><li>输入电压：5V；</li><li>输出电压：3.3V；</li><li>负载电流：300mA。</li></ul>
+
+<p>那么：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mo>=</mo><mo stretchy="false">(</mo><mn>5</mn><mo>−</mo><mn>3.3</mn><mo stretchy="false">)</mo><mo>×</mo><mn>0.3</mn></mrow><annotation encoding="application/x-tex">P=(5-3.3)\times0.3</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">5</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">3.3</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.3</span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mo>=</mo><mn>0.51</mn><mi>W</mi></mrow><annotation encoding="application/x-tex">P=0.51W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">0.51</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span></span>
+
+
+<p>也就是说，LDO 需要消耗约 0.51W 的功率。</p>
+
+<p>这部分能量主要转化为热量。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">LDO 功耗示例</h2><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:2;--pad:3;"><span class="cg-text is-secondary is-xs">输入功率</span><h3 class="cg-title">1.50W</h3></div></div><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:2;--pad:3;"><span class="cg-text is-secondary is-xs">输出功率</span><h3 class="cg-title">0.99W</h3></div></div></div><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><span class="cg-text is-secondary is-xs">理论损耗</span><h3 class="cg-title">0.51W</h3><span class="cg-text is-secondary is-xs">主要以热量形式耗散</span></div></div>
+
+
+<h3>3. LDO 效率</h3>
+
+<p>忽略静态电流时：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>η</mi><mo>≈</mo><mfrac><msub><mi>V</mi><mrow><mi>o</mi><mi>u</mi><mi>t</mi></mrow></msub><msub><mi>V</mi><mrow><mi>i</mi><mi>n</mi></mrow></msub></mfrac><mo>×</mo><mn>100</mn><mi mathvariant="normal">%</mi></mrow><annotation encoding="application/x-tex">\eta\approx\frac{V_{out}}{V_{in}}\times100\%</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6776em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">η</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.836em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">in</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">t</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.836em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">100%</span></span></span></span></span>
+
+
+<p>因此：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>η</mi><mo>≈</mo><mfrac><mn>3.3</mn><mn>5</mn></mfrac><mo>×</mo><mn>100</mn><mi mathvariant="normal">%</mi><mo>=</mo><mn>66</mn><mi mathvariant="normal">%</mi></mrow><annotation encoding="application/x-tex">\eta\approx\frac{3.3}{5}\times100\%=66\%</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6776em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">η</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">5</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">3.3</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">100%</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">66%</span></span></span></span></span>
+
+
+<p>这意味着输入和输出之间有相当一部分能量被消耗掉了。</p>
+
+<h3>4. LDO 适合什么场景？</h3>
+
+<p>适合：</p>
+
+<ul><li>小电流传感器；</li><li>低噪声模拟电路；</li><li>电源电流较小的模块；</li><li>输入输出压差较小的场景。</li></ul>
+
+<p>但不一定适合大电流、长时间工作的电池供电系统。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、DC-DC 降压转换器：为什么效率通常更高？</h2>
+
+<p>DC-DC 是开关型电源转换技术。</p>
+
+<p>常见的降压转换器叫 Buck Converter。</p>
+
+<p>它通过开关管、电感、电容和控制电路实现电压转换。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-02.jpg" alt="Buck Converter Circuit Diagram, Working and Applications" loading="lazy"><figcaption><a href="https://www.hackatronic.com/wp-content/uploads/2025/05/Buck-Converter-Circuit.webp" target="_blank" rel="noopener">Buck Converter Circuit Diagram, Working and Applications</a> · 搜索词：buck converter DC DC step down power supply circuit schematic inductor MOSFET diode capacitor</figcaption></figure>
+
+
+<h3>1. 基本工作过程</h3>
+
+<pre class="code"><code class="language-text">输入电压
+   |
+   ↓
+开关管快速开关
+   |
+   ↓
+电感储能与释放
+   |
+   ↓
+电容滤波
+   |
+   ↓
+稳定输出电压</code></pre>
+
+<h3>2. 为什么效率更高？</h3>
+
+<p>因为它不是简单地把多余电压转化为热量。</p>
+
+<p>它通过开关和储能元件传递能量。</p>
+
+<p>假设：</p>
+
+<ul><li>输入 5V；</li><li>输出 3.3V；</li><li>输出电流 500mA；</li><li>效率 90%。</li></ul>
+
+<p>输出功率：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mo>=</mo></msub><mn>3.3</mn><mo>×</mo><mn>0.5</mn><mo>=</mo><mn>1.65</mn><mi>W</mi></mrow><annotation encoding="application/x-tex">P_=3.3\times0.5=1.65W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">3.3</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">1.65</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span></span>
+
+
+<p>输入功率：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mo>=</mo></msub><mfrac><mn>1.65</mn><mn>0.9</mn></mfrac><mo>≈</mo><mn>1.833</mn><mi>W</mi></mrow><annotation encoding="application/x-tex">P_=\frac{1.65}{0.9}
+\approx1.833W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">0.9</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1.65</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">1.833</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span></span>
+
+
+<p>损耗：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mo>=</mo></msub><mn>1.833</mn><mo>−</mo><mn>1.65</mn><mo>=</mo><mn>0.183</mn><mi>W</mi></mrow><annotation encoding="application/x-tex">P_=1.833-1.65
+=0.183W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">1.833</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1.65</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">0.183</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span></span>
+
+
+<p>与前面 LDO 示例相比，损耗明显降低。</p>
+
+<h3>3. LDO 和 DC-DC 对比</h3>
+
+<div class="table-wrap"><table><thead><tr><th>项目</th><th>LDO</th><th>Buck DC-DC</th></tr></thead><tbody><tr><td>电路复杂度</td><td>低</td><td>较高</td></tr><tr><td>效率</td><td>与压差有关</td><td>通常较高</td></tr><tr><td>发热</td><td>较明显</td><td>通常较低</td></tr><tr><td>输出噪声</td><td>通常较低</td><td>有开关纹波</td></tr><tr><td>外围元件</td><td>少</td><td>电感、电容等</td></tr><tr><td>适用场景</td><td>小电流、低噪声</td><td>较大功率、电池供电</td></tr></tbody></table></div>
+
+<h3>4. 智能语音终端如何选择？</h3>
+
+<p>我的建议是：</p>
+
+<ul><li>主控供电：使用经过验证、满足瞬态电流要求的 3.3V 电源。</li><li>功放供电：根据功放芯片要求独立设计电源支路。</li><li>模拟音频：必要时增加低噪声电源滤波。</li><li>电池供电：优先评估 DC-DC 的效率和静态功耗。</li></ul>
+
+<p>不要认为所有模块都必须从同一个 3.3V 电源直接取电。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、锂电池供电：单节电池的工作原理</h2>
+
+<p>你的智能终端如果要脱离 USB 使用，就需要电池供电。</p>
+
+<p>常见方案是单节锂离子电池或锂聚合物电池。</p>
+
+<p>典型参数：</p>
+
+<div class="table-wrap"><table><thead><tr><th>参数</th><th>典型值</th></tr></thead><tbody><tr><td>标称电压</td><td>3.7V</td></tr><tr><td>满充电压</td><td>4.2V</td></tr><tr><td>放电截止电压</td><td>依电池规格确定</td></tr><tr><td>电池容量</td><td>由产品需求决定</td></tr></tbody></table></div>
+
+<p>注意：不同电池化学体系和规格可能不同，必须以电池厂商数据手册为准。</p>
+
+<h3>1. 电池电压变化</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-03.jpg" alt="Solar Panels V/s Batteries - Understanding the key Difference" loading="lazy"><figcaption><a href="https://media.licdn.com/dms/image/v2/D5612AQGmHPAWR4E-fA/article-inline_image-shrink_400_744/article-inline_image-shrink_400_744/0/1723315159574?e=2147483647&amp;t=exyNOovdGCE45fCu0ItxlnChWmAo8SVQb2mMUe7Dxoo&amp;v=beta" target="_blank" rel="noopener">Solar Panels V/s Batteries - Understanding the key Difference</a> · 搜索词：single cell lithium ion battery voltage discharge curve 4.2V 3.7V 3.0V graph</figcaption></figure>
+
+
+<p>锂电池放电过程中，电压不是恒定的。</p>
+
+<p>可以粗略理解为：</p>
+
+<pre class="code"><code class="language-text">满电：4.2V
+
+正常工作：约 3.7V
+
+低电量：电压逐渐下降
+
+达到保护或截止条件：停止放电</code></pre>
+
+<p>所以，不能简单地把电池直接连接到要求稳定 3.3V 的负载上。</p>
+
+<h3>2. 电池供电架构</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>单节锂电池</strong><span class="cg-text is-secondary is-xs">3.0～4.2V，示意范围</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>电池保护与电源管理</strong><span class="cg-text is-secondary is-xs">过充、过放、过流及供电路径</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>Buck-Boost</strong><span class="cg-text is-secondary is-xs">稳定 3.3V</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>功放电源</strong><span class="cg-text is-secondary is-xs">按功放要求设计</span></div></div></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>主控与外围设备</strong></div></div>
+
+
+<p>这里的 Buck-Boost 是一种可升可降压的转换器。</p>
+
+<p>它适合输入电压可能高于或低于目标输出电压的场景。</p>
+
+<p>但是否需要使用，要看电池电压范围、效率和成本。</p>
+
+<h3>3. 充电和供电不是一回事</h3>
+
+<p>电池充电电路负责按照规定的充电曲线给电池充电。</p>
+
+<p>电源管理电路负责给系统供电。</p>
+
+<p>如果设备需要一边充电一边工作，还需要考虑 Power Path 电源路径管理。</p>
+
+<p>不能简单地把一个充电芯片和一个电池接上，就认为整个系统已经具备完善的边充边用功能。</p>
+
+<hr class="cg-divider"/>
+
+<h2>六、Wi-Fi 瞬态电流：为什么电源必须留有余量？</h2>
+
+<p>这是 ESP32-S3 电源设计的关键。</p>
+
+<p>假设系统平时消耗 100mA。</p>
+
+<p>当 Wi-Fi 发射时，负载电流可能短时间显著增加。</p>
+
+<p>如果电源设计只按照平均电流计算，就可能导致电压跌落。</p>
+
+<h3>1. 计算电源容量</h3>
+
+<p>假设一个示意项目：</p>
+
+<div class="table-wrap"><table><thead><tr><th>模块</th><th>设计电流预算</th></tr></thead><tbody><tr><td>XIAO ESP32S3</td><td>500mA</td></tr><tr><td>OLED</td><td>30mA</td></tr><tr><td>I2S 麦克风</td><td>10mA</td></tr><tr><td>其他传感器</td><td>40mA</td></tr><tr><td>合计</td><td>580mA</td></tr></tbody></table></div>
+
+<p>这里的数值是设计预算示例，不是板卡的实测电流。</p>
+
+<p>如果预留 30% 设计余量：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mo>=</mo></msub><mn>580</mn><mo>×</mo><mn>1.3</mn></mrow><annotation encoding="application/x-tex">I_=580\times1.3</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">580</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1.3</span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mo>=</mo></msub><mn>754</mn><mi>m</mi><mi>A</mi></mrow><annotation encoding="application/x-tex">I_=754mA</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">754</span><span class="mord mathnormal">m</span><span class="mord mathnormal">A</span></span></span></span></span>
+
+
+<p>这时就不能随意选择一个标称输出只有 500mA 的稳压器。</p>
+
+<p>还要检查：</p>
+
+<ul><li>瞬态响应；</li><li>输入电压范围；</li><li>输出电容要求；</li><li>温升；</li><li>限流保护；</li><li>PCB 铜箔承载能力。</li></ul>
+
+<h3>2. 为什么功放要单独考虑？</h3>
+
+<p>假设功放在大音量播放时需要较大电流。</p>
+
+<p>如果主控和功放共用一条细长的 3.3V 供电走线，就可能产生：</p>
+
+<ul><li>电源压降；</li><li>地弹噪声；</li><li>音频底噪；</li><li>主控重启。</li></ul>
+
+<p>因此建议根据实际功放芯片的供电要求设计独立的电源支路。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、去耦电容：电源设计中最容易被忽视的元件</h2>
+
+<p>电容不仅用于滤波，还可以在负载电流快速变化时提供局部电荷。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">3.3V 电源
+    |
+    +------ ESP32-S3
+    |
+   0.1uF
+    |
+   GND
+
+    |
+   10uF
+    |
+   GND</code></pre>
+
+<p>这只是简化示意。</p>
+
+<h3>1. 为什么常见 0.1μF？</h3>
+
+<p>0.1μF 陶瓷电容常用于高频去耦。</p>
+
+<p>它能够为芯片附近的快速电流变化提供局部电荷，并降低电源线上高频噪声。</p>
+
+<h3>2. 为什么还要 10μF？</h3>
+
+<p>较大容量的电容可以帮助处理较低频率的电源波动和负载变化。</p>
+
+<h3>3. 电容应该放在哪里？</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-04.jpg" alt="Decoupling Capacitors Matter in PCB Design" loading="lazy"><figcaption><a href="https://blindburiedcircuits.com/wp-content/uploads/2025/04/Decoupling-Capacitors-1536x872.jpg" target="_blank" rel="noopener">Decoupling Capacitors Matter in PCB Design</a> · 搜索词：PCB decoupling capacitor placement close to IC power pin ground plane layout example</figcaption></figure>
+
+
+<p>核心原则：</p>
+
+<p><strong>去耦电容应尽可能靠近对应芯片的电源引脚，并形成短而低阻抗的回流路径。</strong></p>
+
+<p>不是把电容放在 PCB 上任意一个位置就能发挥相同效果。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、PCB 电源走线：为什么走线宽度非常重要？</h2>
+
+<p>PCB 铜箔并不是理想导线。</p>
+
+<p>它存在电阻和寄生电感。</p>
+
+<p>当电流通过走线时：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mo>=</mo></msub><mi>I</mi><mo>×</mo><mi>R</mi></mrow><annotation encoding="application/x-tex">V_=I\times R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span></span>
+
+
+<p>如果走线太细、太长，压降和发热可能增大。</p>
+
+<h3>1. 走线电阻</h3>
+
+<p>对于一段均匀铜箔：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mo>=</mo><mi>ρ</mi><mfrac><mi>L</mi><mrow><mi>W</mi><mi>t</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">R=\rho\frac{L}{Wt}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0463em;vertical-align:-0.686em;"></span><span class="mord mathnormal">ρ</span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mord mathnormal">t</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">L</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ρ</mi></mrow><annotation encoding="application/x-tex">\rho</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">ρ</span></span></span></span>：铜的电阻率；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span></span></span></span>：走线长度；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>W</mi></mrow><annotation encoding="application/x-tex">W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span>：走线宽度；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi></mrow><annotation encoding="application/x-tex">t</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6151em;"></span><span class="mord mathnormal">t</span></span></span></span>：铜厚。</li></ul>
+
+<p>可以看出：</p>
+
+<ul><li>走线越长，电阻越大；</li><li>走线越宽，电阻越小；</li><li>铜厚越大，电阻越小。</li></ul>
+
+<h3>2. 为什么大电流走线需要更宽？</h3>
+
+<p>假设电源支路需要承载较大的功放电流。</p>
+
+<p>如果走线过细，就可能出现：</p>
+
+<ul><li>压降；</li><li>局部发热；</li><li>电源稳定性下降。</li></ul>
+
+<p>因此在 PCB 设计中，电源走线需要根据电流、铜厚、允许温升和走线长度进行计算。</p>
+
+<p>不能只凭肉眼判断。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、GND 地线设计：为什么所有模块都需要共同参考地？</h2>
+
+<p>GND 是电路中的参考电位。</p>
+
+<p>假设 XIAO ESP32S3 和一个外部传感器分别使用独立电源。</p>
+
+<p>如果两者需要通过普通 GPIO 进行数字通信，就必须确保信号电平具有共同参考。</p>
+
+<p>典型连接：</p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3          外部传感器
+
+3.3V  --------------- VCC
+
+GPIO  --------------- DATA
+
+GND   --------------- GND</code></pre>
+
+<p>如果没有公共地，双方可能无法正确识别对方的高低电平。</p>
+
+<h3>1. 什么是地线压降？</h3>
+
+<p>地线也存在电阻。</p>
+
+<p>当大电流通过地线时，地线两端会产生电压差：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mo>=</mo></msub><mi>I</mi><mo>×</mo><mi>R</mi></mrow><annotation encoding="application/x-tex">V_=I\times R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span></span>
+
+
+<p>假设：</p>
+
+<ul><li>电流为 1A；</li><li>地线等效电阻为 0.05Ω。</li></ul>
+
+<p>则：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mo>=</mo></msub><mn>1</mn><mo>×</mo><mn>0.05</mn><mo>=</mo><mn>0.05</mn><mi>V</mi></mrow><annotation encoding="application/x-tex">V_=1\times0.05=0.05V</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.05</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">0.05</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span></span></span></span></span>
+
+
+<p>也就是 50mV。</p>
+
+<p>对于数字电路，这可能影响噪声裕量；对于音频和模拟测量，也可能产生明显干扰。</p>
+
+<h3>2. 什么是地弹噪声？</h3>
+
+<p>当功放、电机或其他大电流负载快速变化时，地线电流也会变化。</p>
+
+<p>如果不同模块共用一段阻抗较大的地线，就可能导致局部地电位发生变化。</p>
+
+<p>这种现象称为 Ground Bounce，也常被称为地弹。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-05.jpg" alt="EMC and Interference Management and Suppression" loading="lazy"><figcaption><a href="https://media.monolithicpower.com/wysiwyg/Educational/Automotive_Chapter_12_Fig6-_960_x_504.png" target="_blank" rel="noopener">EMC and Interference Management and Suppression</a> · 搜索词：PCB ground bounce shared ground impedance high current circuit return current path illustration</figcaption></figure>
+
+
+<h3>3. 推荐的 PCB 接地方式</h3>
+
+<p>对于你的语音终端，建议优先考虑：</p>
+
+<ul><li>使用连续、完整的地平面；</li><li>缩短大电流回流路径；</li><li>功放电流不要经过主控敏感区域的狭窄地线；</li><li>ADC 输入附近避免高噪声开关节点；</li><li>音频输入和功放输出合理分区；</li><li>不要随意切割地平面。</li></ul>
+
+<p>这里有一个重要知识：</p>
+
+<p><strong>模拟地和数字地不意味着一定要在 PCB 上物理分割。</strong></p>
+
+<p>很多情况下，连续的完整地平面比随意分割地线更可靠。</p>
+
+<p>如果确实需要分区，应根据实际电流回流路径设计，而不是简单地把 AGND 和 DGND 分开后只用一根细线连接。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、模拟电路与数字电路如何分区？</h2>
+
+<p>XIAO ESP32S3 的 Wi-Fi、数字时钟、USB 和高速开关电路都可能产生电磁干扰。</p>
+
+<p>而麦克风、ADC 和音频模拟输入通常对噪声比较敏感。</p>
+
+<p>所以 PCB 应当合理分区。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-06.jpg" alt="EMC Design Guidelines in PCB Layout Design - PCB Design &amp; Layout - PCBway" loading="lazy"><figcaption><a href="https://pcbwayfile.s3.us-west-2.amazonaws.com/web/25/09/17/1349501996831ab8d7e734129bac0d33ce3b5c0c15584t.png" target="_blank" rel="noopener">EMC Design Guidelines in PCB Layout Design - PCB Design &amp; Layout - PCBway</a> · 搜索词：PCB mixed signal analog digital layout partitioning ground plane microphone audio power amplifier RF circuit example</figcaption></figure>
+
+
+<h3>1. 推荐的功能分区</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">智能语音终端 PCB 分区示意</h2><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-md" style="--gap:1;--pad:3;background:#2563eb18;"><strong>数字主控区</strong><span class="cg-text is-secondary is-xs">XIAO ESP32S3、USB、数字接口</span></div></div><div class="cg-grid-item"><div class="cg-box radius-md" style="--gap:1;--pad:3;background:#0d948818;"><strong>音频输入区</strong><span class="cg-text is-secondary is-xs">麦克风、输入信号</span></div></div><div class="cg-grid-item"><div class="cg-box radius-md" style="--gap:1;--pad:3;background:#7c3aed18;"><strong>功放输出区</strong><span class="cg-text is-secondary is-xs">功放芯片、扬声器接口</span></div></div><div class="cg-grid-item"><div class="cg-box radius-md" style="--gap:1;--pad:3;background:#d9770618;"><strong>电源管理区</strong><span class="cg-text is-secondary is-xs">稳压器、电池、充电管理</span></div></div></div><span class="cg-text is-secondary is-xs">这是功能布局示意，并非经过电磁兼容验证的 PCB 布局。</span></div>
+
+
+<h3>2. 麦克风为什么应该远离功放？</h3>
+
+<p>功放输出可能存在较大的电流变化。</p>
+
+<p>扬声器线缆也可能产生电磁干扰。</p>
+
+<p>如果麦克风输入电路靠近功放输出走线，就可能出现：</p>
+
+<ul><li>音频底噪；</li><li>电源噪声；</li><li>啸叫；</li><li>高频干扰；</li><li>信号失真。</li></ul>
+
+<p>建议：</p>
+
+<ol><li>麦克风尽量靠近设备的声音入口。</li><li>麦克风信号线尽量短。</li><li>功放与麦克风输入保持合理距离。</li><li>扬声器输出走线避免穿越敏感模拟输入区域。</li><li>功放电源和回流路径尽量靠近功放自身。</li></ol>
+
+<p>对于数字 I2S 麦克风，还需要考虑 BCLK 和数据线的串扰、时钟边沿以及信号完整性。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、USB 接口保护：为什么外部接口需要 ESD 防护？</h2>
+
+<p>XIAO ESP32S3 使用 USB 接口进行供电、下载和通信。</p>
+
+<p>如果未来设计自己的外围 PCB，可能还会引出：</p>
+
+<ul><li>USB-C；</li><li>UART；</li><li>外部按键；</li><li>音频接口；</li><li>传感器接口。</li></ul>
+
+<p>这些接口都有可能接触外部环境。</p>
+
+<p>静电放电可能直接损坏芯片或导致设备异常。</p>
+
+<h3>1. ESD 保护电路</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-07.jpg" alt="usb c - ESD protection at CC pins of USB C - Electrical Engineering Stack Exchange" loading="lazy"><figcaption><a href="https://i.sstatic.net/cwI8bFKg.png" target="_blank" rel="noopener">usb c - ESD protection at CC pins of USB C - Electrical Engineering Stack Exchange</a> · 搜索词：USB Type C D+ D- TVS ESD protection diode schematic circuit</figcaption></figure>
+
+
+<p>对于 USB 数据线，通常可以考虑专用低电容 ESD 保护器件。</p>
+
+<p>对于外部 GPIO 接口，则应根据电压范围、信号速度和接口环境选择保护方案。</p>
+
+<h3>2. ESD 器件应该放在哪里？</h3>
+
+<p>基本原则：</p>
+
+<p><strong>尽量靠近外部连接器放置。</strong></p>
+
+<p>原因是静电应当在进入 PCB 内部敏感电路之前被泄放。</p>
+
+<p>布局时还应注意：</p>
+
+<ul><li>ESD 器件到连接器的走线尽量短；</li><li>接地回路低阻抗；</li><li>避免保护器件接地过孔过远；</li><li>高速 USB 信号线保持合理阻抗和对称性；</li><li>避免形成过长的支路。</li></ul>
+
+<h3>3. USB-C 接口还有什么需要注意？</h3>
+
+<p>USB-C 不仅仅是一个插座。</p>
+
+<p>还涉及：</p>
+
+<ul><li>CC1、CC2；</li><li>VBUS；</li><li>GND；</li><li>D+、D-；</li><li>屏蔽层；</li><li>电源输入保护。</li></ul>
+
+<p>如果设计 USB-C 供电接口，还必须考虑正确的 Type-C 电源角色配置。</p>
+
+<p>不能简单地认为只要连接了 USB-C 的 5V 和 GND，就完成了所有接口设计。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、PCB 电源布局：从原理图进入实际板子</h2>
+
+<p>前面讲了电源、去耦和接地，现在把这些原则落实到 PCB。</p>
+
+<h3>1. 一个推荐的布局顺序</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"></div>
+
+
+<h3>2. 两层 PCB 还是四层 PCB？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>对比</th><th>两层 PCB</th><th>四层 PCB</th></tr></thead><tbody><tr><td>制造成本</td><td>较低</td><td>较高</td></tr><tr><td>设计难度</td><td>较低</td><td>中等</td></tr><tr><td>地平面完整性</td><td>较难保持</td><td>更容易</td></tr><tr><td>电源完整性</td><td>需要精心布线</td><td>更容易优化</td></tr><tr><td>高速信号</td><td>设计空间有限</td><td>通常更有优势</td></tr><tr><td>适合场景</td><td>简单外围电路</td><td>复杂、高密度设计</td></tr></tbody></table></div>
+
+<p>对于初期的 XIAO ESP32S3 外围扩展板，可以优先考虑两层 PCB。</p>
+
+<p>但如果同时包含：</p>
+
+<ul><li>Wi-Fi 主控；</li><li>音频功放；</li><li>电源转换；</li><li>USB 高速信号；</li><li>多种外部接口；</li></ul>
+
+<p>那么四层板也值得评估。</p>
+
+<h3>3. 四层板的典型叠层</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">四层 PCB 叠层示意</h2></div>
+
+
+<p>注意：这只是常见的四层板参考结构，实际叠层、阻抗、铜厚和介质材料要与 PCB 制造商确认。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十三、FreeCAD、KiCad 与 Codex 如何协同？</h2>
+
+<p>这部分与你之前的 PCB 外壳设计项目直接相关。</p>
+
+<p>我建议将工具职责明确分开。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row" style="--gap:3;align-items:center"><div class="cg-image-ph"><span>KiCad PCB editor circuit board design screenshot</span></div><div class="cg-box" style="--gap:1;--pad:0;"><strong>KiCad</strong><span class="cg-text is-secondary is-xs">原理图、元件库、PCB 布局、布线、DRC、Gerber。</span><span class="cg-text is-secondary is-xs"><a class="cg-link" href="https://www.kicad.org/" target="_blank" rel="noopener">KiCad 官方网站<span class="cg-ext" aria-hidden="true">↗</span></a></span></div></div><hr class="cg-divider"/><div class="cg-row" style="--gap:3;align-items:center"><figure class="cg-figure"><img src="../tutorial/images/22-09.jpg" alt="KiCad + FreeCad 3D workflow - Hardware - TMPDIR" loading="lazy"><figcaption><a href="https://community.tmpdir.org/uploads/default/optimized/2X/9/9d9b6e4f97f0bd9500d8bd9b582fbab65ff3b430_2_1023x763.png" target="_blank" rel="noopener">KiCad + FreeCad 3D workflow - Hardware - TMPDIR</a> · 搜索词：FreeCAD CAD enclosure mechanical engineering PCB design</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>FreeCAD</strong><span class="cg-text is-secondary is-xs">PCB 外壳、结构尺寸、卡扣、螺丝柱、接口开孔、装配检查。</span><span class="cg-text is-secondary is-xs"><a class="cg-link" href="https://www.freecad.org/" target="_blank" rel="noopener">FreeCAD 官方网站<span class="cg-ext" aria-hidden="true">↗</span></a></span></div></div><hr class="cg-divider"/><div class="cg-row" style="--gap:3;align-items:center"><figure class="cg-figure"><img src="../tutorial/images/22-10.jpg" alt="Voice Dictation for AI Prompts on Mac: Real Speakmac Workflow" loading="lazy"><figcaption><a href="https://www.speakmac.app/blog/voice-prompting-codex-on-mac-hero.webp" target="_blank" rel="noopener">Voice Dictation for AI Prompts on Mac: Real Speakmac Workflow</a> · 搜索词：OpenAI Codex code editor programming workspace</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;"><strong>Codex</strong><span class="cg-text is-secondary is-xs">生成和检查原理图设计数据、器件清单、引脚映射、PCB 约束及 FreeCAD 参数化脚本。</span><span class="cg-text is-secondary is-xs"><a class="cg-link" href="https://openai.com/codex/" target="_blank" rel="noopener">Codex 官方介绍<span class="cg-ext" aria-hidden="true">↗</span></a></span></div></div></div>
+
+
+<h3>推荐协同流程</h3>
+
+<pre class="code"><code class="language-text">硬件需求
+   ↓
+KiCad 原理图
+   ↓
+ERC 检查
+   ↓
+PCB 元件布局
+   ↓
+PCB 布线
+   ↓
+DRC 检查
+   ↓
+导出 STEP / 3D 模型
+   ↓
+FreeCAD 外壳装配
+   ↓
+检查接口、卡扣、散热和尺寸
+   ↓
+修改 PCB 或外壳
+   ↓
+最终制造</code></pre>
+
+<p>需要特别强调：</p>
+
+<p><strong>Codex 可以协助生成和修改设计文件，但不能代替电气规则检查、真实器件数据手册核对和 PCB 实物测试。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>十四、针对你的 XIAO ESP32S3 智能终端，推荐的电源设计思路</h2>
+
+<p>假设目标设备包括：</p>
+
+<ul><li>普通版 XIAO ESP32S3；</li><li>I2S 麦克风；</li><li>I2S 功放；</li><li>OLED；</li><li>单节锂电池；</li><li>USB-C 充电接口。</li></ul>
+
+<p>建议把电源设计拆成以下几个独立功能区。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">智能终端电源架构</h2><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>USB-C 5V 输入</strong><span class="cg-text is-secondary is-xs">接口保护、输入检测</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>充电管理与 Power Path</strong><span class="cg-text is-secondary is-xs">管理 USB 与电池供电</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>单节锂电池</strong><span class="cg-text is-secondary is-xs">保护和电量检测</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:1;--pad:3;"><strong>主控电源</strong><span class="cg-text is-secondary is-xs">XIAO ESP32S3 原有供电路径，或经过验证的专用供电方案</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:1;--pad:3;"><strong>功放电源</strong><span class="cg-text is-secondary is-xs">根据功放芯片电压和电流独立设计</span></div></div></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>音频、显示及其他外围设备</strong></div></div>
+
+
+<p>这里需要注意：</p>
+
+<p>如果直接使用 XIAO 开发板的 BAT 接口和板载电源管理电路，就必须遵守官方规定的连接方式。</p>
+
+<p>不能再额外并联一个充电电路，或者同时从多个电源点向板载电源轨反向供电，除非已经明确验证其供电路径和防倒灌设计。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十五、电池电量检测：如何让设备知道还剩多少电？</h2>
+
+<p>如果设备采用锂电池供电，就需要检测电池状态。</p>
+
+<p>最简单的方法是 ADC 测量电池电压。</p>
+
+<h3>1. 电阻分压原理</h3>
+
+<p>假设电池电压最高为 4.2V，而 ADC 输入不能超过允许范围。</p>
+
+<p>可以使用电阻分压：</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/22-11.jpg" alt="Solar Powered WiFi Weather Station V3.0 - Redeem Hardware Products, DIY Electronics, and Kits by PCBWay Beans - PCBWay" loading="lazy"><figcaption><a href="https://content.instructables.com/ORIG/FGW/LL49/KMNGJC41/FGWLL49KMNGJC41.png?auto=webp&amp;fit=bounds&amp;frame=1&amp;md=fae7d8ecaa4c49087b523440e0f74a8a&amp;width=842" target="_blank" rel="noopener">Solar Powered WiFi Weather Station V3.0 - Redeem Hardware Products, DIY Electronics, and Kits by PCBWay Beans - PCBWay</a> · 搜索词：battery voltage sensing resistor divider ESP32 ADC schematic two resistors</figcaption></figure>
+
+
+<p>电压计算：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mrow><mi>A</mi><mi>D</mi><mi>C</mi></mrow></msub><mo>=</mo><msub><mi>V</mi><mrow><mi>B</mi><mi>A</mi><mi>T</mi></mrow></msub><mo>×</mo><mfrac><msub><mi>R</mi><mn>2</mn></msub><mrow><msub><mi>R</mi><mn>1</mn></msub><mo>+</mo><msub><mi>R</mi><mn>2</mn></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">V_{ADC}=V_{BAT}\times\frac{R_2}{R_1+R_2}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">A</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">D</span><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0502em;">B</span><span class="mord mathnormal mtight">A</span><span class="mord mathnormal mtight" style="margin-right:0.1389em;">T</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.1963em;vertical-align:-0.836em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.836em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>假设：</p>
+
+<ul><li>R1 = 100kΩ；</li><li>R2 = 100kΩ；</li><li>电池电压 = 4.2V。</li></ul>
+
+<p>则：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mo>=</mo></msub><mn>4.2</mn><mo>×</mo><mfrac><mn>100</mn><mn>200</mn></mfrac></mrow><annotation encoding="application/x-tex">V_=4.2\times\frac{100}{200}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">4.2</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">200</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">100</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mo>=</mo></msub><mn>2.1</mn><mi>V</mi></mrow><annotation encoding="application/x-tex">V_=2.1V</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">2.1</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span></span></span></span></span>
+
+
+<p>ADC 可以在满足其输入范围的前提下测量这个电压。</p>
+
+<h3>2. 为什么不能简单地用电压判断电量？</h3>
+
+<p>锂电池的电压与剩余容量并不是严格线性关系。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">4.2V ≠ 100% 电量
+
+3.7V ≠ 精确的 50% 电量
+
+3.3V ≠ 精确的 0% 电量</code></pre>
+
+<p>实际电量还受到：</p>
+
+<ul><li>电池化学特性；</li><li>温度；</li><li>放电电流；</li><li>电池老化；</li><li>内阻；</li><li>静置时间；</li></ul>
+
+<p>影响。</p>
+
+<h3>3. 更专业的方式：Fuel Gauge</h3>
+
+<p>如果产品需要准确显示剩余电量，可以使用专用电量计芯片。</p>
+
+<p>例如：</p>
+
+<ul><li>MAX17048；</li><li>MAX17049；</li><li>其他适合目标电池的 Fuel Gauge。</li></ul>
+
+<p>这类芯片通常可以通过 I2C 与 XIAO ESP32S3 通信。</p>
+
+<p>但具体型号要结合电池、供电结构、采购渠道和数据手册选型。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十六、PCB 热设计：为什么电源芯片会发热？</h2>
+
+<p>电源设计不仅要看电气参数，还要看温度。</p>
+
+<p>假设一个 LDO 损耗为 0.5W。</p>
+
+<p>如果 PCB 面积很小，散热铜面积不足，芯片温度可能明显上升。</p>
+
+<h3>1. 温升基本原理</h3>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mi>J</mi></msub><mo>=</mo><msub><mi>T</mi><mi>A</mi></msub><mo>+</mo><mi>P</mi><mo>×</mo><msub><mi>θ</mi><mrow><mi>J</mi><mi>A</mi></mrow></msub></mrow><annotation encoding="application/x-tex">T_J=T_A+P\times\theta_{JA}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0962em;">J</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">A</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0962em;">J</span><span class="mord mathnormal mtight">A</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mi>J</mi></msub></mrow><annotation encoding="application/x-tex">T_J</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0962em;">J</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：芯片结温；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mi>A</mi></msub></mrow><annotation encoding="application/x-tex">T_A</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">A</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：环境温度；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi></mrow><annotation encoding="application/x-tex">P</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span></span></span></span>：功耗；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mrow><mi>J</mi><mi>A</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\theta_{JA}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">θ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0962em;">J</span><span class="mord mathnormal mtight">A</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：结到环境的热阻。</li></ul>
+
+<p>假设：</p>
+
+<ul><li>环境温度 25℃；</li><li>功耗 0.5W；</li><li>热阻 100℃/W。</li></ul>
+
+<p>那么：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mi>J</mi></msub><mo>=</mo><mn>25</mn><mo>+</mo><mn>0.5</mn><mo>×</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">T_J=25+0.5\times100</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0962em;">J</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">25</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">0.5</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">100</span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mi>J</mi></msub><mo>=</mo><mn>75</mn><mtext>℃</mtext></mrow><annotation encoding="application/x-tex">T_J=75℃</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0962em;">J</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">75℃</span></span></span></span></span>
+
+
+<p>这是简化的估算，真实温度需要结合芯片封装、PCB 铜面积、过孔、气流和外壳条件分析。</p>
+
+<h3>2. 3D 打印外壳为什么也要考虑？</h3>
+
+<p>你的设备采用 3D 打印外壳。</p>
+
+<p>这意味着还需要考虑：</p>
+
+<ul><li>外壳材料导热能力；</li><li>PCB 与外壳之间的空气间隙；</li><li>电源芯片周围的散热空间；</li><li>扬声器和功放的位置；</li><li>长时间 Wi-Fi 工作产生的热量；</li><li>外壳内部热量积累。</li></ul>
+
+<p>建议后续在 FreeCAD 中将电源芯片、功放和主要热源标记为独立的热设计区域。</p>
+
+<p>但不要仅靠外壳模型推测芯片温度，最终仍需要实物温度测试。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十七、电源调试：如何确认你的电路设计正确？</h2>
+
+<p>完成电路设计后，不能直接连接所有模块然后上电。</p>
+
+<p>建议采用分阶段测试。</p>
+
+<h3>第一步：检查电路是否短路</h3>
+
+<p>使用万用表测量：</p>
+
+<ul><li>3.3V 与 GND；</li><li>5V 与 GND；</li><li>BAT 与 GND。</li></ul>
+
+<p>检查是否存在异常低阻或明显短路。</p>
+
+<p>电容充电可能造成电阻读数变化，因此不能只根据一次蜂鸣器提示判断电路短路。</p>
+
+<h3>第二步：检查空载电压</h3>
+
+<p>在没有连接主控负载的条件下，按照电路设计测试：</p>
+
+<div class="table-wrap"><table><thead><tr><th>测量位置</th><th>检查内容</th></tr></thead><tbody><tr><td>USB 输入</td><td>输入电压</td></tr><tr><td>稳压器输入</td><td>输入是否正常</td></tr><tr><td>稳压器输出</td><td>是否达到设计值</td></tr><tr><td>功放电源</td><td>是否符合芯片规格</td></tr><tr><td>电池接口</td><td>极性和电压</td></tr></tbody></table></div>
+
+<h3>第三步：逐步增加负载</h3>
+
+<p>建议顺序：</p>
+
+<ol><li>单独测试稳压器。</li><li>连接 XIAO ESP32S3。</li><li>连接 OLED。</li><li>连接麦克风。</li><li>连接功放。</li><li>最后测试 Wi-Fi 和最大音量。</li></ol>
+
+<h3>第四步：测量瞬态波形</h3>
+
+<p>使用示波器观察：</p>
+
+<ul><li>Wi-Fi 发射时的 3.3V 电压；</li><li>功放启动时的电源波动；</li><li>扬声器大音量播放时的电源噪声；</li><li>USB 插拔时的电源变化。</li></ul>
+
+<p>这一步非常重要，因为万用表通常无法准确捕捉微秒或毫秒级的瞬态电压跌落。</p>
+
+<h3>第五步：进行长时间测试</h3>
+
+<p>建议至少覆盖：</p>
+
+<ul><li>Wi-Fi 持续连接；</li><li>音频持续播放；</li><li>音频采集；</li><li>USB 供电；</li><li>电池供电；</li><li>充电过程中运行；</li><li>高温环境下运行。</li></ul>
+
+<p>还需要确认是否存在异常发热、意外重启和电池保护触发。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十八、第二十二课综合实战：建立 XIAO ESP32S3 电源设计实验室</h2>
+
+<p>建议在现有项目仓库中增加：</p>
+
+<pre class="code"><code class="language-text">XIAO-ESP32S3-Projects/
+└── projects/
+    └── power_design_lab/
+        ├── docs/
+        │   ├── power_architecture.md
+        │   ├── battery_design.md
+        │   ├── ldo_vs_buck.md
+        │   ├── capacitor_selection.md
+        │   ├── grounding_guide.md
+        │   ├── pcb_power_layout.md
+        │   └── power_test_plan.md
+        │
+        ├── hardware/
+        │   ├── power_schematic/
+        │   ├── battery_circuit/
+        │   ├── usb_protection/
+        │   └── pcb/
+        │
+        ├── measurements/
+        │   ├── voltage_test.csv
+        │   ├── current_test.csv
+        │   └── thermal_test.csv
+        │
+        └── README.md</code></pre>
+
+<h3>实验验收标准</h3>
+
+<div class="table-wrap"><table><thead><tr><th>实验</th><th>验收目标</th></tr></thead><tbody><tr><td>LDO 实验</td><td>测量输入输出和温升</td></tr><tr><td>DC-DC 实验</td><td>测量转换效率和纹波</td></tr><tr><td>电池实验</td><td>确认充放电路径</td></tr><tr><td>电量检测</td><td>ADC 读取电池电压</td></tr><tr><td>去耦实验</td><td>观察电源瞬态变化</td></tr><tr><td>地线实验</td><td>分析不同回流路径</td></tr><tr><td>USB 保护</td><td>核对接口保护方案</td></tr><tr><td>PCB 实验</td><td>完成电源布局与 DRC</td></tr><tr><td>热设计</td><td>测量主要芯片温度</td></tr></tbody></table></div>
+
+<hr class="cg-divider"/>
+
+<h2>十九、给 Codex 的第二十二课实践任务</h2>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>XIAO ESP32S3 Power Design Lab</strong><span class="cg-badge color-success">工程实践</span></div>
+  让 Codex 建立电源系统设计资料和验证工程。
+
+  主要工作：
+
+<ol><li>检查普通版 XIAO ESP32S3 官方电源原理图。</li><li>梳理 USB、BAT、3V3 的实际供电关系。</li><li>建立 LDO 与 DC-DC 计算工具。</li><li>建立单节锂电池供电设计文档。</li><li>建立充电和 Power Path 方案比较。</li><li>建立电阻分压电池检测计算工具。</li><li>建立去耦电容选型指南。</li><li>建立 PCB 电源与地平面设计规范。</li><li>建立 USB ESD 保护方案。</li><li>建立功放与主控电源分区方案。</li><li>建立温升和电流测试记录模板。</li><li>整理 FreeCAD 与 KiCad 的协同接口。</li></ol>
+  <button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制 Codex 实践任务
+  </button></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>二十、第二十二课学习验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第二十二课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>二十一、下一课：XIAO ESP32S3 原理图设计与 KiCad 实战</h2>
+
+
+<h2 class="cg-title">第二十三课：从零开始设计自己的 XIAO ESP32S3 扩展 PCB</h2>
+
+
+<p>下一课开始，我们不再只讲单个电路原理，而是进入完整的 PCB 工程流程。</p>
+
+<p>具体学习：</p>
+
+<ol><li>KiCad 工程结构。</li><li>原理图编辑器。</li><li>XIAO ESP32S3 模块符号。</li><li>官方引脚映射导入。</li><li>元器件符号和封装。</li><li>连接器和接口设计。</li><li>原理图网络标号。</li><li>ERC 电气规则检查。</li><li>PCB 元件布局。</li><li>两层 PCB 布线。</li><li>电源与地平面。</li><li>DRC 设计规则检查。</li><li>Gerber 制造文件。</li><li>STEP 三维模型导出。</li><li>FreeCAD 外壳装配。</li><li>PCB 打样和实物测试。</li></ol>
+
+
+
+<p>特别是下一课，我们将围绕一个实际目标展开：</p>
+
+<p><strong>设计一块能够与普通版 XIAO ESP32S3 配合使用的智能语音终端扩展 PCB，并且能够与 FreeCAD 中的 3D 打印外壳准确装配。</strong></p>
+
+<p>官方参考资料：</p>
+
+<ul><li><a class="cg-link" href="https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/" target="_blank" rel="noopener">Seeed XIAO ESP32S3 官方硬件资料<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/" target="_blank" rel="noopener">ESP32-S3 硬件设计指南<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://www.kicad.org/" target="_blank" rel="noopener">KiCad 官方网站<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.kicad.org/" target="_blank" rel="noopener">KiCad 官方文档<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://www.ti.com/power-management/linear-regulators/ldo-regulators/overview.html" target="_blank" rel="noopener">TI LDO 稳压器技术资料<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+
+<p><strong>第二十二课最重要的结论：</strong></p>
+
+<p>电源系统不是简单地把 5V 转成 3.3V。它涉及瞬态电流、稳压效率、电池管理、地线回流、去耦、散热和 PCB 布局。</p>
+
+<p>这些设计直接决定 XIAO ESP32S3 产品能否稳定运行，尤其是 Wi-Fi、音频和电池供电同时工作的场景。</p>
+</div></section>
+<nav class="lesson-nav"><a href="21-第二十一课：XIAO ESP32S3 硬件接口与电路设计原理.html">← 第二十一课：XIAO ESP32S3 硬件接口与电路设计原理</a><span class="spacer"></span></nav>
+</main></body></html>

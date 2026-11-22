@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XIAO ESP32S3 课程目录</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">共 22 课 · Markdown 版本见 docs/tutorial/</div></header>
+<main><section class="turn"><div class="content">
+<h1>XIAO ESP32S3 系统开发教程</h1>
+<p>基于 ChatGPT 分享对话整理，共 22 课。HTML 页面与 Markdown 正文内容一致。</p>
+<ol>
+<li><a href="01-XIAO ESP32S3 开发原理：从硬件到软件运行.html">第1课：XIAO ESP32S3 开发原理：从硬件到软件运行</a></li>
+<li><a href="02-XIAO ESP32S3 开发原理进阶（二）：从芯片底层到完整固件.html">第2课：XIAO ESP32S3 开发原理进阶（二）：从芯片底层到完整固件</a></li>
+<li><a href="03-第三课：XIAO ESP32S3 的 CPU、寄存器、中断和时钟原理.html">第三课：XIAO ESP32S3 的 CPU、寄存器、中断和时钟原理</a></li>
+<li><a href="04-第四课：XIAO ESP32S3 的 Flash、SRAM、PSRAM 与内存管理.html">第四课：XIAO ESP32S3 的 Flash、SRAM、PSRAM 与内存管理</a></li>
+<li><a href="05-第五课：ESP-IDF 驱动开发机制——从寄存器到 GPIO、I2C、SPI.html">第五课：ESP-IDF 驱动开发机制——从寄存器到 GPIO、I2C、SPI</a></li>
+<li><a href="06-第六课：FreeRTOS 深入原理——让 XIAO ESP32S3 同时执行多个任务.html">第六课：FreeRTOS 深入原理——让 XIAO ESP32S3 同时执行多个任务</a></li>
+<li><a href="07-第七课：XIAO ESP32S3 的 Wi-Fi、BLE 与网络通信原理.html">第七课：XIAO ESP32S3 的 Wi-Fi、BLE 与网络通信原理</a></li>
+<li><a href="08-第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理.html">第八课：XIAO ESP32S3 多媒体系统原理——摄像头、I2S 音频、DMA 与图像处理</a></li>
+<li><a href="09-第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全.html">第九课：XIAO ESP32S3 启动原理、Bootloader、Flash 分区与固件安全</a></li>
+<li><a href="10-第十课：ESP-IDF 工程构建、编译器、链接器与底层调试.html">第十课：ESP-IDF 工程构建、编译器、链接器与底层调试</a></li>
+<li><a href="11-第十一课：ESP32-S3 外设控制器与底层驱动开发.html">第十一课：ESP32-S3 外设控制器与底层驱动开发</a></li>
+<li><a href="12-第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集.html">第十二课：XIAO ESP32S3 的 ADC、GPTimer、DMA 与实时数据采集</a></li>
+<li><a href="13-第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP.html">第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP</a></li>
+<li><a href="14-第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉.html">第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉</a></li>
+<li><a href="15-第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理.html">第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理</a></li>
+<li><a href="16-第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP-IP、HTTP、MQTT 与 WebSocket.html">第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP/IP、HTTP、MQTT 与 WebSocket</a></li>
+<li><a href="17-第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性.html">第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性</a></li>
+<li><a href="18-第十八课：XIAO ESP32S3 OTA 固件升级、Flash 分区与安全启动.html">第十八课：XIAO ESP32S3 OTA 固件升级、Flash 分区与安全启动</a></li>
+<li><a href="19-第十九课：XIAO ESP32S3 专业调试体系——JTAG、GDB、Core Dump、内存与性能分析.html">第十九课：XIAO ESP32S3 专业调试体系——JTAG、GDB、Core Dump、内存与性能分析</a></li>
+<li><a href="20-第二十课：XIAO ESP32S3 工程架构与产品级开发.html">第二十课：XIAO ESP32S3 工程架构与产品级开发</a></li>
+<li><a href="21-第二十一课：XIAO ESP32S3 硬件接口与电路设计原理.html">第二十一课：XIAO ESP32S3 硬件接口与电路设计原理</a></li>
+<li><a href="22-第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理.html">第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理</a></li>
+</ol>
+</div></section></main></body></html>

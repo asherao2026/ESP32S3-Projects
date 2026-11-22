@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理 · <a href="index.html">课程目录</a> · <a href="../tutorial/15-第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理</h1>
+
+<p>前面十四课，我们已经系统学习了 XIAO ESP32S3 的硬件结构、CPU、寄存器、中断、FreeRTOS、GPIO、通信接口、DMA、数字音频和图像采集。</p>
+
+<p>现在进入一个非常重要的阶段：<strong>让 XIAO ESP32S3 从传统微控制器变成具有本地智能分析能力的设备。</strong></p>
+
+<p>本课继续以普通版 Seeed XIAO ESP32S3 为开发对象，使用 ESP-IDF，逐步建立可以交给 Codex 实现的 AI 工程。</p>
+
+<h2>一、什么是边缘 AI？</h2>
+
+<p>传统嵌入式设备通常按照预先编写的规则工作。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">if (temperature &gt; 30) {
+    fan_on();
+}</code></pre>
+
+<p>CPU 只需要比较温度和阈值。</p>
+
+<p>但是，如果需要判断：</p>
+
+<ul><li>当前声音是不是人在说话？</li><li>设备是否出现异常振动？</li><li>用户是否说出了唤醒词？</li><li>传感器数据是否代表设备故障？</li></ul>
+
+<p>简单的 <code>if</code> 判断往往不够。</p>
+
+<p>这时就需要机器学习模型。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">传统程序与边缘 AI 的区别</h2><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>传统嵌入式程序</strong><div class="cg-box radius-md bg-surface align-center" style="--gap:2;--pad:2;">传感器输入</div><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><div class="cg-box radius-md bg-surface align-center" style="--gap:2;--pad:2;">人工编写规则</div><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><div class="cg-box radius-md bg-surface align-center" style="--gap:2;--pad:2;">执行动作</div></div></div><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>边缘 AI 程序</strong><div class="cg-box radius-md bg-surface align-center" style="--gap:2;--pad:2;">传感器输入</div><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><div class="cg-box radius-md bg-surface align-center" style="--gap:2;--pad:2;">神经网络推理</div><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:var(--text-secondary);width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><div class="cg-box radius-md bg-surface align-center" style="--gap:2;--pad:2;">分类或预测</div></div></div></div></div>
+
+
+<p>边缘 AI（Edge AI）就是在设备本地执行 AI 模型，而不是每次都将原始数据发送到服务器。</p>
+
+<p>它的优势包括：</p>
+
+<ul><li>减少网络依赖；</li><li>降低部分场景下的响应延迟；</li><li>减少原始数据上传；</li><li>可以离线运行；</li><li>降低持续通信的带宽消耗。</li></ul>
+
+<p>但它也有局限：微控制器的内存、算力和功耗都比较有限。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、XIAO ESP32S3 为什么能够运行 AI？</h2>
+
+<p>ESP32-S3 相比一些传统微控制器，具备更适合轻量级神经网络计算的硬件能力。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/15-01.jpg" alt="Waveshare ESP32-S3 Development Board (with Headers) - The Pi Hut" loading="lazy"><figcaption><a href="https://cdn.shopify.com/s/files/1/0176/3274/files/ESP32-S3_Microcontroller_features_1_12b0e7c8-3bbb-4f8f-a344-8e0c74f33a1e.jpg?v=1690544112" target="_blank" rel="noopener">Waveshare ESP32-S3 Development Board (with Headers) - The Pi Hut</a> · 搜索词：Espressif ESP32-S3 microcontroller chip dual core Xtensa LX7 development board</figcaption></figure>
+
+
+<h3>1. ESP32-S3 的关键硬件</h3>
+
+<div class="table-wrap"><table><thead><tr><th>硬件</th><th>作用</th></tr></thead><tbody><tr><td>双核 Xtensa LX7</td><td>执行应用和 AI 推理</td></tr><tr><td>最高 240MHz CPU 时钟</td><td>提供通用计算能力</td></tr><tr><td>向量指令扩展</td><td>加速部分神经网络运算</td></tr><tr><td>SRAM</td><td>保存高速工作数据</td></tr><tr><td>Flash</td><td>保存程序和模型</td></tr><tr><td>PSRAM（视板卡配置）</td><td>保存较大的中间数据</td></tr><tr><td>DMA</td><td>搬运音频和其他外设数据</td></tr><tr><td>Wi-Fi</td><td>与服务器协同处理</td></tr></tbody></table></div>
+
+<p>这里有一个重要区别：</p>
+
+<p><strong>ESP32-S3 没有像桌面 GPU 那样的独立大型 AI 加速器。</strong></p>
+
+<p>它主要依靠 CPU、向量指令以及经过优化的数学运算库完成轻量级神经网络推理。</p>
+
+<h3>2. 向量指令为什么重要？</h3>
+
+<p>假设神经网络需要执行大量乘加运算：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></munderover><msub><mi>w</mi><mi>i</mi></msub><msub><mi>x</mi><mi>i</mi></msub><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">y=\sum_{i=0}^{N-1}w_ix_i+b</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:3.106em;vertical-align:-1.2777em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8283em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mrel mtight">=</span><span class="mord mtight">0</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.2777em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span></span>
+
+
+<p>传统计算需要反复执行乘法和加法。</p>
+
+<p>ESP32-S3 的向量指令能够加速部分适合的数据运算。</p>
+
+<p>例如：</p>
+
+<ul><li>INT8 矩阵计算；</li><li>卷积计算；</li><li>向量乘加；</li><li>部分 DSP 操作。</li></ul>
+
+<p>但实际加速效果取决于运算类型、数据排列、编译器和推理框架实现，并非所有模型都能获得相同收益。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、神经网络的底层工作原理</h2>
+
+<p>先从一个最简单的神经元开始。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/15-02.jpg" alt="Exploring the Power of Neural Networks | by Vibhuraj | Medium" loading="lazy"><figcaption><a href="https://miro.medium.com/v2/resize%3Afit%3A1400/1%2AUtVreXHT8Th-8NhzlASmTw.png" target="_blank" rel="noopener">Exploring the Power of Neural Networks | by Vibhuraj | Medium</a> · 搜索词：artificial neuron neural network inputs weights bias activation function educational diagram</figcaption></figure>
+
+
+<p>一个人工神经元接收多个输入：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>x</mi><mn>2</mn></msub><mo separator="true">,</mo><msub><mi>x</mi><mn>3</mn></msub></mrow><annotation encoding="application/x-tex">x_1,x_2,x_3</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>每个输入对应一个权重：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>w</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>w</mi><mn>2</mn></msub><mo separator="true">,</mo><msub><mi>w</mi><mn>3</mn></msub></mrow><annotation encoding="application/x-tex">w_1,w_2,w_3</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>然后计算：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>z</mi><mo>=</mo><msub><mi>w</mi><mn>1</mn></msub><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><msub><mi>w</mi><mn>2</mn></msub><msub><mi>x</mi><mn>2</mn></msub><mo>+</mo><msub><mi>w</mi><mn>3</mn></msub><msub><mi>x</mi><mn>3</mn></msub><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">z=w_1x_1+w_2x_2+w_3x_3+b</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span></span>
+
+
+<p>最后通过激活函数：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">y=f(z)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mclose">)</span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span></span></span></span>：输入数据；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>w</mi></mrow><annotation encoding="application/x-tex">w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span></span></span></span>：模型权重；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi></mrow><annotation encoding="application/x-tex">b</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span>：偏置；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi></mrow><annotation encoding="application/x-tex">f</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span></span></span></span>：激活函数；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi></mrow><annotation encoding="application/x-tex">y</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span>：输出。</li></ul>
+
+<h3>1. 用 C 语言实现一个神经元</h3>
+
+<pre class="code"><code class="language-c">#include &lt;math.h&gt;
+
+float neuron(
+    const float *input,
+    const float *weight,
+    int count,
+    float bias
+)
+{
+    float sum = bias;
+
+    for (int i = 0; i &lt; count; i++) {
+        sum += input[i] * weight[i];
+    }
+
+    // ReLU 激活函数
+    return fmaxf(0.0f, sum);
+}</code></pre>
+
+<p>这个函数就是一个简单神经元的前向计算。</p>
+
+<h3>2. 多个神经元组成神经网络</h3>
+
+<pre class="code"><code class="language-text">输入层
+  │
+  ├── x1 ──┐
+  ├── x2 ──┼──→ 隐藏层
+  └── x3 ──┘       │
+                   ↓
+                输出层
+                   │
+                   ↓
+                预测结果</code></pre>
+
+<p>例如我们要判断设备振动状态：</p>
+
+<p>输入：</p>
+
+<pre class="code"><code class="language-text">振动幅度
+振动频率
+温度
+电流</code></pre>
+
+<p>输出：</p>
+
+<pre class="code"><code class="language-text">正常
+异常</code></pre>
+
+<p>神经网络会根据训练得到的权重进行判断。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、模型训练和模型推理有什么区别？</h2>
+
+<p>这是 TinyML 开发中最重要的概念之一。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><strong>模型训练 Training</strong><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+        训练数据
+        <span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        神经网络
+        <span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        计算损失
+        <span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        更新权重
+        <span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        导出模型
+      </div><span class="cg-text is-secondary is-xs">通常在 Mac、PC 或服务器上完成。</span></div><div class="cg-grid-item"><strong>模型推理 Inference</strong><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;">
+        实时输入
+        <span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        已训练模型
+        <span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        前向计算
+        <span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        输出结果
+      </div><span class="cg-text is-secondary is-xs">在 XIAO ESP32S3 上运行。</span></div></div></div>
+
+
+<h3>1. 为什么不直接在 XIAO 上训练？</h3>
+
+<p>训练通常需要：</p>
+
+<ul><li>大量数据；</li><li>多次迭代；</li><li>反向传播；</li><li>梯度计算；</li><li>较大的内存。</li></ul>
+
+<p>这些任务通常更适合电脑或服务器。</p>
+
+<p>因此推荐：</p>
+
+<pre class="code"><code class="language-text">Mac
+  ↓
+收集数据
+  ↓
+训练模型
+  ↓
+量化模型
+  ↓
+导出模型文件
+  ↓
+Codex 集成到 ESP-IDF
+  ↓
+XIAO ESP32S3 推理</code></pre>
+
+<hr class="cg-divider"/>
+
+<h2>五、模型量化：INT8 为什么重要？</h2>
+
+<p>神经网络通常使用浮点数表示权重。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">0.1234
+-0.7521
+0.3812</code></pre>
+
+<p>如果每个权重使用 32 位浮点数：</p>
+
+<pre class="code"><code class="language-text">100万个权重 ≈ 4MB</code></pre>
+
+<p>对于微控制器来说，这可能占用大量存储空间。</p>
+
+<p>如果转换为 INT8：</p>
+
+<pre class="code"><code class="language-text">100万个权重 ≈ 1MB</code></pre>
+
+<p>模型权重理论存储量可减少约 75%，但实际模型文件还包含结构、量化参数及其他数据。</p>
+
+<h3>1. INT8 量化公式</h3>
+
+<p>常见仿射量化表示：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mo>=</mo></msub><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mo>×</mo><mo stretchy="false">(</mo><msub><mi>x</mi><mo>−</mo></msub><mi>z</mi><mi>e</mi><mi>r</mi><mi>o</mi><mi mathvariant="normal">_</mi><mi>p</mi><mi>o</mi><mi>i</mi><mi>n</mi><mi>t</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x_=scale\times(x_-zero\_point)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathnormal">sc</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.06em;vertical-align:-0.31em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2583em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mbin mtight">−</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2083em;"><span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">o</span><span class="mord" style="margin-right:0.0278em;">_</span><span class="mord mathnormal">p</span><span class="mord mathnormal">o</span><span class="mord mathnormal">in</span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span></span>
+
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">scale = 0.01
+
+zero_point = 0
+
+INT8 = 50</code></pre>
+
+<p>对应：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>x</mi><mo>=</mo></msub><mn>0.01</mn><mo>×</mo><mn>50</mn><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">x_=0.01\times50=0.5</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7944em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1068em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">=</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">0.01</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">50</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.5</span></span></span></span></span>
+
+
+<h3>2. 量化有什么代价？</h3>
+
+<p>INT8 的优点：</p>
+
+<ul><li>模型更小；</li><li>通常减少内存带宽需求；</li><li>适合整数运算优化；</li><li>在合适框架下可以提高推理速度。</li></ul>
+
+<p>缺点：</p>
+
+<ul><li>可能损失部分精度；</li><li>不同层对量化的敏感度不同；</li><li>某些模型或算子不支持完整 INT8；</li><li>需要代表性数据集进行校准。</li></ul>
+
+<h3>3. INT8 和 FP32 的直观对比</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><span class="cg-text is-secondary is-strong">假设模型有 100 万个权重，仅计算权重数据</span><div class="cg-box" style="--gap:1;--pad:0;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>FP32</strong><span class="cg-text">4 MB</span></div><div class="cg-box radius-sm bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box" style="--gap:2;--pad:0;background:#64748B;"></div></div></div><div class="cg-box" style="--gap:1;--pad:0;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>INT8</strong><span class="cg-text">1 MB</span></div><div class="cg-box radius-sm bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div><div class="cg-caption">十进制 MB，示意权重数据量，不包含运行时激活缓冲区。</div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>六、ESP32-S3 的 AI 内存管理</h2>
+
+<p>在真实开发中，模型文件大小并不是唯一需要考虑的内存。</p>
+
+<p>一个神经网络推理过程通常需要：</p>
+
+<pre class="code"><code class="language-text">模型权重
+   +
+输入张量
+   +
+中间激活张量
+   +
+输出张量
+   +
+运行时工作缓冲区</code></pre>
+
+<h3>1. Flash 和 RAM 分别负责什么？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>存储区域</th><th>主要用途</th></tr></thead><tbody><tr><td>Flash</td><td>程序、常量模型权重</td></tr><tr><td>内部 SRAM</td><td>高速运行数据</td></tr><tr><td>PSRAM</td><td>大型张量或数据缓冲</td></tr><tr><td>DMA 可访问内存</td><td>音频等外设数据传输</td></tr></tbody></table></div>
+
+<p>部分推理框架可能要求模型或特定算子的缓冲区满足对齐和内存能力限制。</p>
+
+<p>不能简单地把所有张量放入 PSRAM 就认为一定能运行。</p>
+
+<h3>2. 如何查询剩余内存？</h3>
+
+<pre class="code"><code class="language-c">#include &quot;esp_heap_caps.h&quot;
+#include &quot;esp_log.h&quot;
+
+void ai_memory_info(void)
+{
+    ESP_LOGI(
+        &quot;AI&quot;,
+        &quot;Internal RAM free: %u&quot;,
+        (unsigned)heap_caps_get_free_size(
+            MALLOC_CAP_INTERNAL |
+            MALLOC_CAP_8BIT
+        )
+    );
+
+    ESP_LOGI(
+        &quot;AI&quot;,
+        &quot;PSRAM free: %u&quot;,
+        (unsigned)heap_caps_get_free_size(
+            MALLOC_CAP_SPIRAM
+        )
+    );
+}</code></pre>
+
+<h3>3. 为什么 AI 模型可能初始化失败？</h3>
+
+<p>常见原因：</p>
+
+<ul><li>模型文件不兼容；</li><li>不支持某个算子；</li><li>Tensor Arena 太小；</li><li>内存碎片化；</li><li>PSRAM 未初始化；</li><li>数据对齐不正确；</li><li>模型格式和运行时版本不匹配。</li></ul>
+
+<p>所以 AI 开发必须记录内存使用情况。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、XIAO ESP32S3 可以使用哪些 AI 框架？</h2>
+
+<p>目前学习阶段建议重点研究两个开源生态。</p>
+
+
+<div class="cg-box" style="--gap:3;--pad:0;"><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/15-03.jpg" alt="See Online Workshop: Build an ML app for Android with TFLite at Google Developer Groups GDG Chapel Hill" loading="lazy"><figcaption><a href="https://res.cloudinary.com/startup-grind/image/upload/c_fill%2Cdpr_2.0%2Cf_auto%2Cg_center%2Ch_1080%2Cq_100%2Cw_1080/v1/gcs/platform-data-goog/events/tensorflow-lite-logo-social_x3eyv8i.png" target="_blank" rel="noopener">See Online Workshop: Build an ML app for Android with TFLite at Google Developer Groups GDG Chapel Hill</a> · 搜索词：TensorFlow Lite Micro logo embedded machine learning</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;">
+      <strong><span class="entity" title="software">TensorFlow Lite Micro</span></strong>
+
+      面向微控制器的轻量级机器学习推理框架。
+
+      支持将兼容模型部署到资源有限的设备中。
+
+      <span class="cg-text"><a class="cg-link" href="https://github.com/tensorflow/tflite-micro" target="_blank" rel="noopener">查看 GitHub 源码<span class="cg-ext" aria-hidden="true">↗</span></a></span></div></div><hr class="cg-divider"/><div class="cg-row" style="--gap:3;align-items:start"><figure class="cg-figure"><img src="../tutorial/images/15-04.jpg" alt="Check out ESP-DL! | Espressif Systems" loading="lazy"><figcaption><a href="https://www.espressif.com/sites/default/files/wecom-temp-5d2ef2071558b783f292750b3f61623b.png" target="_blank" rel="noopener">Check out ESP-DL! | Espressif Systems</a> · 搜索词：Espressif ESP-DL neural network inference framework ESP32</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;">
+      <strong><span class="entity" title="software">ESP-DL</span></strong>
+
+      Espressif 的深度学习推理框架，针对支持的 Espressif 芯片和模型格式提供优化。
+
+      <span class="cg-text"><a class="cg-link" href="https://github.com/espressif/esp-dl" target="_blank" rel="noopener">查看 GitHub 源码<span class="cg-ext" aria-hidden="true">↗</span></a></span></div></div></div>
+
+
+<h3>1. 应该先学哪个？</h3>
+
+<p>建议按照目标选择：</p>
+
+<div class="table-wrap"><table><thead><tr><th>开发目标</th><th>优先研究</th></tr></thead><tbody><tr><td>理解 TinyML 基础</td><td>TensorFlow Lite Micro</td></tr><tr><td>研究 ESP32-S3 优化推理</td><td>ESP-DL</td></tr><tr><td>数字信号处理</td><td>ESP-DSP</td></tr><tr><td>语音唤醒与语音前端</td><td>ESP-SR</td></tr><tr><td>自定义轻量级分类模型</td><td>TFLM 或 ESP-DL，视模型兼容性</td></tr></tbody></table></div>
+
+<p>另外，ESP-SR 是 Espressif 的语音识别相关组件生态。</p>
+
+<p><a class="cg-link" href="https://github.com/espressif/esp-sr" target="_blank" rel="noopener">ESP-SR 官方开源仓库<span class="cg-ext" aria-hidden="true">↗</span></a></p>
+
+<p>需要注意：模型格式、工具链、算子支持和 ESP-IDF 版本会随框架版本变化，不能将 TFLM 模型文件直接视为 ESP-DL 模型。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、第一个 AI 实验：不用麦克风，先让 XIAO 运行神经网络</h2>
+
+<p>这一实验的目的不是识别复杂声音，而是先验证：</p>
+
+<p><strong>ESP32-S3 能否正确加载模型、执行推理并输出结果？</strong></p>
+
+<p>我们先做一个简单的分类模型。</p>
+
+<p>输入：</p>
+
+<pre class="code"><code class="language-text">温度
+振动
+电流</code></pre>
+
+<p>输出：</p>
+
+<pre class="code"><code class="language-text">0 = 正常
+
+1 = 异常</code></pre>
+
+<h3>1. AI 推理过程</h3>
+
+<pre class="code"><code class="language-text">输入传感器数据
+       ↓
+数据归一化
+       ↓
+模型输入张量
+       ↓
+神经网络推理
+       ↓
+输出分类分数
+       ↓
+判断正常 / 异常</code></pre>
+
+<h3>2. 为什么要归一化？</h3>
+
+<p>假设：</p>
+
+<pre class="code"><code class="language-text">温度：30
+振动：0.02
+电流：1.5</code></pre>
+
+<p>这些输入量纲和数值范围不同。</p>
+
+<p>可以使用训练时确定的归一化方式：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>x</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><mfrac><mrow><mi>x</mi><mo>−</mo><mi>μ</mi></mrow><mi>σ</mi></mfrac></mrow><annotation encoding="application/x-tex">x&#x27;=\frac{x-\mu}{\sigma}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8019em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.9463em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.2603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">σ</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">μ</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi></mrow><annotation encoding="application/x-tex">\mu</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">μ</span></span></span></span>：训练数据均值；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi></mrow><annotation encoding="application/x-tex">\sigma</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">σ</span></span></span></span>：训练数据标准差。</li></ul>
+
+<p>例如温度均值为 25，标准差为 5：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>x</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><mfrac><mrow><mn>30</mn><mo>−</mo><mn>25</mn></mrow><mn>5</mn></mfrac><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">x&#x27;=\frac{30-25}{5}=1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8019em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">5</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">30</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">25</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></span>
+
+
+<p>必须使用训练阶段保存的均值和标准差，不能在设备端随意重新计算一套参数。</p>
+
+<h3>3. 推理结果是什么？</h3>
+
+<p>假设模型输出：</p>
+
+<pre class="code"><code class="language-text">正常：0.92
+异常：0.08</code></pre>
+
+<p>可以选择正常类别。</p>
+
+<p>但模型输出分数不一定等于真实世界中准确校准的概率。</p>
+
+<p>需要通过验证集和真实数据评估模型质量。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、第二个 AI 实验：本地声音关键词识别</h2>
+
+<p>现在把第十三课的数字音频知识与 AI 结合。</p>
+
+<p>硬件：</p>
+
+<ul><li>普通版 XIAO ESP32S3；</li><li>INMP441 数字麦克风；</li><li>USB 连接 Mac。</li></ul>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/15-05.jpg" alt="ESP32 Offline Voice Recognition Using Edge Impulse and INMP441 Module" loading="lazy"><figcaption><a href="https://circuitdigest.com/sites/default/files/inlineimages/u5/ESP32-Voice-Control-Using-Edge-Impulse-Project.png" target="_blank" rel="noopener">ESP32 Offline Voice Recognition Using Edge Impulse and INMP441 Module</a> · 搜索词：ESP32-S3 INMP441 microphone tinyml voice keyword spotting embedded development setup</figcaption></figure>
+
+
+<h3>1. 关键词识别的整体流程</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>INMP441 麦克风</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>I2S + DMA</strong><span class="cg-text is-secondary is-xs">16kHz PCM 采集</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>音频预处理</strong><span class="cg-text is-secondary is-xs">分帧、窗函数、特征提取</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>MFCC / Log-Mel 特征</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>TinyML 神经网络</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>关键词识别结果</strong><span class="cg-text is-secondary is-xs">唤醒 / 停止 / 未识别</span></div></div>
+
+
+<h3>2. 为什么不能直接把 PCM 全部输入模型？</h3>
+
+<p>理论上可以设计端到端的波形模型，但对于资源有限的微控制器，直接处理大量原始 PCM 可能需要较高计算量。</p>
+
+<p>因此传统 TinyML 关键词识别通常先提取音频特征。</p>
+
+<p>常见特征：</p>
+
+<ul><li>MFCC；</li><li>Mel Spectrogram；</li><li>Log-Mel Filterbank。</li></ul>
+
+<p>这些特征可以减少数据维度，并突出语音频谱结构。</p>
+
+<h3>3. MFCC 是什么？</h3>
+
+<p>MFCC 全称 Mel-Frequency Cepstral Coefficients。</p>
+
+<p>它是经典语音特征之一。</p>
+
+<p>大致流程：</p>
+
+<pre class="code"><code class="language-text">PCM
+ ↓
+分帧
+ ↓
+加窗
+ ↓
+FFT
+ ↓
+功率谱
+ ↓
+Mel 滤波器组
+ ↓
+对数运算
+ ↓
+DCT
+ ↓
+MFCC</code></pre>
+
+<p>不同模型可能使用不同特征流程，不是所有语音模型都必须使用 DCT。</p>
+
+<h3>4. 为什么要分帧？</h3>
+
+<p>声音随时间变化。</p>
+
+<p>假设：</p>
+
+<ul><li>采样率：16kHz；</li><li>每帧：25ms；</li><li>帧移：10ms。</li></ul>
+
+<p>每帧采样数：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>16000</mn><mo>×</mo><mn>0.025</mn><mo>=</mo><mn>400</mn></mrow><annotation encoding="application/x-tex">16000\times0.025=400</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.025</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">400</span></span></span></span></span>
+
+
+<p>帧移采样数：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>16000</mn><mo>×</mo><mn>0.01</mn><mo>=</mo><mn>160</mn></mrow><annotation encoding="application/x-tex">16000\times0.01=160</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">16000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.01</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">160</span></span></span></span></span>
+
+
+<p>这样可以将连续声音分成互相重叠的小片段。</p>
+
+<h3>5. 关键词识别与语音识别有什么区别？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>功能</th><th>关键词识别 KWS</th><th>自动语音识别 ASR</th></tr></thead><tbody><tr><td>目标</td><td>少量固定词语</td><td>连续语音转文字</td></tr><tr><td>模型规模</td><td>通常较小</td><td>通常较大</td></tr><tr><td>MCU 本地运行</td><td>相对容易</td><td>受模型和资源限制</td></tr><tr><td>应用</td><td>唤醒词、控制词</td><td>语音输入、对话</td></tr></tbody></table></div>
+
+<p>对于 XIAO ESP32S3，建议先实现 KWS，再研究服务器端 ASR。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、第三个 AI 实验：设备异常检测</h2>
+
+<p>这个实验非常适合没有摄像头、没有麦克风的情况。</p>
+
+<p>假设 XIAO ESP32S3 连接一个加速度传感器。</p>
+
+<p>采集：</p>
+
+<pre class="code"><code class="language-text">X 轴加速度
+Y 轴加速度
+Z 轴加速度</code></pre>
+
+<p>然后通过模型判断：</p>
+
+<pre class="code"><code class="language-text">正常运行
+异常振动
+设备停止</code></pre>
+
+<h3>1. 为什么不直接使用阈值？</h3>
+
+<p>简单场景当然可以使用阈值。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">if (vibration &gt; 2.0f) {
+    alarm_on();
+}</code></pre>
+
+<p>但如果不同工作状态下正常振动范围不同，单一阈值可能不够可靠。</p>
+
+<p>机器学习可以利用多个特征综合判断。</p>
+
+<h3>2. 输入特征设计</h3>
+
+<p>例如每 1 秒采集一次数据窗口。</p>
+
+<p>提取：</p>
+
+<div class="table-wrap"><table><thead><tr><th>特征</th><th>含义</th></tr></thead><tbody><tr><td>Mean</td><td>平均值</td></tr><tr><td>RMS</td><td>有效值</td></tr><tr><td>Variance</td><td>方差</td></tr><tr><td>Peak</td><td>峰值</td></tr><tr><td>Zero Crossing</td><td>过零率</td></tr><tr><td>Frequency Energy</td><td>频域能量</td></tr></tbody></table></div>
+
+<p>这些特征组成一个输入向量。</p>
+
+<pre class="code"><code class="language-text">[mean, rms, variance, peak, zcr, energy]</code></pre>
+
+<p>模型输出：</p>
+
+<pre class="code"><code class="language-text">Normal
+Abnormal</code></pre>
+
+<h3>3. 训练数据比模型结构更重要</h3>
+
+<p>如果训练数据只包含实验桌面上的一种状态，模型可能无法适应真实环境。</p>
+
+<p>应该采集不同：</p>
+
+<ul><li>工作负载；</li><li>安装位置；</li><li>环境温度；</li><li>传感器个体；</li><li>运行时间。</li></ul>
+
+<p>同时保留独立测试集，避免只在训练数据上评估准确率。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、如何评估 AI 推理性能？</h2>
+
+<p>嵌入式 AI 不只是看分类是否正确。</p>
+
+<p>还要看运行是否足够快、是否占用太多内存。</p>
+
+<h3>1. 主要性能指标</h3>
+
+<div class="table-wrap"><table><thead><tr><th>指标</th><th>含义</th></tr></thead><tbody><tr><td>Inference Latency</td><td>单次推理时间</td></tr><tr><td>Model Size</td><td>模型文件大小</td></tr><tr><td>Peak RAM</td><td>峰值 RAM 占用</td></tr><tr><td>CPU Load</td><td>CPU 使用情况</td></tr><tr><td>Accuracy</td><td>模型准确率</td></tr><tr><td>Precision / Recall</td><td>分类性能</td></tr><tr><td>Power</td><td>功耗</td></tr></tbody></table></div>
+
+<h3>2. 如何测量推理时间？</h3>
+
+<p>ESP-IDF 可以使用高精度计时 API：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_timer.h&quot;
+#include &quot;esp_log.h&quot;
+
+void run_inference(void)
+{
+    int64_t start = esp_timer_get_time();
+
+    // 在这里执行实际模型推理
+
+    int64_t end = esp_timer_get_time();
+
+    ESP_LOGI(
+        &quot;AI&quot;,
+        &quot;Inference time: %lld us&quot;,
+        (long long)(end - start)
+    );
+}</code></pre>
+
+<p>例如实际测得：</p>
+
+<pre class="code"><code class="language-text">Inference time: 15000 us</code></pre>
+
+<p>代表本次推理耗时 15ms。</p>
+
+<p>这只是举例，不代表某个模型在 XIAO ESP32S3 上的真实性能。</p>
+
+<h3>3. 如何判断能否实时运行？</h3>
+
+<p>假设模型每 100ms 需要推理一次。</p>
+
+<p>如果单次推理需要 20ms，理论上还有时间执行其他任务。</p>
+
+<p>但如果单次推理需要 150ms，就无法满足每 100ms 完成一次推理的要求。</p>
+
+<p>因此需要考虑：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mrow><mi>p</mi><mi>r</mi><mi>e</mi><mi>p</mi><mi>r</mi><mi>o</mi><mi>c</mi><mi>e</mi><mi>s</mi><mi>s</mi></mrow></msub><mo>+</mo><msub><mi>T</mi><mrow><mi>i</mi><mi>n</mi><mi>f</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi></mrow></msub><mo>+</mo><msub><mi>T</mi><mrow><mi>p</mi><mi>o</mi><mi>s</mi><mi>t</mi><mi>p</mi><mi>r</mi><mi>o</mi><mi>c</mi><mi>e</mi><mi>s</mi><mi>s</mi></mrow></msub><mo>≤</mo><msub><mi>T</mi><mrow><mi>b</mi><mi>u</mi><mi>d</mi><mi>g</mi><mi>e</mi><mi>t</mi></mrow></msub></mrow><annotation encoding="application/x-tex">T_{preprocess}+T_{inference}+T_{postprocess}
+\leq T_{budget}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">ocess</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">in</span><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">er</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">n</span><span class="mord mathnormal mtight">ce</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight">os</span><span class="mord mathnormal mtight">tp</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">ocess</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">b</span><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">t</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>还要为音频采集、Wi-Fi、FreeRTOS 调度和其他任务预留时间。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、AI + FreeRTOS：如何防止推理阻塞其他功能？</h2>
+
+<p>推荐架构：</p>
+
+<pre class="code"><code class="language-text">Sensor / I2S Task
+        ↓
+Input Ring Buffer
+        ↓
+Feature Task
+        ↓
+AI Inference Task
+        ↓
+Result Queue
+        ↓
+Application Task
+        ↓
+GPIO / Wi-Fi / Display</code></pre>
+
+<h3>1. 为什么分任务？</h3>
+
+<p>因为音频采集是连续过程，而 AI 推理可能需要几十毫秒甚至更长。</p>
+
+<p>如果在采集任务中直接执行耗时推理，就可能导致数据积压。</p>
+
+<h3>2. 推荐任务划分</h3>
+
+<div class="table-wrap"><table><thead><tr><th>任务</th><th>职责</th></tr></thead><tbody><tr><td>Capture Task</td><td>采集原始数据</td></tr><tr><td>Feature Task</td><td>特征提取</td></tr><tr><td>Inference Task</td><td>模型推理</td></tr><tr><td>Control Task</td><td>根据结果执行动作</td></tr><tr><td>Monitor Task</td><td>记录系统性能</td></tr></tbody></table></div>
+
+<h3>3. 如何防止模型推理太慢？</h3>
+
+<p>可以采用：</p>
+
+<ul><li>降低输入分辨率；</li><li>缩小模型；</li><li>INT8 量化；</li><li>使用优化算子；</li><li>减少推理频率；</li><li>降低特征维度；</li><li>使用更合适的内存布局。</li></ul>
+
+<hr class="cg-divider"/>
+
+<h2>十三、本地 AI 和云端 AI 如何协同？</h2>
+
+<p>对于 XIAO ESP32S3，一个非常实用的架构是：</p>
+
+<p><strong>本地负责快速判断，云端负责复杂分析。</strong></p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>XIAO ESP32S3</strong><span class="cg-text is-secondary is-xs">采集音频 / 传感器数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>本地 TinyML</strong><span class="cg-text is-secondary is-xs">唤醒词 / 状态判断 / 异常检测</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>触发事件</strong><span class="cg-text is-secondary is-xs">满足条件才上传必要数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>Wi-Fi 服务器</strong><span class="cg-text is-secondary is-xs">复杂识别 / 大模型推理</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>执行结果</strong><span class="cg-text is-secondary is-xs">播放语音 / 显示 / 控制外设</span></div></div>
+
+
+<p>例如智能语音终端：</p>
+
+<ol><li>XIAO 持续采集音频。</li><li>本地模型检测唤醒词。</li><li>唤醒后开始上传语音。</li><li>服务器完成语音识别。</li><li>大模型生成回复。</li><li>服务器返回音频。</li><li>XIAO 通过 I2S 功放播放。</li></ol>
+
+<p>这样可以减少无意义的持续上传，也能将复杂模型计算放在更合适的设备上。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十四、为 XIAO-ESP32S3-Projects 建立 AI 实验目录</h2>
+
+<p>建议将 AI 项目独立管理：</p>
+
+<pre class="code"><code class="language-text">XIAO-ESP32S3-Projects/
+└── projects/
+    └── edge_ai/
+        ├── 01_neural_network_basic/
+        │   ├── main/
+        │   └── README.md
+        │
+        ├── 02_tflite_micro/
+        │   ├── main/
+        │   ├── model/
+        │   └── README.md
+        │
+        ├── 03_int8_inference/
+        │   ├── main/
+        │   ├── model/
+        │   └── README.md
+        │
+        ├── 04_keyword_spotting/
+        │   ├── main/
+        │   ├── audio/
+        │   ├── model/
+        │   └── README.md
+        │
+        ├── 05_anomaly_detection/
+        │   ├── main/
+        │   ├── sensors/
+        │   ├── model/
+        │   └── README.md
+        │
+        ├── 06_esp_dl/
+        │   ├── main/
+        │   ├── model/
+        │   └── README.md
+        │
+        └── docs/
+            ├── model_conversion.md
+            ├── quantization.md
+            ├── memory_optimization.md
+            └── performance_testing.md</code></pre>
+
+<p>每个实验都应该独立构建，并明确记录：</p>
+
+<ul><li>ESP-IDF 版本；</li><li>AI 框架版本；</li><li>模型来源；</li><li>模型许可证；</li><li>输入输出格式；</li><li>RAM 和 Flash 占用；</li><li>推理时间；</li><li>实测准确率。</li></ul>
+
+<hr class="cg-divider"/>
+
+<h2>十五、给 Codex 的开发任务</h2>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Codex：建立 XIAO ESP32S3 TinyML 实验体系</strong><button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制任务
+    </button></div>
+  重点要求：先验证一个最小神经网络，再引入 AI 框架，最后结合音频和传感器，不要一次性集成所有功能。
+</div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十六、本课学习验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第十五课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十七、下一课：Wi-Fi、TCP/IP、HTTP、MQTT 与 WebSocket 的底层原理</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十六课：XIAO ESP32S3 网络通信系统</h2><figure class="cg-figure"><img src="../tutorial/images/15-06.jpg" alt="Status Internet Co., Ltd." loading="lazy"><figcaption><a href="https://www.status.com.tw/Uploads/media/images/status/smartIOT/devicecloud2.png" target="_blank" rel="noopener">Status Internet Co., Ltd.</a> · 搜索词：ESP32 WiFi IoT device TCP IP MQTT WebSocket network architecture diagram</figcaption></figure>
+  下一课将深入讲解：
+
+<ol><li>ESP32-S3 Wi-Fi 硬件结构。</li><li>802.11 无线通信原理。</li><li>STA、AP、AP+STA 工作模式。</li><li>TCP/IP 协议栈。</li><li>DHCP、DNS 和 IP 地址。</li><li>TCP 与 UDP 的区别。</li><li>Socket 编程。</li><li>HTTP 客户端与服务器。</li><li>MQTT 发布订阅。</li><li>WebSocket 实时双向通信。</li><li>TLS 加密通信。</li><li>Wi-Fi 断线重连。</li><li>FreeRTOS 网络任务设计。</li><li>网络通信性能和内存优化。</li><li>音频、AI 与网络的协同设计。</li></ol></div>
+
+
+<p>下一课的目标是让普通版 XIAO ESP32S3 从一个独立运行的智能控制器，变成能够稳定接入局域网、互联网和 AI 服务器的网络终端。</p>
+
+<p>届时我们会结合 ESP-IDF 的实际代码，逐步构建一个具有 Wi-Fi 自动重连、HTTP 服务、MQTT 消息通信和 WebSocket 实时数据传输能力的完整工程。</p>
+</div></section>
+<nav class="lesson-nav"><a href="14-第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉.html">← 第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉</a><span class="spacer"></span><a href="16-第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP-IP、HTTP、MQTT 与 WebSocket.html">第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP/IP、HTTP、MQTT 与 WebSocket →</a></nav>
+</main></body></html>

@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉 · <a href="index.html">课程目录</a> · <a href="../tutorial/14-第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第十四课：XIAO ESP32S3 摄像头、图像采集与计算机视觉</h1>
+
+<p>前面我们已经学习了数字音频系统，包括 I2S、PCM、DMA、DSP 和 Wi-Fi 音频传输。</p>
+
+<p>现在进入另一个重要领域：<strong>嵌入式视觉开发（Embedded Vision）</strong>。</p>
+
+<p>这节课仍然以普通版 Seeed XIAO ESP32S3 为唯一主控，不直接套用 Sense 版的摄像头接线。</p>
+
+<p>我们将研究如何给普通版 XIAO ESP32S3 外接摄像头，让它能够：</p>
+
+<ul><li>拍摄照片；</li><li>获取 JPEG 图像；</li><li>保存图像；</li><li>通过 Wi-Fi 传输图像；</li><li>实时输出视频流；</li><li>进行简单图像处理；</li><li>进一步运行轻量级视觉算法。</li></ul>
+
+<h2>一、先理解摄像头系统的整体结构</h2>
+
+<p>摄像头并不是简单地把一根数据线连接到 ESP32-S3 就能工作。</p>
+
+<p>它包含图像传感器、时钟、数据接口、控制总线和数据缓冲区。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/14-01.jpg" alt="Real-Time Image Pipeline: DMA + DCMI Optimization" loading="lazy"><figcaption><a href="https://tech.hoomanely.com/content/images/2026/01/image-5.png" target="_blank" rel="noopener">Real-Time Image Pipeline: DMA + DCMI Optimization</a> · 搜索词：embedded camera ESP32 camera sensor image processing pipeline sensor DVP DMA PSRAM JPEG architecture diagram</figcaption></figure>
+
+
+<p>一套典型的嵌入式摄像头系统：</p>
+
+<pre class="code"><code class="language-text">外部光线
+   ↓
+摄像头镜头
+   ↓
+CMOS 图像传感器
+   ↓
+图像像素转换
+   ↓
+DVP 并行数据接口
+   ↓
+ESP32-S3 LCD_CAM
+   ↓
+DMA
+   ↓
+PSRAM / RAM
+   ↓
+图像处理
+   ↓
+JPEG / Wi-Fi / 显示</code></pre>
+
+<p>这里有几个重要概念：</p>
+
+<div class="table-wrap"><table><thead><tr><th>模块</th><th>作用</th></tr></thead><tbody><tr><td>CMOS Sensor</td><td>感知光线并生成像素数据</td></tr><tr><td>SCCB</td><td>配置摄像头寄存器</td></tr><tr><td>DVP</td><td>传输图像数据</td></tr><tr><td>LCD_CAM</td><td>ESP32-S3 图像接口控制器</td></tr><tr><td>DMA</td><td>搬运图像数据</td></tr><tr><td>PSRAM</td><td>保存较大的图像帧</td></tr><tr><td>JPEG</td><td>压缩图像</td></tr><tr><td>Wi-Fi</td><td>传输图像</td></tr></tbody></table></div>
+
+<hr class="cg-divider"/>
+
+<h2>二、CMOS 图像传感器：摄像头如何感知世界？</h2>
+
+<p>普通摄像头内部通常有一个 CMOS 图像传感器。</p>
+
+<p>它由大量感光像素组成。</p>
+
+<p>例如：</p>
+
+<ul><li>320 × 240；</li><li>640 × 480；</li><li>1600 × 1200；</li><li>1920 × 1080。</li></ul>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/14-02.jpg" alt="スマホカメラの画像センサの仕組みと「進化の先」を、ソニー開発者に聞く - CMOSセンサーのしくみ・技術のふしぎ(2) | TECH+（テックプラス）" loading="lazy"><figcaption><a href="https://news.mynavi.jp/techplus/article/Fundamentals-of-CMOS-Sensors-2/images/002.jpg" target="_blank" rel="noopener">スマホカメラの画像センサの仕組みと「進化の先」を、ソニー開発者に聞く - CMOSセンサーのしくみ・技術のふしぎ(2) | TECH+（テックプラス）</a> · 搜索词：CMOS image sensor pixel photodiode array microscopic structure diagram</figcaption></figure>
+
+
+<h3>1. 像素是什么？</h3>
+
+<p>假设一个摄像头分辨率为：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>640</mn><mo>×</mo><mn>480</mn></mrow><annotation encoding="application/x-tex">640\times480</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">640</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">480</span></span></span></span></span>
+
+
+<p>那么像素数量：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>640</mn><mo>×</mo><mn>480</mn><mo>=</mo><mn>307200</mn></mrow><annotation encoding="application/x-tex">640\times480=307200</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">640</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">480</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">307200</span></span></span></span></span>
+
+
+<p>也就是约 30.7 万个像素。</p>
+
+<p>每个像素负责感知一定区域的光线。</p>
+
+<h3>2. RGB 图像如何形成？</h3>
+
+<p>现实世界中的颜色可以通过红、绿、蓝三个颜色分量进行表示。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">R = 255
+G = 0
+B = 0</code></pre>
+
+<p>代表红色。</p>
+
+<pre class="code"><code class="language-text">R = 0
+G = 255
+B = 0</code></pre>
+
+<p>代表绿色。</p>
+
+<pre class="code"><code class="language-text">R = 0
+G = 0
+B = 255</code></pre>
+
+<p>代表蓝色。</p>
+
+<p>但是 CMOS 传感器通常不会让每个像素直接同时测量完整的 RGB 三个分量。</p>
+
+<p>常见做法是使用 Bayer 彩色滤光阵列，再通过 ISP 或传感器内部处理生成彩色图像。</p>
+
+<h3>3. 什么是图像传感器曝光？</h3>
+
+<p>曝光决定传感器接收多少光线。</p>
+
+<p>曝光时间过短：</p>
+
+<ul><li>图像偏暗；</li><li>快速运动比较清晰。</li></ul>
+
+<p>曝光时间过长：</p>
+
+<ul><li>图像偏亮；</li><li>快速运动可能产生拖影。</li></ul>
+
+<p>因此摄像头通常具有：</p>
+
+<ul><li>曝光控制；</li><li>增益控制；</li><li>白平衡；</li><li>自动曝光；</li><li>自动增益。</li></ul>
+
+<p>这些通常可以通过摄像头控制寄存器配置。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、OV2640：适合入门的摄像头模块</h2>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/14-03.jpg" alt="OV2640 2MP Camera Module JPEG/RGB/YUV Output for Arduino IoT Embedded DIY | eBay" loading="lazy"><figcaption><a href="https://ae01.alicdn.com/kf/S31bc80f31a074600a548ab6b7ced452bS.jpg" target="_blank" rel="noopener">OV2640 2MP Camera Module JPEG/RGB/YUV Output for Arduino IoT Embedded DIY | eBay</a> · 搜索词：OV2640 camera module 2 megapixel DVP camera</figcaption></figure><strong>OV2640</strong><span class="cg-text is-secondary is-xs">常见 200 万像素摄像头，支持 JPEG 输出。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/14-04.jpg" alt="Cheap Price Dvp Interface Ov3660 Camera Module for Machine Vision - Mini Camera Module and Cheap Price Camera Module" loading="lazy"><figcaption><a href="https://image.made-in-china.com/2f0j00BsOMSNAyUgok/Cheap-Price-Dvp-Interface-Ov3660-Camera-Module-for-Machine-Vision.webp" target="_blank" rel="noopener">Cheap Price Dvp Interface Ov3660 Camera Module for Machine Vision - Mini Camera Module and Cheap Price Camera Module</a> · 搜索词：OV3660 camera module DVP sensor</figcaption></figure><strong>OV3660</strong><span class="cg-text is-secondary is-xs">另一种常见的高分辨率摄像头传感器。</span></div></div>
+
+
+<p>OV2640 是 ESP32 摄像头项目中非常常见的选择。</p>
+
+<p>它的主要特点：</p>
+
+<ul><li>最高约 200 万像素；</li><li>支持 JPEG；</li><li>支持多种图像格式；</li><li>可以通过 SCCB 配置；</li><li>常见模块使用 DVP 并行接口。</li></ul>
+
+<p>注意：摄像头模块的具体供电、引脚排列和输出能力取决于模块设计，购买时需要确认是否为完整的 DVP 模块，而不是仅有传感器芯片的裸模块。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、SCCB：ESP32-S3 如何配置摄像头？</h2>
+
+<p>摄像头不仅需要传输图像，还需要设置内部参数。</p>
+
+<p>例如：</p>
+
+<ul><li>分辨率；</li><li>曝光；</li><li>白平衡；</li><li>图像格式；</li><li>亮度；</li><li>对比度；</li><li>特殊效果。</li></ul>
+
+<p>这些配置通常通过 SCCB 完成。</p>
+
+<p>SCCB 是摄像头常见的控制接口，与 I2C 在电气和通信形式上有相似之处，但不能把所有 SCCB 行为都简单等同于标准 I2C。</p>
+
+<h3>1. SCCB 的两根主要信号线</h3>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>作用</th></tr></thead><tbody><tr><td>SIOC</td><td>控制时钟</td></tr><tr><td>SIOD</td><td>控制数据</td></tr></tbody></table></div>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3
+    │
+    ├── SIOC ─── Camera
+    │
+    └── SIOD ─── Camera</code></pre>
+
+<p>摄像头初始化时，ESP32-S3 通过这两根线向传感器写入寄存器。</p>
+
+<h3>2. 配置流程</h3>
+
+<pre class="code"><code class="language-text">ESP32-S3 启动
+    ↓
+初始化 SCCB
+    ↓
+读取传感器 ID
+    ↓
+确认摄像头型号
+    ↓
+写入初始化寄存器
+    ↓
+设置分辨率
+    ↓
+设置输出格式
+    ↓
+启动图像采集</code></pre>
+
+<h3>3. 为什么摄像头需要读取 ID？</h3>
+
+<p>因为不同传感器具有不同的寄存器结构。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">OV2640
+OV3660
+OV5640</code></pre>
+
+<p>它们不能直接使用同一套未经适配的初始化寄存器。</p>
+
+<p>所以驱动通常先读取芯片 ID，再选择对应配置表。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、DVP：摄像头如何高速传输图像？</h2>
+
+<p>DVP 是 Digital Video Port。</p>
+
+<p>这是很多传统嵌入式摄像头使用的并行图像数据接口。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/14-05.jpg" alt="VGA Camera extension OV7670" loading="lazy"><figcaption><a href="https://wiki.epfl.ch/prsoc/documents/OV7670_H_timing.JPG" target="_blank" rel="noopener">VGA Camera extension OV7670</a> · 搜索词：DVP camera parallel interface D0 D7 PCLK HREF VSYNC XCLK wiring timing diagram</figcaption></figure>
+
+
+<h3>1. DVP 主要信号</h3>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>作用</th></tr></thead><tbody><tr><td>D0～D7</td><td>图像数据</td></tr><tr><td>PCLK</td><td>像素时钟</td></tr><tr><td>VSYNC</td><td>帧同步</td></tr><tr><td>HREF</td><td>行有效信号</td></tr><tr><td>XCLK</td><td>摄像头输入时钟</td></tr><tr><td>SIOD</td><td>SCCB 数据</td></tr><tr><td>SIOC</td><td>SCCB 时钟</td></tr></tbody></table></div>
+
+<p>这些信号共同完成图像传输。</p>
+
+<h3>2. 数据如何传输？</h3>
+
+<p>可以把一帧图像理解为：</p>
+
+<pre class="code"><code class="language-text">Frame
+ ├── Line 1
+ │    ├── Pixel 1
+ │    ├── Pixel 2
+ │    └── Pixel ...
+ │
+ ├── Line 2
+ │
+ ├── Line 3
+ │
+ └── Line ...</code></pre>
+
+<p>摄像头通过 PCLK 提供数据节奏。</p>
+
+<p>ESP32-S3 根据 HREF 判断一行数据是否有效。</p>
+
+<p>VSYNC 用于识别帧边界。</p>
+
+<h3>3. 为什么 DVP 需要这么多 GPIO？</h3>
+
+<p>因为 DVP 是并行接口。</p>
+
+<p>例如 8 位数据接口，就需要 8 根数据线，再加上同步和时钟信号。</p>
+
+<p>这对普通版 XIAO ESP32S3 是一个重要的硬件限制。</p>
+
+<p>它的物理引脚数量有限，必须提前做好引脚规划。</p>
+
+<hr class="cg-divider"/>
+
+<h2>六、ESP32-S3 的 LCD_CAM 控制器</h2>
+
+<p>现在进入芯片内部。</p>
+
+<p>ESP32-S3 并不需要 CPU 自己逐个读取摄像头像素。</p>
+
+<p>它集成了 LCD_CAM 控制器。</p>
+
+<p>这个控制器可以用于摄像头数据接收和 LCD 数据输出等相关工作。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/14-06.jpg" alt="《ESP32-S3使用指南—IDF版 V1.6》第三十三章 RGB显示屏实验 - 正点原子 - 博客园" loading="lazy"><figcaption><a href="https://img2024.cnblogs.com/blog/3467708/202508/3467708-20250808153602832-1121458586.png" target="_blank" rel="noopener">《ESP32-S3使用指南—IDF版 V1.6》第三十三章 RGB显示屏实验 - 正点原子 - 博客园</a> · 搜索词：ESP32-S3 LCD_CAM camera DVP DMA controller architecture block diagram</figcaption></figure>
+
+
+<p>工作流程：</p>
+
+<pre class="code"><code class="language-text">摄像头输出数据
+      ↓
+LCD_CAM 接收
+      ↓
+DMA 搬运
+      ↓
+内存缓冲区
+      ↓
+CPU 处理</code></pre>
+
+<p>它与前面学习的 UART、SPI、I2S DMA 有相同的设计思想：</p>
+
+<p><strong>让专用硬件负责高速数据传输，CPU 负责配置和处理。</strong></p>
+
+<h3>1. 为什么不让 CPU 自己采集每个像素？</h3>
+
+<p>假设：</p>
+
+<p>640 × 480 图像。</p>
+
+<p>RGB565 每个像素占 2 字节。</p>
+
+<p>整帧数据：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>640</mn><mo>×</mo><mn>480</mn><mo>×</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">640\times480\times2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">640</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">480</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mo>=</mo><mn>614400</mn><mi>B</mi><mi>y</mi><mi>t</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">=614400Byte</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.3669em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">614400</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span></span></span></span></span>
+
+
+<p>约 600KiB。</p>
+
+<p>如果 CPU 需要逐像素处理每次数据传输，系统开销会很大。</p>
+
+<p>使用 DMA 可以更有效地处理图像数据流。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、PSRAM：为什么摄像头系统特别需要外部 RAM？</h2>
+
+<p>这是普通版 XIAO ESP32S3 摄像头开发必须理解的问题。</p>
+
+<p>假设你使用：</p>
+
+<p>640 × 480 分辨率、RGB565 格式。</p>
+
+<p>一帧需要：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>640</mn><mo>×</mo><mn>480</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>614400</mn><mi>B</mi><mi>y</mi><mi>t</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">640\times480\times2=614400Byte</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">640</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">480</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">614400</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span></span></span></span></span>
+
+
+<p>如果你希望保存两帧：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>614400</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>1228800</mn><mi>B</mi><mi>y</mi><mi>t</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">614400\times2=1228800Byte</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">614400</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">1228800</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span></span></span></span></span>
+
+
+<p>约 1.17MiB。</p>
+
+<p>这还没有计算 Wi-Fi、FreeRTOS、音频和其他任务所需要的内存。</p>
+
+<p>因此摄像头系统经常使用 PSRAM。</p>
+
+<h3>1. 图像帧缓冲区</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/14-07.jpg" alt="Figure 1 - from Template-based automatic data flow code" loading="lazy"><figcaption><a href="https://figures.academia-assets.com/88113402/figure_001.jpg" target="_blank" rel="noopener">Figure 1 - from Template-based automatic data flow code</a> · 搜索词：camera double frame buffer ping pong buffering PSRAM DMA embedded vision architecture diagram</figcaption></figure>
+
+
+<p>常见结构：</p>
+
+<pre class="code"><code class="language-text">Camera
+   ↓
+DMA
+   ↓
+Frame Buffer A
+   ↓
+CPU 处理
+
+Camera
+   ↓
+DMA
+   ↓
+Frame Buffer B
+   ↓
+网络发送</code></pre>
+
+<p>这就是双帧缓冲的思路。</p>
+
+<h3>2. XIAO ESP32S3 的 PSRAM</h3>
+
+<p>XIAO ESP32S3 系列存在不同硬件版本和存储配置。</p>
+
+<p>不要只根据产品系列名称推断当前板子的 PSRAM 容量。</p>
+
+<p>应当：</p>
+
+<ol><li>查看板卡具体型号。</li><li>检查板卡官方规格。</li><li>查看 ESP-IDF 启动日志。</li><li>使用 ESP-IDF 查询实际 PSRAM。</li><li>确认摄像头驱动能够使用对应内存。</li></ol>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_psram.h&quot;
+#include &quot;esp_heap_caps.h&quot;
+
+void print_memory_info(void)
+{
+    printf(
+        &quot;PSRAM size: %u\n&quot;,
+        (unsigned)esp_psram_get_size()
+    );
+
+    printf(
+        &quot;PSRAM free: %u\n&quot;,
+        (unsigned)heap_caps_get_free_size(
+            MALLOC_CAP_SPIRAM
+        )
+    );
+}</code></pre>
+
+<p>这里还需要区分：</p>
+
+<ul><li>PSRAM 总容量；</li><li>已初始化容量；</li><li>当前空闲容量；</li><li>DMA 是否可以访问该内存。</li></ul>
+
+<p>不能简单地认为所有 PSRAM 内存都可以直接作为任意 DMA 缓冲区。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、图像格式：RGB565、RGB888、YUV422 和 JPEG</h2>
+
+<p>摄像头采集到的数据不一定都是 JPEG。</p>
+
+<p>不同格式会直接影响内存、传输速度和 CPU 负载。</p>
+
+<h3>1. RGB565</h3>
+
+<p>RGB565 使用 16 位表示一个像素。</p>
+
+<p>分配方式：</p>
+
+<div class="table-wrap"><table><thead><tr><th>颜色</th><th>位数</th></tr></thead><tbody><tr><td>R</td><td>5</td></tr><tr><td>G</td><td>6</td></tr><tr><td>B</td><td>5</td></tr><tr><td>总计</td><td>16</td></tr></tbody></table></div>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">uint16_t pixel = 0xF800;</code></pre>
+
+<p>代表红色。</p>
+
+<p>特点：</p>
+
+<ul><li>数据结构简单；</li><li>适合 LCD 显示；</li><li>内存占用较大；</li><li>需要处理颜色排列和字节序。</li></ul>
+
+<h3>2. RGB888</h3>
+
+<p>每个像素使用 24 位：</p>
+
+<pre class="code"><code class="language-text">R = 8bit
+G = 8bit
+B = 8bit</code></pre>
+
+<p>优点是颜色表示更丰富，但内存占用更大。</p>
+
+<h3>3. YUV422</h3>
+
+<p>YUV 将亮度和色度分开表示。</p>
+
+<p>其中：</p>
+
+<ul><li>Y：亮度；</li><li>U：蓝色色度分量；</li><li>V：红色色度分量。</li></ul>
+
+<p>YUV422 通常每两个像素共享一组色度数据，平均每像素 16 位。</p>
+
+<p>它在视频采集和图像处理领域非常常见。</p>
+
+<h3>4. JPEG</h3>
+
+<p>JPEG 是一种有损图像压缩格式。</p>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/14-08.jpg" alt="Digital Image Representation.ppt" loading="lazy"><figcaption><a href="https://image.slidesharecdn.com/digitalimagerepresentation-220723084559-771ffcdb/75/Digital-Image-Representation-ppt-10-2048.jpg" target="_blank" rel="noopener">Digital Image Representation.ppt</a> · 搜索词：uncompressed RGB bitmap digital photograph pixel image</figcaption></figure><strong>RGB 原始图像</strong><span class="cg-text is-secondary is-xs">像素数据直接存储，文件通常较大。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/14-09.jpg" alt="How to Compress an Image: Best Free Tools in 2026 (Without Visible Quality Loss)" loading="lazy"><figcaption><a href="https://data.catioapps.com/photoaistudio/in/a6ba6d78-cd5a-4cf5-91f4-6e1c42b2f18d.webp" target="_blank" rel="noopener">How to Compress an Image: Best Free Tools in 2026 (Without Visible Quality Loss)</a> · 搜索词：JPEG compressed photograph image visual example</figcaption></figure><strong>JPEG 压缩图像</strong><span class="cg-text is-secondary is-xs">经过压缩，适合存储和网络传输。</span></div></div>
+
+
+<p>例如，同一张照片：</p>
+
+<ul><li>RGB565：约 600KiB；</li><li>JPEG：可能只有几十 KiB。</li></ul>
+
+<p>具体压缩大小取决于图像内容、分辨率和 JPEG 质量参数。</p>
+
+<h3>5. 不同格式如何选择？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>使用场景</th><th>推荐格式</th></tr></thead><tbody><tr><td>网络拍照上传</td><td>JPEG</td></tr><tr><td>LCD 显示</td><td>RGB565</td></tr><tr><td>图像分析</td><td>RGB888 / 灰度</td></tr><tr><td>视频处理</td><td>YUV422</td></tr><tr><td>低带宽传输</td><td>JPEG</td></tr></tbody></table></div>
+
+<p><strong>对于 XIAO ESP32S3，建议首先使用 JPEG，而不是直接使用大尺寸 RGB 图像。</strong></p>
+
+<p>原因是 JPEG 可以显著降低内存和网络带宽压力。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、ESP32-Camera：使用现成驱动控制摄像头</h2>
+
+<p>前面我们学习了摄像头底层硬件，现在看看如何使用成熟驱动。</p>
+
+<p>Espressif 提供了开源项目：</p>
+
+
+<div class="cg-row" style="--gap:3;align-items:center"><figure class="cg-figure"><img src="../tutorial/images/14-10.jpg" alt="How to Use ESP32-CAM: Pinouts, Specs, and Examples | Cirkit Designer" loading="lazy"><figcaption><a href="https://abacasstorageaccnt.blob.core.windows.net/cirkit/b6fea144-67e6-416a-af83-9b6222ea9c4c.png" target="_blank" rel="noopener">How to Use ESP32-CAM: Pinouts, Specs, and Examples | Cirkit Designer</a> · 搜索词：Espressif esp32 camera OV2640 module logo project</figcaption></figure><div class="cg-box" style="--gap:1;--pad:0;">
+    <strong><span class="entity" title="software · Espressif 摄像头驱动开源项目">esp32-camera</span></strong>
+
+    <span class="cg-text is-secondary is-xs">支持多种 ESP32 摄像头传感器及图像采集功能。</span><span class="cg-text"><a class="cg-link" href="https://github.com/espressif/esp32-camera" target="_blank" rel="noopener">GitHub 源码仓库<span class="cg-ext" aria-hidden="true">↗</span></a></span></div></div>
+
+
+<p>这个项目可以帮助我们省去大量底层工作。</p>
+
+<p>它负责：</p>
+
+<ul><li>SCCB 配置；</li><li>摄像头初始化；</li><li>LCD_CAM 数据采集；</li><li>DMA 管理；</li><li>图像帧缓冲；</li><li>JPEG 数据获取；</li><li>图像参数配置。</li></ul>
+
+<h3>1. 摄像头配置结构</h3>
+
+<p>核心结构体：</p>
+
+<pre class="code"><code class="language-c">camera_config_t config;</code></pre>
+
+<p>常见配置项：</p>
+
+<div class="table-wrap"><table><thead><tr><th>配置</th><th>作用</th></tr></thead><tbody><tr><td><code>pin_pwdn</code></td><td>电源控制</td></tr><tr><td><code>pin_reset</code></td><td>复位</td></tr><tr><td><code>pin_xclk</code></td><td>摄像头时钟</td></tr><tr><td><code>pin_sccb_sda</code></td><td>SCCB 数据</td></tr><tr><td><code>pin_sccb_scl</code></td><td>SCCB 时钟</td></tr><tr><td><code>pin_d0</code>～<code>pin_d7</code></td><td>并行数据</td></tr><tr><td><code>pin_vsync</code></td><td>帧同步</td></tr><tr><td><code>pin_href</code></td><td>行有效</td></tr><tr><td><code>pin_pclk</code></td><td>像素时钟</td></tr><tr><td><code>xclk_freq_hz</code></td><td>摄像头时钟频率</td></tr><tr><td><code>pixel_format</code></td><td>图像格式</td></tr><tr><td><code>frame_size</code></td><td>图像尺寸</td></tr><tr><td><code>fb_count</code></td><td>帧缓冲数量</td></tr><tr><td><code>fb_location</code></td><td>帧缓冲位置</td></tr></tbody></table></div>
+
+<p>注意：不同版本的 <code>esp32-camera</code> 结构体字段可能有变化，例如 SCCB 字段名称的调整。应以实际安装版本的 <code>sensor.h</code>、<code>esp_camera.h</code> 为准。</p>
+
+<h3>2. 摄像头初始化示例</h3>
+
+<p>下面先展示软件结构，不直接给出一套未经核对的 GPIO 接线表。</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_camera.h&quot;
+#include &quot;esp_log.h&quot;
+
+static const char *TAG = &quot;CAMERA&quot;;
+
+void camera_init(void)
+{
+    camera_config_t config = {
+        // GPIO 引脚配置
+        // 必须填写实际硬件接线对应的 GPIO
+
+        .xclk_freq_hz = 20000000,
+
+        .pixel_format = PIXFORMAT_JPEG,
+
+        .frame_size = FRAMESIZE_QVGA,
+
+        .jpeg_quality = 12,
+
+        .fb_count = 1,
+
+        .fb_location = CAMERA_FB_IN_PSRAM,
+
+        .grab_mode = CAMERA_GRAB_WHEN_EMPTY
+    };
+
+    esp_err_t err = esp_camera_init(&amp;config);
+
+    if (err != ESP_OK) {
+
+        ESP_LOGE(
+            TAG,
+            &quot;Camera init failed: 0x%x&quot;,
+            err
+        );
+
+        return;
+    }
+
+    ESP_LOGI(TAG, &quot;Camera initialized&quot;);
+}</code></pre>
+
+<p>这是初始化框架，实际使用前必须补全全部引脚，并确认当前驱动版本支持这些配置。</p>
+
+<h3>3. 获取一帧图像</h3>
+
+<pre class="code"><code class="language-c">camera_fb_t *fb = esp_camera_fb_get();
+
+if (fb != NULL) {
+
+    printf(&quot;Width: %u\n&quot;, fb-&gt;width);
+
+    printf(&quot;Height: %u\n&quot;, fb-&gt;height);
+
+    printf(&quot;Length: %u\n&quot;, (unsigned)fb-&gt;len);
+
+    printf(&quot;Format: %d\n&quot;, fb-&gt;format);
+
+    esp_camera_fb_return(fb);
+}</code></pre>
+
+<p>其中：</p>
+
+<ul><li><code>width</code>：图像宽度；</li><li><code>height</code>：图像高度；</li><li><code>len</code>：图像数据长度；</li><li><code>format</code>：图像格式；</li><li><code>buf</code>：图像数据指针。</li></ul>
+
+<p>这里有一个特别重要的规则：</p>
+
+<p><strong>获取帧缓冲区之后，不要在数据尚未处理完成时就调用 <code>esp_camera_fb_return()</code>。</strong></p>
+
+<p>否则驱动可能重新使用这块缓冲区，导致你读取到被覆盖的数据。</p>
+
+<p>如果需要长期保存图像，应该先复制到自己管理的缓冲区，或者直接保存、发送完毕后再归还帧缓冲区。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、图像分辨率：如何控制内存占用？</h2>
+
+<p>摄像头开发最容易出现的问题之一，就是内存不够。</p>
+
+<p>我们计算几种常见分辨率的 RGB565 原始图像大小。</p>
+
+<div class="table-wrap"><table><thead><tr><th>分辨率</th><th>像素数量</th><th>RGB565 单帧</th></tr></thead><tbody><tr><td>QQVGA 160×120</td><td>19,200</td><td>37.5KiB</td></tr><tr><td>QVGA 320×240</td><td>76,800</td><td>150KiB</td></tr><tr><td>VGA 640×480</td><td>307,200</td><td>600KiB</td></tr><tr><td>SVGA 800×600</td><td>480,000</td><td>937.5KiB</td></tr><tr><td>XGA 1024×768</td><td>786,432</td><td>1.5MiB</td></tr></tbody></table></div>
+
+<p>这些是未压缩 RGB565 图像的理论数据量。</p>
+
+<p>如果是 JPEG，大小会根据场景和压缩质量变化。</p>
+
+<h3>1. 为什么初学者应该从 QVGA 开始？</h3>
+
+<p>建议开发顺序：</p>
+
+<pre class="code"><code class="language-text">QQVGA
+  ↓
+QVGA
+  ↓
+VGA
+  ↓
+更高分辨率</code></pre>
+
+<p>每一步都验证：</p>
+
+<ul><li>摄像头初始化；</li><li>图像帧获取；</li><li>帧数据完整性；</li><li>PSRAM 占用；</li><li>JPEG 解码；</li><li>Wi-Fi 传输。</li></ul>
+
+<p>不要一开始就使用最高分辨率。</p>
+
+<h3>2. 帧率如何计算？</h3>
+
+<p>假设每秒采集 10 帧：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>F</mi><mi>P</mi><mi>S</mi><mo>=</mo><mn>10</mn></mrow><annotation encoding="application/x-tex">FPS=10</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">10</span></span></span></span></span>
+
+
+<p>如果每帧 JPEG 平均 40KB：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>40</mn><mi>K</mi><mi>B</mi><mo>×</mo><mn>10</mn><mo>=</mo><mn>400</mn><mi>K</mi><mi>B</mi><mi mathvariant="normal">/</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">40KB\times10=400KB/s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord">40</span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">10</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">400</span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord">/</span><span class="mord mathnormal">s</span></span></span></span></span>
+
+
+<p>这还没有计算 HTTP、TCP、Wi-Fi 等协议开销。</p>
+
+<p>因此要根据图像大小和无线网络能力控制帧率。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、图像处理：让 ESP32-S3 能够分析图像</h2>
+
+<p>现在进入计算机视觉的基础。</p>
+
+<p>摄像头得到图像之后，不只是显示照片，还可以对图像进行分析。</p>
+
+<h3>1. 灰度处理</h3>
+
+<p>彩色图像可以转换为灰度图像。</p>
+
+<p>常用计算方式：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>G</mi><mi>r</mi><mi>a</mi><mi>y</mi><mo>=</mo><mn>0.299</mn><mi>R</mi><mo>+</mo><mn>0.587</mn><mi>G</mi><mo>+</mo><mn>0.114</mn><mi>B</mi></mrow><annotation encoding="application/x-tex">Gray=0.299R+0.587G+0.114B</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">G</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord">0.299</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord">0.587</span><span class="mord mathnormal">G</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">0.114</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span></span></span></span></span>
+
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">uint8_t rgb_to_gray(
+    uint8_t r,
+    uint8_t g,
+    uint8_t b
+)
+{
+    return (
+        299 * r +
+        587 * g +
+        114 * b
+    ) / 1000;
+}</code></pre>
+
+<p>灰度处理能够减少后续图像分析的数据量。</p>
+
+<h3>2. 二值化</h3>
+
+<p>设置一个阈值：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>G</mi><mi>r</mi><mi>a</mi><mi>y</mi><mo>&gt;</mo><mi>T</mi></mrow><annotation encoding="application/x-tex">Gray&gt;T</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">G</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span></span></span></span></span>
+
+
+<p>则像素设置为白色，否则设置为黑色。</p>
+
+<pre class="code"><code class="language-c">uint8_t threshold(
+    uint8_t gray,
+    uint8_t value
+)
+{
+    return gray &gt; value ? 255 : 0;
+}</code></pre>
+
+<p>可以用于：</p>
+
+<ul><li>简单目标区域提取；</li><li>黑白标记识别；</li><li>线条检测；</li><li>简单图像分割。</li></ul>
+
+<h3>3. 边缘检测</h3>
+
+<p>图像中的边缘通常表现为亮度变化明显的区域。</p>
+
+<p>常见算法：</p>
+
+<ul><li>Sobel；</li><li>Prewitt；</li><li>Canny。</li></ul>
+
+<p>例如 Sobel 算法通过计算水平和垂直方向的梯度：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>G</mi><mo>=</mo><msqrt><mrow><msubsup><mi>G</mi><mi>x</mi><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>G</mi><mi>y</mi><mn>2</mn></msubsup></mrow></msqrt></mrow><annotation encoding="application/x-tex">G=\sqrt{G_x^2+G_y^2}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">G</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:1.84em;vertical-align:-0.6276em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.2124em;"><span class="svg-align" style="top:-3.8em;"><span class="pstrut" style="height:3.8em;"></span><span class="mord" style="padding-left:1em;"><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.7401em;"><span style="top:-2.453em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.247em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.7401em;"><span style="top:-2.453em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">y</span></span></span><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3831em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.1724em;"><span class="pstrut" style="height:3.8em;"></span><span class="hide-tail" style="min-width:1.02em;height:1.88em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.88em" viewBox="0 0 400000 1944" preserveAspectRatio="xMinYMin slice"><path d="M983 90
+l0 -0
+c4,-6.7,10,-10,18,-10 H400000v40
+H1013.1s-83.4,268,-264.1,840c-180.7,572,-277,876.3,-289,913c-4.7,4.7,-12.7,7,-24,7
+s-12,0,-12,0c-1.3,-3.3,-3.7,-11.7,-7,-25c-35.3,-125.3,-106.7,-373.3,-214,-744
+c-10,12,-21,25,-33,39s-32,39,-32,39c-6,-5.3,-15,-14,-27,-26s25,-30,25,-30
+c26.7,-32.7,52,-63,76,-91s52,-60,52,-60s208,722,208,722
+c56,-175.3,126.3,-397.3,211,-666c84.7,-268.7,153.8,-488.2,207.5,-658.5
+c53.7,-170.3,84.5,-266.8,92.5,-289.5z
+M1001 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.6276em;"><span></span></span></span></span></span></span></span></span></span>
+
+
+<p>边缘强度越大，说明图像在该位置变化越明显。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/14-11.jpg" alt="OpenCV入门（18）：图像处理之边缘检测 - fengMisaka - 博客园" loading="lazy"><figcaption><a href="https://s2.loli.net/2025/08/12/kLszGD8t97fnYbS.png" target="_blank" rel="noopener">OpenCV入门（18）：图像处理之边缘检测 - fengMisaka - 博客园</a> · 搜索词：Sobel edge detection original image grayscale edge detection result comparison</figcaption></figure>
+
+
+<p>ESP32-S3 可以运行简单的图像处理算法，但分辨率、帧率和算法复杂度需要合理控制。</p>
+
+<h3>4. 图像缩放</h3>
+
+<p>假设原始图像：</p>
+
+<pre class="code"><code class="language-text">640 × 480</code></pre>
+
+<p>缩小到：</p>
+
+<pre class="code"><code class="language-text">160 × 120</code></pre>
+
+<p>像素数量减少为原来的：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mn>160</mn><mo>×</mo><mn>120</mn></mrow><mrow><mn>640</mn><mo>×</mo><mn>480</mn></mrow></mfrac><mo>=</mo><mfrac><mn>1</mn><mn>16</mn></mfrac></mrow><annotation encoding="application/x-tex">\frac{160\times120}{640\times480}
+=\frac{1}{16}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:2.0908em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">640</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">480</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">160</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">120</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">16</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>可以显著降低后续处理开销。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、Wi-Fi 图像传输：让 Mac 实时看到 XIAO 的画面</h2>
+
+<p>现在将摄像头与前面学习的 Wi-Fi 网络知识结合起来。</p>
+
+<p>建议首先实现 HTTP 单张照片上传，再实现 MJPEG 视频流。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">摄像头网络传输架构</h2><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>OV2640</strong><span class="cg-text is-secondary is-xs">拍摄图像</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>ESP32-S3 LCD_CAM + DMA</strong><span class="cg-text is-secondary is-xs">获取图像帧</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>PSRAM 帧缓冲区</strong><span class="cg-text is-secondary is-xs">保存 JPEG</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>HTTP / MJPEG</strong><span class="cg-text is-secondary is-xs">网络传输</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>Mac 浏览器</strong><span class="cg-text is-secondary is-xs">查看照片和视频流</span></div></div>
+
+
+<h3>1. HTTP 单张照片</h3>
+
+<p>工作流程：</p>
+
+<pre class="code"><code class="language-text">Mac 请求 /capture
+       ↓
+ESP32-S3 获取一帧
+       ↓
+返回 image/jpeg
+       ↓
+Mac 浏览器显示</code></pre>
+
+<p>这是最适合入门的方式。</p>
+
+<h3>2. MJPEG 视频流</h3>
+
+<p>MJPEG 是将多张 JPEG 图片连续发送形成的视频流。</p>
+
+<p>典型 HTTP 响应使用：</p>
+
+<pre class="code"><code class="language-text">multipart/x-mixed-replace</code></pre>
+
+<p>每一帧都是独立的 JPEG 图片。</p>
+
+<p>浏览器可以连续显示。</p>
+
+<h3>3. 为什么先做 JPEG？</h3>
+
+<p>因为 JPEG：</p>
+
+<ul><li>数据量较小；</li><li>便于浏览器显示；</li><li>不需要在 ESP32-S3 上实时进行复杂的视频编码；</li><li>适合无线网络传输。</li></ul>
+
+<h3>4. 网络传输时要注意什么？</h3>
+
+<p>不能让摄像头采集任务一直等待网络发送。</p>
+
+<p>建议：</p>
+
+<pre class="code"><code class="language-text">Camera Task
+     ↓
+Frame Queue
+     ↓
+HTTP Task
+     ↓
+Wi-Fi</code></pre>
+
+<p>并控制帧缓冲区数量，防止网络发送速度跟不上摄像头采集速度。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十三、视觉开发的下一步：轻量级 AI</h2>
+
+<p>当你掌握图像采集、JPEG 和基础图像处理后，可以进一步学习边缘 AI。</p>
+
+<p>ESP32-S3 可以运行一些适合 MCU 的轻量级机器学习模型。</p>
+
+<p>例如：</p>
+
+<ul><li>简单图像分类；</li><li>特定物体检测；</li><li>人体存在检测；</li><li>手势识别；</li><li>条码识别；</li><li>简单视觉触发。</li></ul>
+
+<p>但需要认识到：</p>
+
+<p><strong>ESP32-S3 并不是桌面 GPU。</strong></p>
+
+<p>它适合小模型、低分辨率和低复杂度任务。</p>
+
+<p>更复杂的目标检测和视觉语言模型，通常需要将图像发送到更强的本地服务器或云端处理。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十四、普通版 XIAO ESP32S3 摄像头开发的硬件限制</h2>
+
+<p>这里需要专门强调一下。</p>
+
+<p>普通版和 Sense 版的区别不只是是否有摄像头。</p>
+
+<p>Sense 版本有相应的摄像头连接扩展硬件，而普通版需要自己完成摄像头模块接线和资源规划。</p>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/14-12.jpg" alt="Overview of IoT WiFi Microcontroller Development Boards" loading="lazy"><figcaption><a href="https://datacapturecontrol.com/articles/static/images/data-communication/wireless/wifi/dev-boards/esp32-s3-seeed-studio-xiao-dev-board.png" target="_blank" rel="noopener">Overview of IoT WiFi Microcontroller Development Boards</a> · 搜索词：Seeed Studio XIAO ESP32S3 standard development board front back</figcaption></figure><strong>普通版 XIAO ESP32S3</strong><span class="cg-text is-secondary is-xs">本课程唯一基础主控，需要外接摄像头并规划 DVP 引脚。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/14-13.jpg" alt="Seeed Studio XIAO ESP32S3 Sense - 2.4GHz WiFi, BLE 5.0, OV2640 camera sensor, digital microphone, 8MB PSRAM, 8MB FLASH, battery charge, IoT, embedded ML | Kiwi Electronics" loading="lazy"><figcaption><a href="https://www.kiwi-electronics.com/image/cache/catalog/product/map1/113991115c-1400x1050h.jpg" target="_blank" rel="noopener">Seeed Studio XIAO ESP32S3 Sense - 2.4GHz WiFi, BLE 5.0, OV2640 camera sensor, digital microphone, 8MB PSRAM, 8MB FLASH, battery charge, IoT, embedded ML | Kiwi Electronics</a> · 搜索词：Seeed Studio XIAO ESP32S3 Sense expansion board OV2640 camera module</figcaption></figure><strong>XIAO ESP32S3 Sense</strong><span class="cg-text is-secondary is-xs">带摄像头扩展硬件，不直接作为本课程接线依据。</span></div></div>
+
+
+<h3>开发前必须核实的四件事</h3>
+
+<ol><li>你使用的普通版具体硬件版本。</li><li>板子实际可用 GPIO。</li><li>外接摄像头模块的完整引脚定义。</li><li>摄像头 DVP 数据线、时钟和控制线能否全部映射到可用 GPIO。</li></ol>
+
+<p>还需要注意：XIAO 的 USB、启动相关引脚和板载功能可能占用部分资源，不能仅凭 GPIO Matrix 支持灵活映射就认为任意引脚都能使用。</p>
+
+<p><strong>建议先不要购买摄像头，也不要照搬 Sense 的接线图。先核对普通版板卡原理图，再决定是否适合直接连接 OV2640。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>十五、实战：建立普通版 XIAO ESP32S3 摄像头实验工程</h2>
+
+<p>建议将摄像头开发拆成五个阶段。</p>
+
+<div class="table-wrap"><table><thead><tr><th>阶段</th><th>实验目标</th><th>验收结果</th></tr></thead><tbody><tr><td>1</td><td>摄像头硬件连接</td><td>能够识别传感器</td></tr><tr><td>2</td><td>单张照片采集</td><td>获得完整 JPEG</td></tr><tr><td>3</td><td>PSRAM 帧缓冲</td><td>稳定获取图像</td></tr><tr><td>4</td><td>HTTP 图片服务</td><td>Mac 浏览器查看照片</td></tr><tr><td>5</td><td>MJPEG 视频流</td><td>连续查看画面</td></tr></tbody></table></div>
+
+<h3>1. 工程目录</h3>
+
+<pre class="code"><code class="language-text">projects/
+└── camera_vision/
+    │
+    ├── main/
+    │   └── app_main.c
+    │
+    ├── components/
+    │   ├── camera_bsp/
+    │   │   ├── camera_pins.h
+    │   │   └── camera_bsp.c
+    │   │
+    │   ├── camera_driver/
+    │   │   ├── camera_init.c
+    │   │   └── camera_capture.c
+    │   │
+    │   ├── image_processing/
+    │   │   ├── grayscale.c
+    │   │   ├── threshold.c
+    │   │   └── resize.c
+    │   │
+    │   ├── camera_network/
+    │   │   ├── http_capture.c
+    │   │   └── mjpeg_server.c
+    │   │
+    │   └── camera_monitor/
+    │       └── memory_monitor.c
+    │
+    ├── docs/
+    │   ├── camera_hardware.md
+    │   ├── gpio_mapping.md
+    │   ├── memory_planning.md
+    │   └── debug_guide.md
+    │
+    └── README.md</code></pre>
+
+<h3>2. 第一阶段：确认摄像头 GPIO</h3>
+
+<p>先创建：</p>
+
+<pre class="code"><code class="language-c">// camera_pins.h
+
+#pragma once
+
+// 必须根据实际硬件接线填写。
+// 以下只声明配置项，不预设 GPIO 数值。
+
+#define CAMERA_PIN_PWDN   (-1)
+#define CAMERA_PIN_RESET  (-1)
+
+#define CAMERA_PIN_XCLK   (-1)
+
+#define CAMERA_PIN_SIOD   (-1)
+#define CAMERA_PIN_SIOC   (-1)
+
+#define CAMERA_PIN_D0     (-1)
+#define CAMERA_PIN_D1     (-1)
+#define CAMERA_PIN_D2     (-1)
+#define CAMERA_PIN_D3     (-1)
+#define CAMERA_PIN_D4     (-1)
+#define CAMERA_PIN_D5     (-1)
+#define CAMERA_PIN_D6     (-1)
+#define CAMERA_PIN_D7     (-1)
+
+#define CAMERA_PIN_VSYNC  (-1)
+#define CAMERA_PIN_HREF   (-1)
+#define CAMERA_PIN_PCLK   (-1)</code></pre>
+
+<p>这里故意没有填写一套虚构的接线。</p>
+
+<p>普通版 XIAO ESP32S3 必须先完成引脚资源核对，特别是 DVP 的 8 根数据线和同步时钟信号。</p>
+
+<h3>3. 第二阶段：摄像头初始化</h3>
+
+<p>完成 GPIO 配置后：</p>
+
+<pre class="code"><code class="language-c">esp_err_t camera_start(void)
+{
+    camera_config_t config = {
+        // 使用 camera_pins.h 中的实际引脚
+
+        .xclk_freq_hz = 20000000,
+
+        .pixel_format = PIXFORMAT_JPEG,
+
+        .frame_size = FRAMESIZE_QVGA,
+
+        .jpeg_quality = 12,
+
+        .fb_count = 1,
+
+        .fb_location = CAMERA_FB_IN_PSRAM,
+
+        .grab_mode = CAMERA_GRAB_WHEN_EMPTY
+    };
+
+    return esp_camera_init(&amp;config);
+}</code></pre>
+
+<h3>4. 第三阶段：拍摄并保存图像</h3>
+
+<pre class="code"><code class="language-c">#include &quot;esp_camera.h&quot;
+#include &quot;esp_log.h&quot;
+
+void capture_image(void)
+{
+    camera_fb_t *fb = esp_camera_fb_get();
+
+    if (fb == NULL) {
+
+        ESP_LOGE(
+            &quot;CAMERA&quot;,
+            &quot;Capture failed&quot;
+        );
+
+        return;
+    }
+
+    ESP_LOGI(
+        &quot;CAMERA&quot;,
+        &quot;Image: %ux%u, %u bytes&quot;,
+        fb-&gt;width,
+        fb-&gt;height,
+        (unsigned)fb-&gt;len
+    );
+
+    // 在这里将 fb-&gt;buf / fb-&gt;len
+    // 写入文件或发送网络。
+
+    esp_camera_fb_return(fb);
+}</code></pre>
+
+<p>注意：文件系统写入需要单独初始化 SD 卡或其他存储介质；不能认为 <code>fb-&gt;buf</code> 自动就是一个文件。</p>
+
+<h3>5. 第四阶段：Mac 查看图像</h3>
+
+<p>推荐先实现：</p>
+
+<pre class="code"><code class="language-text">http://设备IP/capture</code></pre>
+
+<p>浏览器访问后，ESP32-S3 返回 JPEG 图片。</p>
+
+<p>再增加：</p>
+
+<pre class="code"><code class="language-text">http://设备IP/stream</code></pre>
+
+<p>实现 MJPEG 视频流。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十六、给 Codex 的本课开发任务</h2>
+
+<p>建议不要让 Codex 直接按照 Sense 版的摄像头配置复制工程。</p>
+
+<p>先让它完成普通版硬件可行性分析。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Codex：普通版 XIAO ESP32S3 摄像头可行性分析</strong><button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制任务
+    </button></div><strong>执行顺序：</strong>
+
+<ol><li>检查普通版原理图。</li><li>建立 GPIO 资源矩阵。</li><li>分析 DVP 接线可行性。</li><li>检查 PSRAM 和 DMA。</li><li>验证摄像头驱动。</li><li>输出最终接线图。</li><li>创建独立摄像头工程。</li></ol>
+  <span class="cg-badge color-success">先分析硬件，再写代码</span></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十七、本课知识验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第十四课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十八、下一课：ESP32-S3 边缘 AI 与本地模型运行</h2>
+
+<p>前面已经学习了 GPIO、通信外设、ADC、DMA、音频和摄像头。</p>
+
+<p>下一阶段开始进入智能硬件开发的核心：</p>
+
+<p><strong>如何让 XIAO ESP32S3 不仅采集数据，还能够在设备本地进行智能分析？</strong></p>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十五课：TinyML、神经网络与 ESP32-S3 边缘 AI</h2><figure class="cg-figure"><img src="../tutorial/images/14-14.jpg" alt="TinyML &amp; On-Device AI: How to Run Machine Learning Models Without Cloud (Complete 2026 Setup Guide)" loading="lazy"><figcaption><a href="https://www.humai.blog/content/images/size/w2400/2026/01/image-447.png" target="_blank" rel="noopener">TinyML &amp; On-Device AI: How to Run Machine Learning Models Without Cloud (Complete 2026 Setup Guide)</a> · 搜索词：edge AI embedded microcontroller neural network inference TinyML architecture illustration</figcaption></figure>
+  课程安排：
+
+<ol><li>人工智能与机器学习的基本原理。</li><li>神经网络的工作机制。</li><li>CNN 卷积神经网络。</li><li>模型训练与推理的区别。</li><li>INT8 量化原理。</li><li>Flash、RAM、PSRAM 与模型内存规划。</li><li>TensorFlow Lite Micro。</li><li>Espressif ESP-DL。</li><li>音频关键词识别。</li><li>人体和简单图像分类。</li><li>模型部署与推理性能分析。</li><li>本地 AI 与云端 AI 协同。</li></ol></div>
+
+
+<h3>这一课最终要实现什么？</h3>
+
+<p>建议完成三个独立实验：</p>
+
+<div class="table-wrap"><table><thead><tr><th>实验</th><th>功能</th></tr></thead><tbody><tr><td>AI 音频识别</td><td>识别简单语音关键词</td></tr><tr><td>AI 传感器识别</td><td>判断设备运行状态</td></tr><tr><td>AI 图像识别</td><td>对低分辨率图像进行分类</td></tr></tbody></table></div>
+
+<p>重点学习两个开源生态：</p>
+
+<ul><li><a class="cg-link" href="https://github.com/espressif/esp-dl" target="_blank" rel="noopener">ESP-DL：乐鑫边缘 AI 推理框架<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://github.com/tensorflow/tflite-micro" target="_blank" rel="noopener">TensorFlow Lite Micro：微控制器模型推理框架<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+
+<p><strong>后续学习方向：</strong></p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3
+      │
+      ├── 硬件驱动
+      │
+      ├── 音频采集
+      │
+      ├── 图像采集
+      │
+      ├── 数据处理
+      │
+      ├── 本地 AI 推理
+      │
+      └── Wi-Fi 云端通信
+              │
+              ↓
+         智能终端产品</code></pre>
+
+<p>我的建议是：先完成本地音频关键词识别，再研究图像识别。这样即使普通版 XIAO ESP32S3 的外接摄像头引脚规划还没有完成，也不会影响 AI 学习。</p>
+
+<p>最终，我们要建立的不是单纯的 ESP32 示例代码集合，而是一套覆盖硬件、驱动、操作系统、通信、音频、视觉和边缘 AI 的完整 XIAO ESP32S3 开发知识体系。</p>
+</div></section>
+<nav class="lesson-nav"><a href="13-第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP.html">← 第十三课：XIAO ESP32S3 数字音频系统——I2S、PCM、DMA 与 DSP</a><span class="spacer"></span><a href="15-第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理.html">第十五课：XIAO ESP32S3 边缘 AI 开发原理——TinyML、神经网络与本地推理 →</a></nav>
+</main></body></html>

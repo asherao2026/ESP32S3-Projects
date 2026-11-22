@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性 · <a href="index.html">课程目录</a> · <a href="../tutorial/17-第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第十七课：XIAO ESP32S3 低功耗、电源管理与系统可靠性</h1>
+
+<p>前面我们已经学习了 Wi-Fi、MQTT、HTTP、WebSocket、音频、摄像头和边缘 AI。</p>
+
+<p>这些功能能够让 XIAO ESP32S3 变成一台智能设备，但距离真正的产品还有一个关键问题：</p>
+
+<p><strong>如何让设备在电池供电时尽可能省电，并且在断网、欠压、程序异常或意外重启后仍然能够可靠工作？</strong></p>
+
+<p>本课继续以普通版 Seeed XIAO ESP32S3 为主控，使用 ESP-IDF 开发。</p>
+
+<h2>一、ESP32-S3 为什么需要电源管理？</h2>
+
+<p>ESP32-S3 的功耗不是固定的。</p>
+
+<p>同一块开发板，在不同工作状态下，电流可能相差很大。</p>
+
+<p>例如：</p>
+
+<ul><li>CPU 高速运行；</li><li>Wi-Fi 发射；</li><li>Wi-Fi 待机；</li><li>CPU 空闲；</li><li>Light Sleep；</li><li>Deep Sleep。</li></ul>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><h2 class="cg-title">典型工作状态的相对功耗</h2><div class="cg-box" style="--gap:2;--pad:0;"></div><div class="cg-caption">这是一张相对功耗示意图，不是 XIAO ESP32S3 的实测电流。实际功耗与板载电路、射频活动、供电方式和外设有关。</div></div>
+
+
+<h3>1. 为什么不能只看 ESP32-S3 芯片的数据手册？</h3>
+
+<p>因为你使用的是完整开发板。</p>
+
+<p>实际电池电流可能包括：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mrow><mi>t</mi><mi>o</mi><mi>t</mi><mi>a</mi><mi>l</mi></mrow></msub><mo>=</mo><msub><mi>I</mi><mrow><mi>E</mi><mi>S</mi><mi>P</mi><mn>32</mn></mrow></msub><mo>+</mo><msub><mi>I</mi><mrow><mi>r</mi><mi>e</mi><mi>g</mi><mi>u</mi><mi>l</mi><mi>a</mi><mi>t</mi><mi>o</mi><mi>r</mi></mrow></msub><mo>+</mo><msub><mi>I</mi><mrow><mi>L</mi><mi>E</mi><mi>D</mi></mrow></msub><mo>+</mo><msub><mi>I</mi><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>p</mi><mi>h</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>l</mi><mi>s</mi></mrow></msub></mrow><annotation encoding="application/x-tex">I_{total}=I_{ESP32}+I_{regulator}+I_{LED}+I_{peripherals}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0576em;">E</span><span class="mord mathnormal mtight" style="margin-right:0.0576em;">S</span><span class="mord mathnormal mtight" style="margin-right:0.1389em;">P</span><span class="mord mtight">32</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">or</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">L</span><span class="mord mathnormal mtight" style="margin-right:0.0576em;">E</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">D</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">er</span><span class="mord mathnormal mtight">i</span><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight">h</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">er</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span><span class="mord mathnormal mtight">s</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mrow><mi>E</mi><mi>S</mi><mi>P</mi><mn>32</mn></mrow></msub></mrow><annotation encoding="application/x-tex">I_{ESP32}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0576em;">E</span><span class="mord mathnormal mtight" style="margin-right:0.0576em;">S</span><span class="mord mathnormal mtight" style="margin-right:0.1389em;">P</span><span class="mord mtight">32</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：芯片本身电流；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mrow><mi>r</mi><mi>e</mi><mi>g</mi><mi>u</mi><mi>l</mi><mi>a</mi><mi>t</mi><mi>o</mi><mi>r</mi></mrow></msub></mrow><annotation encoding="application/x-tex">I_{regulator}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">or</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>：稳压电路自身消耗；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mrow><mi>L</mi><mi>E</mi><mi>D</mi></mrow></msub></mrow><annotation encoding="application/x-tex">I_{LED}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">L</span><span class="mord mathnormal mtight" style="margin-right:0.0576em;">E</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">D</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>：板载指示灯电流；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>p</mi><mi>h</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>l</mi><mi>s</mi></mrow></msub></mrow><annotation encoding="application/x-tex">I_{peripherals}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">er</span><span class="mord mathnormal mtight">i</span><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight">h</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">er</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span><span class="mord mathnormal mtight">s</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>：麦克风、传感器、显示屏等外设电流。</li></ul>
+
+<p>因此，<strong>芯片的 Deep Sleep 电流不等于整块 XIAO 开发板的 Deep Sleep 电流。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>二、ESP32-S3 的电源域与时钟域</h2>
+
+<p>ESP32-S3 内部不是所有模块都必须同时工作。</p>
+
+<p>可以把它理解成一座工厂。</p>
+
+<p>不同车间可以根据任务需要开启或关闭。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>ESP32-S3 电源与时钟管理</strong></div><div class="cg-grid" style="--cols:2"></div></div>
+
+
+<h3>1. 什么是时钟门控？</h3>
+
+<p>数字电路通常依靠时钟信号运行。</p>
+
+<p>当某个模块不需要工作时，可以关闭它的时钟，减少动态功耗。</p>
+
+<p>这称为 Clock Gating。</p>
+
+<h3>2. 什么是电源门控？</h3>
+
+<p>某些电源域可以在低功耗状态下断电。</p>
+
+<p>相比仅停止时钟，断电通常能够进一步降低功耗，但也会丢失该电源域中未被保留的状态。</p>
+
+<h3>3. 为什么休眠后有些数据会丢失？</h3>
+
+<p>因为休眠期间，部分 RAM 和外设可能断电。</p>
+
+<p>所以要区分：</p>
+
+<ul><li>普通 RAM；</li><li>RTC 保留内存；</li><li>Flash；</li><li>NVS。</li></ul>
+
+<p>不同睡眠模式保留的数据不同。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、四种重要的运行与休眠状态</h2>
+
+<div class="table-wrap"><table><thead><tr><th>模式</th><th>CPU</th><th>Wi-Fi</th><th>程序执行状态</th></tr></thead><tbody><tr><td>Active</td><td>运行</td><td>可工作</td><td>正常运行</td></tr><tr><td>Modem Sleep</td><td>通常运行</td><td>无线模块间歇休眠</td><td>程序继续运行</td></tr><tr><td>Light Sleep</td><td>暂停</td><td>无法持续正常通信</td><td>唤醒后继续</td></tr><tr><td>Deep Sleep</td><td>主 CPU 停止</td><td>关闭</td><td>唤醒后重新启动</td></tr></tbody></table></div>
+
+<h3>1. Active：正常工作</h3>
+
+<p>适合：</p>
+
+<ul><li>音频采集；</li><li>AI 推理；</li><li>网络传输；</li><li>图像处理。</li></ul>
+
+<p>优点是响应快。</p>
+
+<p>缺点是功耗较高。</p>
+
+<h3>2. Modem Sleep：无线模块省电</h3>
+
+<p>设备仍然保持 Wi-Fi 连接，但无线模块可以在部分时间进入省电状态。</p>
+
+<p>ESP-IDF 提供：</p>
+
+<pre class="code"><code class="language-c">esp_wifi_set_ps(WIFI_PS_MIN_MODEM);</code></pre>
+
+<p>也可以根据应用选择其他支持的 Wi-Fi 省电配置。</p>
+
+<p>但要注意：</p>
+
+<p>Modem Sleep 可能增加网络响应延迟，特别是对于实时音频、低延迟 WebSocket 等应用。</p>
+
+<h3>3. Light Sleep：浅睡眠</h3>
+
+<p>CPU 暂停执行，部分状态得到保留。</p>
+
+<p>唤醒后，程序可以从进入休眠的位置附近继续执行。</p>
+
+<p>适合：</p>
+
+<ul><li>间歇性传感器采样；</li><li>短时间等待；</li><li>对唤醒延迟有要求的设备。</li></ul>
+
+<h3>4. Deep Sleep：深度休眠</h3>
+
+<p>这是电池供电设备非常重要的模式。</p>
+
+<p>进入 Deep Sleep 后：</p>
+
+<ul><li>主 CPU 停止；</li><li>Wi-Fi 关闭；</li><li>大部分普通运行状态丢失；</li><li>只保留指定的低功耗域状态。</li></ul>
+
+<p>唤醒后通常重新经历启动流程，再执行 <code>app_main()</code>。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、实战一：定时唤醒的 Deep Sleep</h2>
+
+<p>这是本课第一个推荐实际烧录的实验。</p>
+
+<p>目标：</p>
+
+<pre class="code"><code class="language-text">XIAO 启动
+    ↓
+打印启动信息
+    ↓
+等待 3 秒
+    ↓
+进入 Deep Sleep
+    ↓
+10 秒后唤醒
+    ↓
+重新启动
+    ↓
+重复执行</code></pre>
+
+<h3>1. ESP-IDF 完整示例</h3>
+
+<pre class="code"><code class="language-c">#include &lt;inttypes.h&gt;
+
+#include &quot;freertos/FreeRTOS.h&quot;
+#include &quot;freertos/task.h&quot;
+
+#include &quot;esp_log.h&quot;
+#include &quot;esp_sleep.h&quot;
+#include &quot;esp_system.h&quot;
+
+static const char *TAG = &quot;SLEEP&quot;;
+
+void app_main(void)
+{
+    esp_sleep_wakeup_cause_t cause =
+        esp_sleep_get_wakeup_cause();
+
+    ESP_LOGI(
+        TAG,
+        &quot;Wakeup cause: %d&quot;,
+        cause
+    );
+
+    ESP_LOGI(TAG, &quot;Running...&quot;);
+
+    vTaskDelay(
+        pdMS_TO_TICKS(3000)
+    );
+
+    ESP_LOGI(
+        TAG,
+        &quot;Entering deep sleep&quot;
+    );
+
+    ESP_ERROR_CHECK(
+        esp_sleep_enable_timer_wakeup(
+            10ULL * 1000000ULL
+        )
+    );
+
+    esp_deep_sleep_start();
+}</code></pre>
+
+<h3>2. 为什么使用 <code>10ULL * 1000000ULL</code>？</h3>
+
+<p>因为 <code>esp_sleep_enable_timer_wakeup()</code> 使用微秒作为时间单位。</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>10</mn><mtext>秒</mtext><mo>=</mo><mn>10</mn><mo separator="true">,</mo><mn>000</mn><mo separator="true">,</mo><mn>000</mn><mtext>微秒</mtext></mrow><annotation encoding="application/x-tex">10秒=10,000,000微秒</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">10</span><span class="mord cjk_fallback">秒</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">10</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">000</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">000</span><span class="mord cjk_fallback">微秒</span></span></span></span></span>
+
+
+<p><code>ULL</code> 用于确保表达式使用足够宽的无符号整数类型。</p>
+
+<h3>3. 预期现象</h3>
+
+<p>串口可能看到：</p>
+
+<pre class="code"><code class="language-text">I SLEEP: Wakeup cause: 0
+I SLEEP: Running...
+I SLEEP: Entering deep sleep</code></pre>
+
+<p>经过约 10 秒后，设备重新启动。</p>
+
+<p>再次看到：</p>
+
+<pre class="code"><code class="language-text">I SLEEP: Wakeup cause: 4
+I SLEEP: Running...</code></pre>
+
+<p>其中唤醒原因应以实际枚举值和日志为准。定时器唤醒对应 <code>ESP_SLEEP_WAKEUP_TIMER</code>。</p>
+
+<hr class="cg-divider"/>
+
+<h2>五、RTC 内存：如何让 Deep Sleep 后保留变量？</h2>
+
+<p>普通变量：</p>
+
+<pre class="code"><code class="language-c">int boot_count = 0;</code></pre>
+
+<p>在 Deep Sleep 唤醒后通常不会保留上次运行时的值。</p>
+
+<p>但 ESP-IDF 提供 RTC 保留内存相关机制。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">RTC_DATA_ATTR int boot_count = 0;</code></pre>
+
+<h3>1. 完整示例</h3>
+
+<pre class="code"><code class="language-c">#include &lt;inttypes.h&gt;
+
+#include &quot;esp_log.h&quot;
+#include &quot;esp_sleep.h&quot;
+
+RTC_DATA_ATTR static uint32_t boot_count = 0;
+
+void app_main(void)
+{
+    boot_count++;
+
+    ESP_LOGI(
+        &quot;RTC&quot;,
+        &quot;Boot count: %&quot; PRIu32,
+        boot_count
+    );
+
+    ESP_ERROR_CHECK(
+        esp_sleep_enable_timer_wakeup(
+            5ULL * 1000000ULL
+        )
+    );
+
+    esp_deep_sleep_start();
+}</code></pre>
+
+<p>预期：</p>
+
+<pre class="code"><code class="language-text">Boot count: 1
+Boot count: 2
+Boot count: 3</code></pre>
+
+<p>但是需要注意：</p>
+
+<p>RTC 保留变量并不等于永久存储。</p>
+
+<p>断电、某些复位类型或 RTC 内存未保留的情况，仍然可能导致数据丢失。</p>
+
+<h3>2. RTC 内存和 NVS 的区别</h3>
+
+<div class="table-wrap"><table><thead><tr><th>特性</th><th>RTC 保留内存</th><th>NVS</th></tr></thead><tbody><tr><td>Deep Sleep 保留</td><td>视配置和供电情况</td><td>是</td></tr><tr><td>完全断电保留</td><td>否</td><td>是</td></tr><tr><td>写入速度</td><td>RAM 访问</td><td>Flash 写入</td></tr><tr><td>写入寿命限制</td><td>无 Flash 擦写问题</td><td>有 Flash 擦写寿命</td></tr><tr><td>适合</td><td>睡眠周期计数</td><td>设备配置和持久状态</td></tr></tbody></table></div>
+
+<hr class="cg-divider"/>
+
+<h2>六、GPIO 唤醒：按下按钮唤醒设备</h2>
+
+<p>除了定时器，ESP32-S3 还可以使用符合条件的 GPIO 唤醒。</p>
+
+<p>对于 Deep Sleep，应该使用芯片支持的 RTC GPIO 和对应的唤醒机制。</p>
+
+<p>不能认为所有普通 GPIO 都可以直接用于 Deep Sleep 唤醒。</p>
+
+<h3>1. 按钮连接示意</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-center" style="--gap:2;align-items:center"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>3.3V 电源域</strong></div></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>上拉电阻</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>RTC GPIO 输入</strong><span class="cg-text is-secondary is-xs">按钮按下时拉低</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>按钮 → GND</strong></div></div>
+
+
+<p>上图是逻辑连接关系，不代表电阻与按钮简单串联。实际电路应为 GPIO 节点经上拉电阻连接 3.3V，同时经按钮连接 GND。</p>
+
+<h3>2. 唤醒逻辑</h3>
+
+<pre class="code"><code class="language-text">按钮未按下 → GPIO 高电平
+
+按钮按下   → GPIO 低电平
+
+低电平满足唤醒条件 → ESP32-S3 唤醒</code></pre>
+
+<p>ESP32-S3 支持的具体 RTC GPIO、EXT1 等唤醒方式和 API，应以所用 ESP-IDF 版本为准。</p>
+
+<p>另外，选择 GPIO 时还要避免影响启动绑带引脚。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、Wi-Fi 省电与网络延迟之间的权衡</h2>
+
+<p>对于智能语音终端，这是一个很重要的问题。</p>
+
+<p>假设设备需要：</p>
+
+<ul><li>持续监听唤醒词；</li><li>Wi-Fi 保持连接；</li><li>用户说话后立即上传音频。</li></ul>
+
+<p>如果 Wi-Fi 过度省电，可能增加唤醒和发送延迟。</p>
+
+<h3>不同业务的建议</h3>
+
+<div class="table-wrap"><table><thead><tr><th>应用</th><th>电源策略</th></tr></thead><tbody><tr><td>电池温湿度计</td><td>Deep Sleep</td></tr><tr><td>定时数据上报</td><td>Deep Sleep + Wi-Fi 短时连接</td></tr><tr><td>低频状态监控</td><td>Modem Sleep</td></tr><tr><td>持续 MQTT 在线</td><td>根据延迟要求使用 Wi-Fi 省电</td></tr><tr><td>实时音频</td><td>优先稳定低延迟</td></tr><tr><td>摄像头视频流</td><td>通常保持 Active</td></tr></tbody></table></div>
+
+<p>这里没有适用于所有设备的统一省电配置。</p>
+
+<p>需要通过真实电流和响应延迟测试选择。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、动态频率调整：CPU 不必始终运行在 240MHz</h2>
+
+<p>ESP32-S3 的 CPU 频率可以根据系统配置和运行需求进行调整。</p>
+
+<p>ESP-IDF 提供电源管理功能：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_pm.h&quot;</code></pre>
+
+<p>典型配置形式：</p>
+
+<pre class="code"><code class="language-c">esp_pm_config_t pm_config = {
+    .max_freq_mhz = 240,
+    .min_freq_mhz = 80,
+    .light_sleep_enable = false
+};
+
+ESP_ERROR_CHECK(
+    esp_pm_configure(&amp;pm_config)
+);</code></pre>
+
+<p>实际使用需要启用相应 ESP-IDF 电源管理配置，并确认所选芯片和 SDK 支持对应设置。</p>
+
+<h3>为什么降低 CPU 频率可以省电？</h3>
+
+<p>动态功耗通常与频率和电压有关。</p>
+
+<p>简化关系：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mo>∝</mo></msub><mi>C</mi><msup><mi>V</mi><mn>2</mn></msup><mi>f</mi></mrow><annotation encoding="application/x-tex">P_\propto C V^2 f</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:1.0585em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mrel mtight">∝</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span></span></span></span></span>
+
+
+<p>其中：</p>
+
+<ul><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi></mrow><annotation encoding="application/x-tex">C</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span></span></span></span>：等效开关电容；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">V</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span></span></span></span>：电压；</li><li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi></mrow><annotation encoding="application/x-tex">f</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span></span></span></span>：时钟频率。</li></ul>
+
+<p>降低频率通常可以降低单位时间内的动态开关功耗。</p>
+
+<p>但执行同一任务所需时间可能变长，所以必须比较完成任务所消耗的总能量。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、电池续航计算：如何估算设备能运行多久？</h2>
+
+<p>假设使用一块标称容量为 1000mAh 的电池。</p>
+
+<p>如果设备平均电流为 20mA：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>T</mi><mo>=</mo><mfrac><mn>1000</mn><mn>20</mn></mfrac><mo>=</mo><mn>50</mn><mtext>小时</mtext></mrow><annotation encoding="application/x-tex">T=\frac{1000}{20}=50小时</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">20</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1000</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">50</span><span class="mord cjk_fallback">小时</span></span></span></span></span>
+
+
+<p>这是理想化计算。</p>
+
+<p>实际还要考虑：</p>
+
+<ul><li>电池实际可用容量；</li><li>电池电压变化；</li><li>稳压转换效率；</li><li>峰值电流；</li><li>温度；</li><li>低压截止条件；</li><li>电池老化。</li></ul>
+
+<h3>交互式电池续航计算器</h3>
+
+
+
+
+
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><h2 class="cg-title">XIAO 电池续航估算</h2><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-label">电池容量（mAh）</div><div class="cg-input"></div></div><div class="cg-grid-item"><div class="cg-label">工作电流（mA）</div><div class="cg-input"></div></div><div class="cg-grid-item"><div class="cg-label">休眠电流（mA）</div><div class="cg-input"></div></div><div class="cg-grid-item"><div class="cg-label">有效容量系数（%）</div><div class="cg-input"></div></div></div><div class="cg-box" style="--gap:1;--pad:0;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><div class="cg-label">工作时间占比</div><span class="cg-text is-secondary">%</span></div></div><hr class="cg-divider"/><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">平均电流</span><h3 class="cg-title">— mA</h3></div></div><div class="cg-grid-item"><div class="cg-box radius-md bg-surface-secondary" style="--gap:1;--pad:3;"><span class="cg-text is-secondary is-xs">估算续航</span><h3 class="cg-title">— 天</h3></div></div></div><div class="cg-caption">这是简化的电流占空比估算。有效容量系数用于粗略折减，不是严格的 DC-DC 效率模型；实际应测量电池端平均电流，并考虑电压及转换损耗。</div></div>
+
+
+<h3>一个关键结论</h3>
+
+<p>如果设备每分钟只工作 1 秒，其余时间休眠，那么优化休眠电流可能比优化 CPU 计算速度更重要。</p>
+
+<p>但如果设备持续运行音频和 Wi-Fi，则应重点优化运行状态功耗。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、Watchdog：防止程序卡死</h2>
+
+<p>Watchdog（看门狗）是一种故障检测机制。</p>
+
+<p>如果软件长时间不能正常执行，看门狗可以触发诊断或复位。</p>
+
+<p>ESP-IDF 中需要重点理解两类：</p>
+
+<ul><li>Interrupt Watchdog；</li><li>Task Watchdog。</li></ul>
+
+<h3>1. Interrupt Watchdog</h3>
+
+<p>主要用于检测中断长时间被阻塞等严重问题。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">portDISABLE_INTERRUPTS();
+
+while (1) {
+    // 错误：一直不恢复中断
+}</code></pre>
+
+<p>这可能导致系统无法正常调度和响应中断。</p>
+
+<h3>2. Task Watchdog</h3>
+
+<p>用于监控指定任务是否长时间没有正常推进。</p>
+
+<p>例如某个任务：</p>
+
+<pre class="code"><code class="language-c">while (1) {
+    heavy_computation();
+}</code></pre>
+
+<p>如果长期占用 CPU，其他任务无法获得运行机会，就可能触发看门狗。</p>
+
+<h3>3. 为什么不能简单关闭 Watchdog？</h3>
+
+<p>因为 Watchdog 是发现系统异常的重要工具。</p>
+
+<p>如果因为程序触发 Watchdog 就直接禁用它，可能掩盖：</p>
+
+<ul><li>死循环；</li><li>任务饥饿；</li><li>锁死；</li><li>中断阻塞；</li><li>不合理的计算负载。</li></ul>
+
+<p>正确方法是分析触发原因，调整任务设计。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、Brownout：供电电压下降时会发生什么？</h2>
+
+<p>Brownout 是欠压状态。</p>
+
+<p>当供电电压下降到不适合芯片可靠运行的范围时，系统可能触发欠压检测或复位。</p>
+
+<h3>1. 为什么 Wi-Fi 发送时容易出现供电问题？</h3>
+
+<p>Wi-Fi 发射时电流可能短时升高。</p>
+
+<p>如果电源存在：</p>
+
+<ul><li>电池内阻过高；</li><li>连接线过细；</li><li>接触不良；</li><li>稳压器供电能力不足；</li><li>去耦电容配置不合理；</li></ul>
+
+<p>就可能导致电压瞬间下降。</p>
+
+<h3>2. 常见现象</h3>
+
+<pre class="code"><code class="language-text">设备正常启动
+    ↓
+开始 Wi-Fi 连接
+    ↓
+供电电压下降
+    ↓
+系统复位
+    ↓
+再次启动
+    ↓
+循环重启</code></pre>
+
+<h3>3. 如何排查？</h3>
+
+<p>建议依次检查：</p>
+
+<ol><li>电源输入电压。</li><li>Wi-Fi 发射期间的瞬态电压。</li><li>稳压器额定输出电流。</li><li>电源线和连接器。</li><li>去耦电容。</li><li>启动日志中的复位原因。</li></ol>
+
+<p>不要通过简单关闭 Brownout 检测来掩盖真实供电问题。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、如何读取 ESP32-S3 的复位原因？</h2>
+
+<p>ESP-IDF 提供：</p>
+
+<pre class="code"><code class="language-c">esp_reset_reason()</code></pre>
+
+<p>示例：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_system.h&quot;
+#include &quot;esp_log.h&quot;
+
+void print_reset_reason(void)
+{
+    esp_reset_reason_t reason =
+        esp_reset_reason();
+
+    ESP_LOGI(
+        &quot;SYSTEM&quot;,
+        &quot;Reset reason: %d&quot;,
+        reason
+    );
+}</code></pre>
+
+<p>常见原因包括：</p>
+
+<div class="table-wrap"><table><thead><tr><th>原因</th><th>含义</th></tr></thead><tbody><tr><td><code>ESP_RST_POWERON</code></td><td>上电启动</td></tr><tr><td><code>ESP_RST_SW</code></td><td>软件复位</td></tr><tr><td><code>ESP_RST_PANIC</code></td><td>系统异常</td></tr><tr><td><code>ESP_RST_INT_WDT</code></td><td>中断看门狗</td></tr><tr><td><code>ESP_RST_TASK_WDT</code></td><td>任务看门狗</td></tr><tr><td><code>ESP_RST_BROWNOUT</code></td><td>欠压复位</td></tr><tr><td><code>ESP_RST_DEEPSLEEP</code></td><td>Deep Sleep 唤醒</td></tr></tbody></table></div>
+
+<p>实际还存在其他复位原因，应以 ESP-IDF 枚举定义为准。</p>
+
+<h3>为什么要记录复位原因？</h3>
+
+<p>因为设备偶尔重启时，仅仅知道它“重启了”是不够的。</p>
+
+<p>你需要判断：</p>
+
+<ul><li>是断电？</li><li>是软件主动重启？</li><li>是内存访问异常？</li><li>是任务卡死？</li><li>还是供电不稳定？</li></ul>
+
+<p>建议在启动时记录复位原因，并将统计信息保存在 NVS 或其他可靠存储中。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十三、低功耗设备应该使用状态机</h2>
+
+<p>对于实际产品，不建议到处调用休眠函数。</p>
+
+<p>更好的方式是设计明确的设备状态机。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>BOOT</strong><span class="cg-text is-secondary is-xs">启动和检查硬件</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>MEASURE</strong><span class="cg-text is-secondary is-xs">采集传感器数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>CONNECT</strong><span class="cg-text is-secondary is-xs">连接 Wi-Fi</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>UPLOAD</strong><span class="cg-text is-secondary is-xs">上传数据</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>SAVE</strong><span class="cg-text is-secondary is-xs">保存必要状态</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md align-center" style="--gap:2;--pad:3;background:rgba(22,163,74,0.10);"><strong>SLEEP</strong><span class="cg-text is-secondary is-xs">进入 Deep Sleep</span></div></div>
+
+
+<h3>典型低功耗温度采集器</h3>
+
+<pre class="code"><code class="language-text">每 5 分钟唤醒
+    ↓
+采集温度
+    ↓
+连接 Wi-Fi
+    ↓
+上传数据
+    ↓
+断开 Wi-Fi
+    ↓
+进入 Deep Sleep</code></pre>
+
+<p>这种模式非常适合电池供电的环境监测设备。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十四、外设电源管理：真正省电不能只让 CPU 休眠</h2>
+
+<p>假设你连接：</p>
+
+<ul><li>OLED；</li><li>麦克风；</li><li>功放；</li><li>温湿度传感器；</li><li>LED 灯。</li></ul>
+
+<p>即使 ESP32-S3 进入 Deep Sleep，某些外设仍可能持续耗电。</p>
+
+<p>因此需要考虑：</p>
+
+<pre class="code"><code class="language-text">电池
+  ↓
+电源管理
+  ├── ESP32-S3
+  ├── 传感器电源
+  ├── 显示屏电源
+  ├── 麦克风电源
+  └── 功放电源</code></pre>
+
+<p>对于耗电较大的外设，可以使用：</p>
+
+<ul><li>具有低功耗关断功能的器件；</li><li>Load Switch；</li><li>MOSFET 电源控制电路；</li><li>专用电源管理芯片。</li></ul>
+
+<p>需要注意，不能随意通过 GPIO 直接为高电流外设供电。</p>
+
+<p>还要防止外设断电后，通过 I2C、SPI 或其他信号线反向供电。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十五、XIAO ESP32S3 电池供电的安全注意事项</h2>
+
+<p>如果你计划使用锂电池，必须先确认板卡具体版本的电池接口和充电电路规格。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/17-01.jpg" alt="PlatformIO Cookbook | Seeed Studio Wiki" loading="lazy"><figcaption><a href="https://files.seeedstudio.com/wiki/Epaper/EE04/pio_battery_0.png" target="_blank" rel="noopener">PlatformIO Cookbook | Seeed Studio Wiki</a> · 搜索词：Seeed Studio XIAO ESP32S3 lithium battery JST connector development board battery power</figcaption></figure>
+
+
+<h3>需要特别注意</h3>
+
+<ul><li>不要将单节锂电池直接连接到 3V3 引脚。</li><li>不要将电池正负极接反。</li><li>不要使用没有合适保护措施的电池组。</li><li>不要假设不同 XIAO 版本的电池焊盘和充电能力完全相同。</li><li>充电电流和电池容量应符合电池规格。</li><li>电池电压采样需要合适的分压与保护电路。</li></ul>
+
+<p><strong>如果你后续要为设备设计 3D 打印外壳，电池位置、散热、导线固定和充电接口空间必须提前规划。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>十六、综合实战：制作一台低功耗无线传感器</h2>
+
+<p>建议你使用普通版 XIAO ESP32S3，完成一个真正能够长期运行的电池供电项目。</p>
+
+<h3>项目目标</h3>
+
+<p>设备每 5 分钟：</p>
+
+<ol><li>自动唤醒。</li><li>读取传感器。</li><li>连接 Wi-Fi。</li><li>通过 MQTT 上传数据。</li><li>记录运行状态。</li><li>进入 Deep Sleep。</li></ol>
+
+<h3>建议工程结构</h3>
+
+<pre class="code"><code class="language-text">XIAO-ESP32S3-Projects/
+└── projects/
+    └── low_power_sensor/
+        ├── main/
+        │   └── app_main.c
+        │
+        ├── components/
+        │   ├── power_manager/
+        │   ├── sensor_manager/
+        │   ├── wifi_manager/
+        │   ├── mqtt_uploader/
+        │   ├── rtc_state/
+        │   └── system_monitor/
+        │
+        ├── docs/
+        │   ├── power_architecture.md
+        │   ├── current_measurement.md
+        │   ├── battery_runtime.md
+        │   └── reliability_test.md
+        │
+        └── README.md</code></pre>
+
+<h3>验收标准</h3>
+
+<div class="table-wrap"><table><thead><tr><th>测试</th><th>预期结果</th></tr></thead><tbody><tr><td>定时唤醒</td><td>能够按设定周期唤醒</td></tr><tr><td>RTC 计数</td><td>Deep Sleep 后保留计数</td></tr><tr><td>Wi-Fi 恢复</td><td>唤醒后重新连接</td></tr><tr><td>MQTT 上传</td><td>数据正常发布</td></tr><tr><td>断网处理</td><td>不无限等待，按策略休眠或重试</td></tr><tr><td>欠压处理</td><td>不出现持续异常重启</td></tr><tr><td>长期运行</td><td>连续运行并记录故障</td></tr><tr><td>电流测试</td><td>获得真实工作与休眠电流</td></tr></tbody></table></div>
+
+<hr class="cg-divider"/>
+
+<h2>十七、给 Codex 的本课开发任务</h2>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>Codex：低功耗与可靠性实验工程</strong><button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制任务
+    </button></div>
+  推荐先完成定时休眠与 RTC 计数，再增加网络功能。不要一开始就同时调试电池、Wi-Fi、MQTT 和所有外设。
+</div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十八、本课学习验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第十七课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十九、下一课：ESP32-S3 OTA 升级、Flash 分区与安全启动</h2>
+
+
+<div class="cg-box has-border radius-xl" style="--gap:3;--pad:3;"><h2 class="cg-title">第十八课：OTA、固件安全与远程维护</h2><figure class="cg-figure"><img src="../tutorial/images/17-02.jpg" alt="OTA的学习_esp32 ota升级执行流程 回滚-CSDN博客" loading="lazy"><figcaption><a href="https://i-blog.csdnimg.cn/blog_migrate/c63f07cf90d15eed3fd698890afed360.png" target="_blank" rel="noopener">OTA的学习_esp32 ota升级执行流程 回滚-CSDN博客</a> · 搜索词：ESP32 IoT OTA firmware update secure boot flash partition architecture diagram</figcaption></figure>
+  下一课将深入学习：
+
+<ol><li>ESP32-S3 Flash 分区表。</li><li>Factory、OTA_0、OTA_1 分区。</li><li>OTA Data 分区。</li><li>双分区固件更新。</li><li>HTTP OTA 和 HTTPS OTA。</li><li>固件完整性验证。</li><li>OTA 回滚机制。</li><li>Secure Boot V2。</li><li>Flash Encryption。</li><li>eFuse 安全配置。</li><li>固件版本管理。</li><li>远程升级失败恢复。</li><li>OTA 与 FreeRTOS、Wi-Fi 的协同。</li><li>量产设备安全维护。</li></ol>
+</div>
+
+
+<p><strong>第十七课最重要的结论：</strong></p>
+
+<p>真正优秀的嵌入式设备，不只是功能丰富，而是能够在有限电量下长期稳定运行，并且在异常情况下具备明确的故障检测与恢复机制。</p>
+
+<p>官方参考：</p>
+
+<ul><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/system/sleep_modes.html" target="_blank" rel="noopener">ESP32-S3 Sleep Modes<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/system/power_management.html" target="_blank" rel="noopener">ESP-IDF Power Management<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/system/wdts.html" target="_blank" rel="noopener">ESP-IDF Watchdogs<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+
+<p>下一课将解决设备交付后的关键问题：<strong>如何在不拆外壳、不连接 USB 的情况下安全更新固件，并在升级失败时恢复正常运行。</strong></p>
+</div></section>
+<nav class="lesson-nav"><a href="16-第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP-IP、HTTP、MQTT 与 WebSocket.html">← 第十六课：XIAO ESP32S3 网络通信系统——Wi-Fi、TCP/IP、HTTP、MQTT 与 WebSocket</a><span class="spacer"></span><a href="18-第十八课：XIAO ESP32S3 OTA 固件升级、Flash 分区与安全启动.html">第十八课：XIAO ESP32S3 OTA 固件升级、Flash 分区与安全启动 →</a></nav>
+</main></body></html>

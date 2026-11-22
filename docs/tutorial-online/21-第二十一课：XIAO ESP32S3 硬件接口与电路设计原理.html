@@ -1,0 +1,1364 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第二十一课：XIAO ESP32S3 硬件接口与电路设计原理</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --stage: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #59636e;
+  --border: rgba(31,35,40,.15);
+  --border-light: rgba(31,35,40,.08);
+  --user-bubble: #ddf4ff;
+  --user-bubble-text: #0969da;
+  --surface: #f6f8fa;
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --link: #0969da;
+  --msg-width: 48rem;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+}
+.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar .meta { margin-top: 2px; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+main { max-width: var(--msg-width); margin: 0 auto; padding: 24px 16px 96px; }
+.turn { padding: 18px 0; }
+.turn + .turn { border-top: 1px solid var(--border-light); }
+.user-row { display: flex; justify-content: flex-end; }
+.user-bubble {
+  max-width: 70%; background: var(--user-bubble); color: var(--user-bubble-text);
+  border-radius: 22px; padding: 10px 16px; line-height: 1.5;
+  overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.content { overflow-wrap: anywhere; }
+.content > :first-child { margin-top: 0; }
+.content > :last-child { margin-bottom: 0; }
+.content p { margin: 0 0 .9em; }
+.content h1 { font-size: 20px; font-weight: 600; margin: 1.05em 0 .5em; line-height: 1.3; }
+.content h2, .cg-title { font-size: 18px; font-weight: 600; margin: 1em 0 .45em; line-height: 1.35; }
+.content h3 { font-size: 16px; font-weight: 600; margin: .9em 0 .4em; }
+.content h4 { font-size: 16px; font-weight: 600; margin: .8em 0 .35em; }
+.content ul, .content ol, .cg-list { margin: 0 0 1em; padding-left: 1.35em; }
+.content li, .cg-list-item { margin: .22em 0; }
+.content a, .cg-link { color: var(--link); }
+.content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .9em; background: color-mix(in srgb, var(--text) 8%, transparent);
+  padding: .1em .35em; border-radius: 6px;
+}
+pre.code {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0 0 1em;
+}
+pre.code code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.entity { border-bottom: 1.5px dotted color-mix(in srgb, var(--text) 45%, transparent); cursor: help; }
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 1.1em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th, td {
+  text-align: left; vertical-align: top; padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border-light); border-left: 0; border-right: 0; border-top: 0;
+}
+th { font-weight: 600; }
+.cg-box {
+  display: flex; flex-direction: column;
+  gap: calc(0.25rem * var(--gap, 2));
+  padding: calc(0.25rem * var(--pad, 0));
+  margin: 0 0 1em;
+}
+.cg-box.has-border { border: 1px solid var(--border); background: var(--bg); }
+.cg-box.radius-xl { border-radius: 16px; }
+.cg-box.radius-lg { border-radius: 12px; }
+.cg-box.bg-surface-secondary,
+.cg-box.bg-surface-tertiary,
+.cg-box.bg-surface { background: var(--surface); }
+.cg-box.align-center { align-items: center; text-align: center; }
+.cg-box.align-start { align-items: flex-start; text-align: left; }
+.cg-box.radius-md { border-radius: 10px; }
+.cg-box.radius-sm { border-radius: 8px; }
+.cg-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.cg-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: calc(0.25rem * var(--gap, 2)); width: 100%;
+}
+.cg-row.justify-between { justify-content: space-between; }
+.cg-row.justify-end { justify-content: flex-end; }
+.cg-row.justify-center { justify-content: center; }
+.cg-spacer { flex: 1 1 auto; min-width: 8px; }
+.cg-link {
+  display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--text-secondary); font-weight: 500; white-space: nowrap;
+}
+.cg-link:hover { color: var(--text); text-decoration: underline; }
+.cg-ext { font-size: 12px; opacity: .75; line-height: 1; }
+.cg-badge {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.cg-badge.color-success { background: rgba(16,163,127,.22); color: #4ade80; }
+.cg-badge.color-warning { background: rgba(234,179,8,.22); color: #fbbf24; }
+.cg-badge.color-danger { background: rgba(239,68,68,.22); color: #f87171; }
+.cg-badge.color-info { background: rgba(59,130,246,.22); color: #93c5fd; }
+.cg-badge.color-discovery { background: rgba(168,85,247,.22); color: #d8b4fe; }
+.cg-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 550;
+}
+.cg-divider { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+.cg-text.is-secondary { color: var(--text-secondary); }
+.cg-text.is-xs { font-size: 12px; }
+.cg-text.is-strong { font-weight: 600; }
+.cg-check, .cg-radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.cg-radio-group { display: flex; flex-direction: column; gap: 4px; }
+.cg-grid {
+  display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 12px; margin: 0 0 1em;
+}
+.cg-grid-item { min-width: 0; }
+.cg-image-ph {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  border-radius: 14px; background: var(--surface); color: var(--text-secondary); font-size: 13px; margin: 0 0 1em;
+}
+.cg-input {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  background: var(--surface); color: var(--text-secondary); margin: 0 0 .8em;
+}
+.cg-caption { color: var(--text-secondary); font-size: 13px; margin: .2em 0 .8em; }
+.cg-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; line-height: 0; vertical-align: middle;
+}
+.cg-icon svg { display: block; width: 100%; height: 100%; }
+.cg-icon.is-arrow { display: flex; margin: 2px auto; opacity: .7; }
+.cg-box > .cg-icon.is-arrow { margin: 4px auto; }
+.katex-display { margin: .85em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.05em; color: var(--text); }
+.math-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-secondary); white-space: pre-wrap;
+}
+
+.topbar { background: rgba(255,255,255,.88); }
+.topbar a { color: var(--text-secondary); text-decoration: none; }
+.topbar a:hover { color: var(--link); }
+pre.code { background: var(--code-bg); color: var(--code-fg); }
+.content pre code { color: inherit; }
+.cg-box, .cg-grid-item { white-space: pre-line; }
+.cg-figure { margin: 1rem 0; }
+.cg-figure img {
+  display: block; width: 100%; height: auto; border-radius: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.cg-figure figcaption {
+  margin-top: .5rem; font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+.cg-figure figcaption a { color: var(--text-secondary); }
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.lesson-nav a { color: var(--link); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .spacer { flex: 1; }
+</style>
+</head><body>
+<header class="topbar"><h1>XIAO ESP32S3 系统开发教程</h1><div class="meta">第二十一课：XIAO ESP32S3 硬件接口与电路设计原理 · <a href="index.html">课程目录</a> · <a href="../tutorial/21-第二十一课：XIAO ESP32S3 硬件接口与电路设计原理.md">Markdown</a></div></header>
+<main><section class="turn"><div class="content">
+<h1>第二十一课：XIAO ESP32S3 硬件接口与电路设计原理</h1>
+
+<p>从本课开始，我们正式从软件开发进入硬件设计。</p>
+
+<p>前面二十课，我们学习了如何通过 ESP-IDF、FreeRTOS 和 Codex 开发 XIAO ESP32S3。</p>
+
+<p>但如果要真正设计自己的电路板、修改外围电路、制作 PCB 和 3D 打印外壳，还必须理解芯片与外部电路之间是如何工作的。</p>
+
+<p>本课以 <strong>Seeed XIAO ESP32S3 普通版</strong> 为唯一主控对象。</p>
+
+<p>我们将重点学习：</p>
+
+<ol><li>芯片 GPIO 内部结构。</li><li>GPIO 输入与输出原理。</li><li>上拉电阻与下拉电阻。</li><li>GPIO 中断。</li><li>ADC 模数转换。</li><li>PWM 脉宽调制。</li><li>GPIO 电气保护。</li><li>实际接线与 ESP-IDF 代码。</li><li>示波器和万用表调试。</li><li>在 XIAO ESP32S3 项目中的应用。</li></ol>
+
+<hr class="cg-divider"/>
+
+<h2>一、先理解 XIAO ESP32S3 的硬件结构</h2>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-01.jpg" alt="Seeed Studio XIAO ESP32S3 | Kiwi Electronics" loading="lazy"><figcaption><a href="https://www.kiwi-electronics.com/image/catalog/product/map1/113991114e.jpg" target="_blank" rel="noopener">Seeed Studio XIAO ESP32S3 | Kiwi Electronics</a> · 搜索词：Seeed Studio XIAO ESP32S3 standard development board front back labeled pinout</figcaption></figure>
+
+
+<p>XIAO ESP32S3 是一块非常小的 ESP32-S3 开发板。</p>
+
+<p>它不仅包含 ESP32-S3 芯片，还集成了外围电路。</p>
+
+<p>可以把它分成五个部分：</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>ESP32-S3 主控芯片</strong><span class="cg-text is-secondary is-xs">双核 Xtensa LX7 · 240MHz · Wi-Fi · BLE</span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>存储系统</strong><span class="cg-text is-secondary is-xs">Flash、PSRAM（具体配置依板卡版本）</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>电源系统</strong><span class="cg-text is-secondary is-xs">稳压、电源输入、电池相关电路</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>通信接口</strong><span class="cg-text is-secondary is-xs">USB、UART、I2C、SPI、I2S</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:2;--pad:3;"><strong>用户接口</strong><span class="cg-text is-secondary is-xs">GPIO、按键、LED</span></div></div></div></div>
+
+
+<p>这里需要先建立一个重要认识：</p>
+
+<p><strong>ESP32-S3 芯片的引脚能力，不等于开发板所有引脚都可以自由使用。</strong></p>
+
+<p>因为开发板上可能已经将部分 GPIO 用于 Flash、PSRAM、USB 或其他板载电路。</p>
+
+<hr class="cg-divider"/>
+
+<h2>二、GPIO 是什么？为什么一个引脚能实现多种功能？</h2>
+
+<p>GPIO 的英文是 General Purpose Input/Output，即通用输入输出。</p>
+
+<p>它是微控制器与外部世界连接的基本接口。</p>
+
+<p>例如：</p>
+
+<ul><li>读取按钮状态；</li><li>控制 LED；</li><li>读取传感器数字信号；</li><li>控制继电器；</li><li>输出 PWM；</li><li>接收外部中断。</li></ul>
+
+<h3>1. GPIO 内部结构</h3>
+
+<p>一个 GPIO 并不是简单的一根导线。</p>
+
+<p>它内部包含多个电路模块。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">GPIO 内部功能示意</h2><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>GPIO PAD</strong><span class="cg-text is-secondary is-xs">芯片外部引脚</span></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:1;--pad:3;"><strong>输入路径</strong><span class="cg-text is-secondary is-xs">输入缓冲器 → 输入状态寄存器</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:1;--pad:3;"><strong>输出路径</strong><span class="cg-text is-secondary is-xs">输出数据寄存器 → 输出驱动器</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:1;--pad:3;"><strong>上拉 / 下拉</strong><span class="cg-text is-secondary is-xs">内部弱上拉、弱下拉</span></div></div><div class="cg-grid-item"><div class="cg-box has-border radius-md" style="--gap:1;--pad:3;"><strong>复用功能</strong><span class="cg-text is-secondary is-xs">UART、SPI、I2C、PWM 等</span></div></div></div></div>
+
+
+<p>GPIO 的输入和输出功能由内部配置控制。</p>
+
+<p>同一个 GPIO 可以在不同时间承担不同功能，但不能随意同时让多个外设驱动同一个引脚。</p>
+
+<h3>2. GPIO 的三种基本状态</h3>
+
+<div class="table-wrap"><table><thead><tr><th>状态</th><th>意义</th><th>应用</th></tr></thead><tbody><tr><td>Input</td><td>输入</td><td>读取按钮</td></tr><tr><td>Output</td><td>输出</td><td>控制 LED</td></tr><tr><td>Input/Output</td><td>双向</td><td>某些数字通信场景</td></tr></tbody></table></div>
+
+<p>此外，还有高阻输入、上拉输入和下拉输入等配置。</p>
+
+<h3>3. 什么是高电平和低电平？</h3>
+
+<p>对于 XIAO ESP32S3 的 3.3V GPIO：</p>
+
+<ul><li>低电平：接近 GND；</li><li>高电平：接近 3.3V。</li></ul>
+
+<p>但实际数字输入的高低电平判定阈值由芯片电气规格决定，不是所有介于 0V 和 3.3V 之间的电压都能可靠识别。</p>
+
+<p><strong>绝对不能把 5V 信号直接接到 ESP32-S3 普通 GPIO。</strong></p>
+
+<p>需要通过电平转换或合适的保护电路处理。</p>
+
+<hr class="cg-divider"/>
+
+<h2>三、GPIO 输出原理：为什么可以控制 LED？</h2>
+
+<p>我们先从最简单的 LED 电路理解 GPIO。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-02.jpg" alt="c - Built in LED is off when GPIOC13 is high, but on then GPIOC13 is low - Stack Overflow" loading="lazy"><figcaption><a href="https://i.sstatic.net/hYBh6.png" target="_blank" rel="noopener">c - Built in LED is off when GPIOC13 is high, but on then GPIOC13 is low - Stack Overflow</a> · 搜索词：microcontroller GPIO output LED series resistor schematic 3.3V circuit diagram</figcaption></figure>
+
+
+<p>典型连接：</p>
+
+<pre class="code"><code class="language-text">GPIO
+  |
+  |
+限流电阻
+  |
+  |
+ LED
+  |
+ GND</code></pre>
+
+<p>GPIO 输出高电平时，电流从 GPIO 流经电阻和 LED 到 GND，LED 发光。</p>
+
+<p>GPIO 输出低电平时，LED 熄灭。</p>
+
+<h3>1. 为什么必须串联电阻？</h3>
+
+<p>LED 不能简单地直接连接 3.3V 电源。</p>
+
+<p>因为 LED 的电流需要受到限制。</p>
+
+<p>使用欧姆定律：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mo>=</mo><mfrac><mrow><msub><mi>V</mi><mrow><mi>G</mi><mi>P</mi><mi>I</mi><mi>O</mi></mrow></msub><mo>−</mo><msub><mi>V</mi><mi>f</mi></msub></mrow><mi>I</mi></mfrac></mrow><annotation encoding="application/x-tex">R=\frac{V_{GPIO}-V_f}{I}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0463em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">GP</span><span class="mord mathnormal mtight" style="margin-right:0.0785em;">I</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">O</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+<p>假设：</p>
+
+<ul><li>GPIO 电压：3.3V；</li><li>LED 正向压降：2.0V；</li><li>目标电流：5mA。</li></ul>
+
+<p>那么：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mo>=</mo><mfrac><mrow><mn>3.3</mn><mo>−</mo><mn>2.0</mn></mrow><mn>0.005</mn></mfrac><mo>=</mo><mn>260</mn><mi mathvariant="normal">Ω</mi></mrow><annotation encoding="application/x-tex">R=\frac{3.3-2.0}{0.005}=260\Omega</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">0.005</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">3.3</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">2.0</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">260Ω</span></span></span></span></span>
+
+
+<p>可以选择标准阻值 270Ω。</p>
+
+<h3>2. 电阻功耗</h3>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mo>=</mo><msup><mi>I</mi><mn>2</mn></msup><mi>R</mi></mrow><annotation encoding="application/x-tex">P=I^2R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8641em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mo>=</mo><msup><mn>0.005</mn><mn>2</mn></msup><mo>×</mo><mn>270</mn><mo>=</mo><mn>0.00675</mn><mi>W</mi></mrow><annotation encoding="application/x-tex">P=0.005^2\times270
+=0.00675W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9474em;vertical-align:-0.0833em;"></span><span class="mord">0.00</span><span class="mord"><span class="mord">5</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">270</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">0.00675</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span></span>
+
+
+<p>也就是约 6.75mW。</p>
+
+<p>对于这个例子，常见的 1/8W 或 1/4W 电阻都足够。</p>
+
+<p>实际还需要核对 LED 参数和 GPIO 输出能力。</p>
+
+<h3>3. ESP-IDF 控制 LED</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/gpio.h&quot;
+#include &quot;freertos/FreeRTOS.h&quot;
+#include &quot;freertos/task.h&quot;
+
+#define LED_GPIO GPIO_NUM_4
+
+void app_main(void)
+{
+    gpio_config_t config = {
+        .pin_bit_mask = 1ULL &lt;&lt; LED_GPIO,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+
+    ESP_ERROR_CHECK(gpio_config(&amp;config));
+
+    while (1) {
+        gpio_set_level(LED_GPIO, 1);
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+
+        gpio_set_level(LED_GPIO, 0);
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}</code></pre>
+
+<p>注意：这里 GPIO4 只是示例，烧录前必须确认它在普通版 XIAO ESP32S3 上没有被其他硬件占用。</p>
+
+<hr class="cg-divider"/>
+
+<h2>四、上拉电阻和下拉电阻：为什么按钮不能直接悬空？</h2>
+
+<p>这是硬件设计中非常重要的知识。</p>
+
+<p>假设一个 GPIO 连接了按钮。</p>
+
+<p>如果按钮没有按下，GPIO 没有连接明确的高电平或低电平，它可能处于悬空状态。</p>
+
+<p>悬空输入容易受到环境噪声影响，读数可能随机变化。</p>
+
+<h3>1. 上拉电阻</h3>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">按钮上拉电路</h2><div class="cg-box align-center" style="--gap:1;--pad:0;"><strong>3.3V</strong><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:2;"><strong>10kΩ</strong><span class="cg-text is-secondary is-xs">上拉电阻</span></div><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>GPIO 输入节点</strong></div><div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><strong>按钮</strong><span class="cg-text is-secondary is-xs">按下时导通</span><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span><strong>GND</strong></div><div class="cg-grid-item"><span class="cg-badge color-success">未按下：高电平</span><span class="cg-badge color-info">按下：低电平</span></div></div></div></div>
+
+
+<p>工作状态：</p>
+
+<div class="table-wrap"><table><thead><tr><th>按钮状态</th><th>GPIO 读取</th></tr></thead><tbody><tr><td>未按下</td><td>HIGH</td></tr><tr><td>按下</td><td>LOW</td></tr></tbody></table></div>
+
+<h3>2. 下拉电阻</h3>
+
+<p>下拉电路则相反。</p>
+
+<pre class="code"><code class="language-text">3.3V
+  |
+ 按钮
+  |
+ GPIO
+  |
+ 10kΩ
+  |
+ GND</code></pre>
+
+<p>此时：</p>
+
+<ul><li>按钮未按下：LOW；</li><li>按钮按下：HIGH。</li></ul>
+
+<h3>3. 内部上拉与外部上拉</h3>
+
+<p>ESP32-S3 提供内部上拉和下拉功能。</p>
+
+<p>ESP-IDF 示例：</p>
+
+<pre class="code"><code class="language-c">gpio_config_t config = {
+    .pin_bit_mask = 1ULL &lt;&lt; BUTTON_GPIO,
+    .mode = GPIO_MODE_INPUT,
+    .pull_up_en = GPIO_PULLUP_ENABLE,
+    .pull_down_en = GPIO_PULLDOWN_DISABLE,
+    .intr_type = GPIO_INTR_DISABLE
+};
+
+ESP_ERROR_CHECK(gpio_config(&amp;config));</code></pre>
+
+<p>内部上拉适合很多普通按钮场景。</p>
+
+<p>外部上拉则适用于：</p>
+
+<ul><li>对抗干扰要求更高；</li><li>需要明确的上拉阻值；</li><li>外部电路要求更可靠的默认电平；</li><li>特定低功耗或电气设计场景。</li></ul>
+
+<hr class="cg-divider"/>
+
+<h2>五、GPIO 中断：如何让芯片主动感知外部变化？</h2>
+
+<p>前面我们使用循环读取按钮状态：</p>
+
+<pre class="code"><code class="language-c">while (1) {
+    int level = gpio_get_level(BUTTON_GPIO);
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+}</code></pre>
+
+<p>这种方式称为轮询（Polling）。</p>
+
+<p>它的问题是：CPU 需要不断检查 GPIO 状态。</p>
+
+<p>如果有很多按钮、传感器和外部信号，轮询会增加任务管理负担。</p>
+
+<p>GPIO 中断可以解决这个问题。</p>
+
+<h3>1. 什么是中断？</h3>
+
+<p>假设按钮连接到 GPIO。</p>
+
+<p>当按钮按下时，GPIO 电平发生变化。</p>
+
+<p>芯片可以检测这个变化，并触发中断。</p>
+
+<pre class="code"><code class="language-text">正常执行程序
+      |
+      |
+等待外部信号
+      |
+      ↓
+按钮按下
+      |
+      ↓
+GPIO 电平变化
+      |
+      ↓
+触发中断
+      |
+      ↓
+执行中断处理程序
+      |
+      ↓
+恢复原来的任务</code></pre>
+
+<h3>2. GPIO 中断类型</h3>
+
+<p>ESP32-S3 常见 GPIO 中断模式包括：</p>
+
+<div class="table-wrap"><table><thead><tr><th>类型</th><th>触发条件</th></tr></thead><tbody><tr><td><code>GPIO_INTR_POSEDGE</code></td><td>上升沿</td></tr><tr><td><code>GPIO_INTR_NEGEDGE</code></td><td>下降沿</td></tr><tr><td><code>GPIO_INTR_ANYEDGE</code></td><td>任意边沿</td></tr><tr><td><code>GPIO_INTR_LOW_LEVEL</code></td><td>低电平</td></tr><tr><td><code>GPIO_INTR_HIGH_LEVEL</code></td><td>高电平</td></tr></tbody></table></div>
+
+<p>例如，按钮采用上拉接法：</p>
+
+<ul><li>未按下：HIGH；</li><li>按下：LOW。</li></ul>
+
+<p>因此，按钮按下时产生下降沿。</p>
+
+<p>可以使用：</p>
+
+<pre class="code"><code class="language-c">GPIO_INTR_NEGEDGE</code></pre>
+
+<h3>3. ESP-IDF 中断示例</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/gpio.h&quot;
+#include &quot;esp_log.h&quot;
+
+#define BUTTON_GPIO GPIO_NUM_5
+
+static const char *TAG = &quot;BUTTON&quot;;
+
+static void IRAM_ATTR button_isr(void *arg)
+{
+    BaseType_t higher_priority_task_woken = pdFALSE;
+
+    TaskHandle_t task =
+        (TaskHandle_t)arg;
+
+    vTaskNotifyGiveFromISR(
+        task,
+        &amp;higher_priority_task_woken
+    );
+
+    if (higher_priority_task_woken) {
+        portYIELD_FROM_ISR();
+    }
+}</code></pre>
+
+<p>初始化中断：</p>
+
+<pre class="code"><code class="language-c">void button_init(TaskHandle_t task)
+{
+    gpio_config_t config = {
+        .pin_bit_mask = 1ULL &lt;&lt; BUTTON_GPIO,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_NEGEDGE
+    };
+
+    ESP_ERROR_CHECK(gpio_config(&amp;config));
+
+    ESP_ERROR_CHECK(gpio_install_isr_service(0));
+
+    ESP_ERROR_CHECK(
+        gpio_isr_handler_add(
+            BUTTON_GPIO,
+            button_isr,
+            (void *)task
+        )
+    );
+}</code></pre>
+
+<p>任务中接收通知：</p>
+
+<pre class="code"><code class="language-c">void button_task(void *arg)
+{
+    while (1) {
+        ulTaskNotifyTake(
+            pdTRUE,
+            portMAX_DELAY
+        );
+
+        ESP_LOGI(&quot;BUTTON&quot;, &quot;Button event&quot;);
+    }
+}</code></pre>
+
+<p>这是一个基本的中断通知结构，完整工程还需要先创建 <code>button_task</code>，并处理重复安装 ISR 服务、按钮抖动和任务句柄生命周期等问题。</p>
+
+<h3>4. 为什么中断函数不能写太多代码？</h3>
+
+<p>因为中断处理程序运行在特殊的执行环境中。</p>
+
+<p>不要在 GPIO ISR 中：</p>
+
+<ul><li>使用 <code>vTaskDelay()</code>；</li><li>调用普通阻塞队列；</li><li>执行长时间计算；</li><li>进行网络通信；</li><li>大量打印日志；</li><li>动态申请内存。</li></ul>
+
+<p>正确方式是：</p>
+
+<p><strong>中断只负责通知任务，具体业务交给 FreeRTOS 任务完成。</strong></p>
+
+<hr class="cg-divider"/>
+
+<h2>六、机械按钮为什么会抖动？如何消抖？</h2>
+
+<p>这是实际电路中经常遇到的问题。</p>
+
+<p>按钮并不是理想开关。</p>
+
+<p>按下或松开时，金属触点可能在短时间内多次接触和分离。</p>
+
+<p>这称为机械抖动（Switch Bounce）。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-03.jpg" alt="按键控制 | 立创开发板技术文档中心" loading="lazy"><figcaption><a href="https://wiki.lckfb.com/storage/images/zh-hans/fdb/micropython/gpio-basic/button-control/button-control_20260409_201336.png" target="_blank" rel="noopener">按键控制 | 立创开发板技术文档中心</a> · 搜索词：mechanical push button switch bounce oscilloscope waveform digital signal diagram</figcaption></figure>
+
+
+<p>假设你按下一次按钮，GPIO 可能检测到：</p>
+
+<pre class="code"><code class="language-text">HIGH
+LOW
+HIGH
+LOW
+HIGH
+LOW
+LOW</code></pre>
+
+<p>但你实际上只按了一次。</p>
+
+<h3>1. 软件消抖</h3>
+
+<p>最简单的方法是：</p>
+
+<p>检测到中断后，延迟一段时间，再确认 GPIO 是否仍处于按下状态。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-c">void button_task(void *arg)
+{
+    while (1) {
+
+        ulTaskNotifyTake(
+            pdTRUE,
+            portMAX_DELAY
+        );
+
+        vTaskDelay(pdMS_TO_TICKS(30));
+
+        if (gpio_get_level(BUTTON_GPIO) == 0) {
+            ESP_LOGI(&quot;BUTTON&quot;, &quot;Valid press&quot;);
+        }
+    }
+}</code></pre>
+
+<p>这只是入门示例。</p>
+
+<p>真实项目还应处理消抖期间的重复通知、长按和释放事件。</p>
+
+<h3>2. 硬件消抖</h3>
+
+<p>可以使用 RC 电路。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">RC 消抖基本原理</h2><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>按钮 + 上拉电阻</strong></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>电容滤波</strong><span class="cg-text is-secondary is-xs">缓冲快速电平变化</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>GPIO 输入</strong></div></div>
+
+
+<p>RC 电路的时间常数：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>τ</mi><mo>=</mo><mi>R</mi><mo>×</mo><mi>C</mi></mrow><annotation encoding="application/x-tex">\tau=R\times C</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span></span></span></span></span>
+
+
+<p>例如：</p>
+
+<ul><li>R = 10kΩ；</li><li>C = 100nF。</li></ul>
+
+<p>则：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>τ</mi><mo>=</mo><mn>10</mn><mo separator="true">,</mo><mn>000</mn><mo>×</mo><mn>0.0000001</mn><mo>=</mo><mn>1</mn><mi>m</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">\tau=10,000\times0.0000001
+=1ms</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">10</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">000</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">0.0000001</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1</span><span class="mord mathnormal">m</span><span class="mord mathnormal">s</span></span></span></span></span>
+
+
+<p>实际电平变化还取决于阈值、充放电路径和电路结构。</p>
+
+<p>需要注意，简单 RC 滤波不一定适合所有输入电路，设计时还应考虑 GPIO 输入阈值和上升、下降时间。</p>
+
+<hr class="cg-divider"/>
+
+<h2>七、ADC：ESP32-S3 如何读取模拟电压？</h2>
+
+<p>GPIO 主要用于识别数字信号。</p>
+
+<p>但是很多传感器输出的是连续变化的电压。</p>
+
+<p>例如：</p>
+
+<ul><li>光敏电阻；</li><li>电位器；</li><li>模拟温度传感器；</li><li>电池电压检测；</li><li>模拟压力传感器。</li></ul>
+
+<p>这时需要 ADC。</p>
+
+<p>ADC 的完整名称是 Analog-to-Digital Converter，即模数转换器。</p>
+
+<h3>1. ADC 工作原理</h3>
+
+<p>假设传感器输出：</p>
+
+<pre class="code"><code class="language-text">0V ───────── 3.3V</code></pre>
+
+<p>ADC 将连续电压转换为数字数值。</p>
+
+<p>ESP32-S3 的 ADC 支持 12 位转换结果。</p>
+
+<p>理想化情况下：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mn>2</mn><mn>12</mn></msup><mo>=</mo><mn>4096</mn></mrow><annotation encoding="application/x-tex">2^{12}=4096</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8641em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">12</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">4096</span></span></span></span></span>
+
+
+<p>也就是 0～4095 共 4096 个数字等级。</p>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">ADC 转换示意</h2><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>模拟传感器</strong><span class="cg-text is-secondary is-xs">输出 1.65V</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box has-border radius-md align-center" style="--gap:2;--pad:3;"><strong>ADC 转换器</strong><span class="cg-text is-secondary is-xs">采样、量化、编码</span></div><div class="cg-row justify-center" style="--gap:2;align-items:center"><span class="cg-icon is-arrow" data-icon="arrow-down" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span></div><div class="cg-box radius-md bg-surface-secondary align-center" style="--gap:2;--pad:3;"><strong>数字结果</strong><h3 class="cg-title">约 2048</h3><span class="cg-text is-secondary is-xs">仅为理想化示意</span></div></div>
+
+
+<h3>2. ADC 的理论分辨率</h3>
+
+<p>如果参考电压假设为 3.3V：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>L</mi><mi>S</mi><mi>B</mi><mo>=</mo><mfrac><mn>3.3</mn><mn>4096</mn></mfrac></mrow><annotation encoding="application/x-tex">LSB=\frac{3.3}{4096}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">4096</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">3.3</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
+
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>L</mi><mi>S</mi><mi>B</mi><mo>≈</mo><mn>0.806</mn><mi>m</mi><mi>V</mi></mrow><annotation encoding="application/x-tex">LSB\approx0.806mV</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord mathnormal">L</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6833em;"></span><span class="mord">0.806</span><span class="mord mathnormal" style="margin-right:0.2222em;">mV</span></span></span></span></span>
+
+
+<p>这表示理想情况下每一个数字等级对应约 0.806mV 的电压区间。</p>
+
+<p>但必须注意：</p>
+
+<p><strong>ESP32-S3 的 ADC 不能简单理解为固定 3.3V 满量程、完全线性的理想转换器。</strong></p>
+
+<p>实际测量结果还受到以下因素影响：</p>
+
+<ul><li>ADC 衰减配置；</li><li>芯片参考电压差异；</li><li>ADC 非线性；</li><li>输入噪声；</li><li>采样时间；</li><li>电路阻抗；</li><li>校准情况。</li></ul>
+
+<p>ESP-IDF 提供 ADC Calibration Driver，可以改善电压换算精度。</p>
+
+<h3>3. ESP-IDF ADC 代码</h3>
+
+<p>使用 ESP-IDF 新版 ADC One-shot 驱动：</p>
+
+<pre class="code"><code class="language-c">#include &quot;esp_adc/adc_oneshot.h&quot;
+#include &quot;esp_adc/adc_cali.h&quot;
+#include &quot;esp_adc/adc_cali_scheme.h&quot;
+#include &quot;esp_log.h&quot;
+
+#define ADC_CHANNEL ADC_CHANNEL_2
+
+static adc_oneshot_unit_handle_t adc_handle;
+
+void adc_init(void)
+{
+    adc_oneshot_unit_init_cfg_t init_config = {
+        .unit_id = ADC_UNIT_1,
+    };
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_new_unit(
+            &amp;init_config,
+            &amp;adc_handle
+        )
+    );
+
+    adc_oneshot_chan_cfg_t channel_config = {
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT
+    };
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_config_channel(
+            adc_handle,
+            ADC_CHANNEL,
+            &amp;channel_config
+        )
+    );
+}</code></pre>
+
+<p>读取 ADC：</p>
+
+<pre class="code"><code class="language-c">void adc_read_value(void)
+{
+    int raw = 0;
+
+    ESP_ERROR_CHECK(
+        adc_oneshot_read(
+            adc_handle,
+            ADC_CHANNEL,
+            &amp;raw
+        )
+    );
+
+    ESP_LOGI(
+        &quot;ADC&quot;,
+        &quot;Raw value: %d&quot;,
+        raw
+    );
+}</code></pre>
+
+<p>这里 <code>ADC_CHANNEL_2</code> 是芯片 ADC 通道示例，不等于可以直接接到 XIAO 某个编号引脚。</p>
+
+<p>实际开发必须先通过普通版 XIAO ESP32S3 引脚映射确认 GPIO 和 ADC 通道之间的关系。</p>
+
+<h3>4. ADC 校准</h3>
+
+<p>如果需要获得更准确的毫伏值，可以使用：</p>
+
+<pre class="code"><code class="language-c">adc_cali_raw_to_voltage(
+    calibration_handle,
+    raw,
+    &amp;voltage_mv
+);</code></pre>
+
+<p>校准句柄需要先按照当前芯片和 ESP-IDF 版本支持的校准方案创建。</p>
+
+<h3>5. ADC 在 XIAO 项目中的应用</h3>
+
+<p>建议先做一个电位器实验。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-04.jpg" alt="ESP32 ADC with ESP-IDF Measure Analog Inputs" loading="lazy"><figcaption><a href="https://i0.wp.com/esp32tutorials.com/wp-content/uploads/2022/07/ESP32-with-Potentiometer-ADC-Measurement-connection-diagram.jpg?resize=815%2C483&amp;ssl=1" target="_blank" rel="noopener">ESP32 ADC with ESP-IDF Measure Analog Inputs</a> · 搜索词：10k potentiometer three pin analog input ESP32 ADC breadboard wiring</figcaption></figure>
+
+
+<p>连接逻辑：</p>
+
+<div class="table-wrap"><table><thead><tr><th>电位器端子</th><th>连接</th></tr></thead><tbody><tr><td>一端</td><td>3.3V</td></tr><tr><td>另一端</td><td>GND</td></tr><tr><td>中间端</td><td>已确认支持 ADC 的 XIAO GPIO</td></tr></tbody></table></div>
+
+<p>旋转电位器，就可以观察 ADC 数值变化。</p>
+
+<p>不要将电位器接到 5V 后再把中间端接入 ESP32-S3 GPIO。</p>
+
+<hr class="cg-divider"/>
+
+<h2>八、PWM：为什么 GPIO 可以控制 LED 亮度和电机速度？</h2>
+
+<p>PWM 的英文是 Pulse Width Modulation，即脉宽调制。</p>
+
+<p>它通过快速切换数字输出的高低电平，改变高电平占整个周期的比例。</p>
+
+<h3>1. 什么是占空比？</h3>
+
+<p>假设一个 PWM 周期为 1ms。</p>
+
+<p>其中：</p>
+
+<ul><li>高电平 0.25ms；</li><li>低电平 0.75ms。</li></ul>
+
+<p>那么：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>u</mi><mi>t</mi><mi>y</mi><mo>=</mo><mfrac><mn>0.25</mn><mn>1</mn></mfrac><mo>×</mo><mn>100</mn><mi mathvariant="normal">%</mi><mo>=</mo><mn>25</mn><mi mathvariant="normal">%</mi></mrow><annotation encoding="application/x-tex">Duty=\frac{0.25}{1}\times100\%=25\%</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:2.0074em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">0.25</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">100%</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">25%</span></span></span></span></span>
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:2;--pad:3;"><h2 class="cg-title">PWM 波形对比</h2></div>
+
+
+<h3>2. PWM 的平均电压</h3>
+
+<p>在理想数字输出且负载适合平均化的情况下：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mrow><mi>a</mi><mi>v</mi><mi>g</mi></mrow></msub><mo>=</mo><mi>D</mi><mo>×</mo><msub><mi>V</mi><mrow><mi>h</mi><mi>i</mi><mi>g</mi><mi>h</mi></mrow></msub></mrow><annotation encoding="application/x-tex">V_{avg}=D\times V_{high}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">hi</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span><span class="mord mathnormal mtight">h</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
+
+
+<p>如果高电平为 3.3V：</p>
+
+<div class="table-wrap"><table><thead><tr><th>占空比</th><th>理想平均电压</th></tr></thead><tbody><tr><td>25%</td><td>0.825V</td></tr><tr><td>50%</td><td>1.65V</td></tr><tr><td>75%</td><td>2.475V</td></tr><tr><td>100%</td><td>3.3V</td></tr></tbody></table></div>
+
+<p>注意，PWM 并不是真正产生连续的模拟电压。</p>
+
+<p>如果需要稳定的模拟电压，可以通过合适的低通滤波电路进行转换。</p>
+
+<h3>3. ESP32-S3 的 LEDC 外设</h3>
+
+<p>ESP32-S3 使用 LEDC 外设产生 PWM。</p>
+
+<p>ESP-IDF 示例：</p>
+
+<pre class="code"><code class="language-c">#include &quot;driver/ledc.h&quot;
+#include &quot;esp_err.h&quot;
+
+#define PWM_GPIO GPIO_NUM_4
+
+void pwm_init(void)
+{
+    ledc_timer_config_t timer = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = LEDC_TIMER_10_BIT,
+        .timer_num = LEDC_TIMER_0,
+        .freq_hz = 5000,
+        .clk_cfg = LEDC_AUTO_CLK
+    };
+
+    ESP_ERROR_CHECK(
+        ledc_timer_config(&amp;timer)
+    );
+
+    ledc_channel_config_t channel = {
+        .gpio_num = PWM_GPIO,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = LEDC_CHANNEL_0,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = LEDC_TIMER_0,
+        .duty = 0,
+        .hpoint = 0
+    };
+
+    ESP_ERROR_CHECK(
+        ledc_channel_config(&amp;channel)
+    );
+}</code></pre>
+
+<p>设置 50% 占空比：</p>
+
+<pre class="code"><code class="language-c">void pwm_set_50_percent(void)
+{
+    ESP_ERROR_CHECK(
+        ledc_set_duty(
+            LEDC_LOW_SPEED_MODE,
+            LEDC_CHANNEL_0,
+            512
+        )
+    );
+
+    ESP_ERROR_CHECK(
+        ledc_update_duty(
+            LEDC_LOW_SPEED_MODE,
+            LEDC_CHANNEL_0
+        )
+    );
+}</code></pre>
+
+<p>这里使用 10 位分辨率：</p>
+
+
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mn>2</mn><mn>10</mn></msup><mo>=</mo><mn>1024</mn></mrow><annotation encoding="application/x-tex">2^{10}=1024</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="katex-base"><span class="katex-strut" style="height:0.8641em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="katex-sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">10</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="katex-base"><span class="katex-strut" style="height:0.6444em;"></span><span class="mord">1024</span></span></span></span></span>
+
+
+<p>因此 512 对应约 50% 占空比。</p>
+
+<h3>4. PWM 有哪些实际用途？</h3>
+
+<ul><li>LED 亮度调节；</li><li>蜂鸣器音调控制；</li><li>电机驱动信号；</li><li>舵机控制；</li><li>某些功率调节场景。</li></ul>
+
+<p>对于电机和大功率负载，GPIO 不能直接驱动，必须使用 MOSFET、驱动芯片和相应的保护电路。</p>
+
+<hr class="cg-divider"/>
+
+<h2>九、I2C：为什么两个引脚就能连接很多传感器？</h2>
+
+<p>I2C 是一种常用的串行通信协议。</p>
+
+<p>它只需要两根信号线：</p>
+
+<ul><li>SDA：数据线；</li><li>SCL：时钟线。</li></ul>
+
+<p>例如，一块 XIAO ESP32S3 可以通过 I2C 连接：</p>
+
+<ul><li>OLED 显示屏；</li><li>温湿度传感器；</li><li>气压传感器；</li><li>RTC 时钟；</li><li>IO 扩展芯片。</li></ul>
+
+<h3>1. I2C 电路原理</h3>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-05.jpg" alt="Understanding I2C Communication in Linux: A Beginner&#x27;s Guide with Sample Code for Raspberry Pi" loading="lazy"><figcaption><a href="https://media.licdn.com/dms/image/v2/D4E12AQGE49_spEYXmA/article-inline_image-shrink_400_744/article-inline_image-shrink_400_744/0/1688208879970?e=2147483647&amp;t=IWXXUlFJyIRojbVJn9RFjQz-bEsgxw_aKMkbQ99aBsA&amp;v=beta" target="_blank" rel="noopener">Understanding I2C Communication in Linux: A Beginner&#x27;s Guide with Sample Code for Raspberry Pi</a> · 搜索词：I2C SDA SCL two pull up resistors multiple slave devices schematic diagram</figcaption></figure>
+
+
+<p>I2C 的一个重要特点：</p>
+
+<p><strong>SDA 和 SCL 通常采用开漏输出，需要上拉电阻。</strong></p>
+
+<p>为什么？</p>
+
+<p>因为总线上的多个设备需要共同使用信号线。</p>
+
+<p>设备可以主动将线路拉低，但不应该直接强行输出高电平与其他设备对抗。</p>
+
+<p>典型连接：</p>
+
+<pre class="code"><code class="language-text">             3.3V
+               |
+         +-----+-----+
+         |           |
+        4.7K        4.7K
+         |           |
+SDA -----+-----------+---- 各个设备 SDA
+
+SCL ----------------------- 各个设备 SCL
+
+GND ----------------------- 所有设备 GND</code></pre>
+
+<p>上图为逻辑示意，实际 SDA、SCL 应各自具有一组上拉电阻。</p>
+
+<h3>2. 为什么常见上拉电阻是 4.7kΩ？</h3>
+
+<p>它是常见的起始选择，但不是固定值。</p>
+
+<p>电阻太大：</p>
+
+<ul><li>上升沿变慢；</li><li>高速通信可能不稳定。</li></ul>
+
+<p>电阻太小：</p>
+
+<ul><li>低电平时需要更大的灌电流；</li><li>可能超过设备输出能力。</li></ul>
+
+<p>最终要根据：</p>
+
+<ul><li>总线电容；</li><li>通信速度；</li><li>设备数量；</li><li>线路长度；</li><li>器件电气规格；</li></ul>
+
+<p>来确定。</p>
+
+<p>还要注意：如果多个模块都已经带有上拉电阻，并联后的等效阻值可能过小。</p>
+
+<h3>3. I2C 地址是什么？</h3>
+
+<p>假设连接了两个设备：</p>
+
+<pre class="code"><code class="language-text">OLED：0x3C
+
+温湿度传感器：0x44</code></pre>
+
+<p>主控通过设备地址选择通信对象。</p>
+
+<p>这意味着多个设备可以共享 SDA 和 SCL，但不能在同一总线上无冲突地使用相同地址，除非设备支持地址修改或采用多路复用器。</p>
+
+<h3>4. ESP-IDF I2C 初始化示例</h3>
+
+<pre class="code"><code class="language-c">#include &quot;driver/i2c_master.h&quot;
+
+#define I2C_SDA_GPIO GPIO_NUM_5
+#define I2C_SCL_GPIO GPIO_NUM_6
+
+static i2c_master_bus_handle_t bus_handle;
+
+void i2c_init(void)
+{
+    i2c_master_bus_config_t config = {
+        .i2c_port = I2C_NUM_0,
+        .sda_io_num = I2C_SDA_GPIO,
+        .scl_io_num = I2C_SCL_GPIO,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = false
+    };
+
+    ESP_ERROR_CHECK(
+        i2c_new_master_bus(
+            &amp;config,
+            &amp;bus_handle
+        )
+    );
+}</code></pre>
+
+<p>这里的 SDA、SCL 是演示值，不是已经确认的 XIAO 接线方案。</p>
+
+<h3>5. 如何调试 I2C？</h3>
+
+<p>建议使用逻辑分析仪观察：</p>
+
+<ul><li>Start；</li><li>Address；</li><li>ACK；</li><li>Data；</li><li>NACK；</li><li>Stop。</li></ul>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">START
+  ↓
+设备地址 0x3C
+  ↓
+ACK
+  ↓
+发送数据
+  ↓
+ACK
+  ↓
+STOP</code></pre>
+
+<p>如果设备无法识别，优先检查供电、GND、上拉电阻、引脚映射和地址。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十、SPI：为什么显示屏和高速外设经常使用 SPI？</h2>
+
+<p>SPI 是一种同步串行通信协议。</p>
+
+<p>典型情况下使用四根信号线：</p>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>功能</th></tr></thead><tbody><tr><td>SCLK</td><td>时钟</td></tr><tr><td>MOSI</td><td>主机发送数据</td></tr><tr><td>MISO</td><td>主机接收数据</td></tr><tr><td>CS</td><td>片选</td></tr></tbody></table></div>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-06.jpg" alt="SPI Structure | USB-I2C/SPI/GPIO Interface Adapters" loading="lazy"><figcaption><a href="https://dlnware.com/sites/dlnware.com/files/images/spi-lines.png" target="_blank" rel="noopener">SPI Structure | USB-I2C/SPI/GPIO Interface Adapters</a> · 搜索词：SPI master slave MOSI MISO SCLK CS wiring schematic diagram</figcaption></figure>
+
+
+<h3>1. SPI 工作原理</h3>
+
+<p>主机产生时钟信号。</p>
+
+<p>发送和接收双方按照约定的时钟边沿交换数据。</p>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">ESP32-S3
+    |
+    |---- SCLK ---- 外设
+    |
+    |---- MOSI ---- 外设
+    |
+    |---- MISO ---- 外设
+    |
+    |---- CS ------ 外设</code></pre>
+
+<p>与 I2C 相比，SPI 通常具有更高的数据传输能力，但需要更多信号线。</p>
+
+<h3>2. SPI 的四种工作模式</h3>
+
+<p>SPI 的工作模式由 CPOL 和 CPHA 决定。</p>
+
+<div class="table-wrap"><table><thead><tr><th>模式</th><th>CPOL</th><th>CPHA</th></tr></thead><tbody><tr><td>Mode 0</td><td>0</td><td>0</td></tr><tr><td>Mode 1</td><td>0</td><td>1</td></tr><tr><td>Mode 2</td><td>1</td><td>0</td></tr><tr><td>Mode 3</td><td>1</td><td>1</td></tr></tbody></table></div>
+
+<p>如果主控和外设配置不一致，就可能出现数据错误。</p>
+
+<h3>3. SPI 在 XIAO 项目中的用途</h3>
+
+<ul><li>TFT 彩色显示屏；</li><li>SD 卡；</li><li>外部 Flash；</li><li>高速传感器；</li><li>某些 ADC 和 DAC。</li></ul>
+
+<p>如果你以后设计带显示屏的智能终端，SPI 很值得重点掌握。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十一、UART：串口通信为什么仍然非常重要？</h2>
+
+<p>UART 是异步串行通信接口。</p>
+
+<p>常见信号：</p>
+
+<ul><li>TX：发送；</li><li>RX：接收；</li><li>GND：公共地。</li></ul>
+
+<p>连接方式：</p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3       USB转串口模块
+
+TX  -------------- RX
+
+RX  -------------- TX
+
+GND -------------- GND</code></pre>
+
+<p>注意 TX 和 RX 需要交叉连接。</p>
+
+<h3>1. 波特率是什么？</h3>
+
+<p>波特率表示每秒传输的符号数量。</p>
+
+<p>常见设置：</p>
+
+<ul><li>9600；</li><li>115200；</li><li>921600。</li></ul>
+
+<p>双方必须使用匹配的通信参数。</p>
+
+<h3>2. UART 还有哪些配置？</h3>
+
+<ul><li>数据位；</li><li>停止位；</li><li>校验位；</li><li>硬件流控。</li></ul>
+
+<p>例如：</p>
+
+<pre class="code"><code class="language-text">115200
+8 Data Bits
+No Parity
+1 Stop Bit</code></pre>
+
+<p>通常称为 115200 8N1。</p>
+
+<h3>3. 一个重要的电气问题</h3>
+
+<p>UART 是逻辑通信协议，不代表所有 UART 电气接口都兼容。</p>
+
+<p>XIAO ESP32S3 GPIO 使用 3.3V 逻辑。</p>
+
+<p>不能直接把传统 RS-232 的正负电压信号接到 GPIO。</p>
+
+<p>如果需要连接工业设备，应使用适当的 RS-232 或 RS-485 收发器。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十二、I2S：智能语音终端最重要的音频接口之一</h2>
+
+<p>前面我们学习过音频采集和播放。</p>
+
+<p>现在从硬件角度理解 I2S。</p>
+
+<p>I2S 是数字音频串行接口。</p>
+
+<p>常见信号：</p>
+
+<div class="table-wrap"><table><thead><tr><th>信号</th><th>作用</th></tr></thead><tbody><tr><td>BCLK</td><td>位时钟</td></tr><tr><td>WS / LRCLK</td><td>左右声道时钟</td></tr><tr><td>DOUT</td><td>数据输出</td></tr><tr><td>DIN</td><td>数据输入</td></tr><tr><td>MCLK</td><td>某些设备需要的主时钟</td></tr></tbody></table></div>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-07.jpg" alt="My Local Voice Assistant Device With Wake Word In Home Assistant | Smart Home Circle" loading="lazy"><figcaption><a href="https://smarthomecircle.com/static/images/2023/voice-assistant-device-with-wake-word/voice-assistant-circuit-diagram.webp" target="_blank" rel="noopener">My Local Voice Assistant Device With Wake Word In Home Assistant | Smart Home Circle</a> · 搜索词：ESP32 I2S digital microphone MAX98357A amplifier connection BCLK WS DIN schematic</figcaption></figure>
+
+
+<h3>1. 麦克风采集</h3>
+
+<p>例如使用数字 I2S 麦克风：</p>
+
+<pre class="code"><code class="language-text">I2S 麦克风
+    |
+    | BCLK
+    | WS
+    | DOUT
+    |
+XIAO ESP32S3</code></pre>
+
+<p>麦克风将声音转换为数字采样数据。</p>
+
+<p>ESP32-S3 通过 I2S 接收。</p>
+
+<h3>2. 扬声器播放</h3>
+
+<p>例如使用带 I2S 输入的数字功放：</p>
+
+<pre class="code"><code class="language-text">XIAO ESP32S3
+    |
+    | BCLK
+    | WS
+    | DOUT
+    |
+I2S 功放
+    |
+    |
+扬声器</code></pre>
+
+<h3>3. 为什么不能直接用 GPIO 驱动扬声器？</h3>
+
+<p>因为 GPIO 只能提供有限的数字输出驱动能力。</p>
+
+<p>扬声器需要相对较大的驱动电流。</p>
+
+<p>因此通常需要：</p>
+
+<ul><li>音频功放；</li><li>合适的扬声器阻抗；</li><li>电源去耦；</li><li>合理的地线和音频布局。</li></ul>
+
+<p>对于你正在研究的语音终端，I2S 麦克风和功放是后续必须深入掌握的部分。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十三、GPIO 电气保护：为什么硬件设计不能只考虑能不能接通？</h2>
+
+<p>很多初学者能够把传感器连接起来，但没有考虑电气保护。</p>
+
+<p>这可能导致设备偶尔异常，甚至损坏芯片。</p>
+
+<h3>1. 过压保护</h3>
+
+<p>ESP32-S3 GPIO 不能直接承受任意电压。</p>
+
+<p>如果外部传感器输出 5V，需要根据接口情况设计：</p>
+
+<ul><li>电阻分压；</li><li>电平转换芯片；</li><li>缓冲器；</li><li>专用保护电路。</li></ul>
+
+<h3>2. ESD 静电保护</h3>
+
+<p>如果设备有外露 USB、按钮和外部连接器，静电可能通过接口进入电路。</p>
+
+<p>可以在适当接口使用 ESD 保护器件。</p>
+
+
+<figure class="cg-figure"><img src="../tutorial/images/21-08.jpg" alt="PCB Surge Protection: Designing Your PCB for Transient Voltage Suppression" loading="lazy"><figcaption><a href="https://files.resources.altium.com/sites/default/files/styles/max_width_1300/public/inline-images/usb-uart-tvs.png?VersionId=UmGEae76urUqHa7B36GC.Nb5CsfN3_EU&amp;itok=n2q8-9-G" target="_blank" rel="noopener">PCB Surge Protection: Designing Your PCB for Transient Voltage Suppression</a> · 搜索词：USB connector ESD protection TVS diode PCB schematic layout</figcaption></figure>
+
+
+<h3>3. 反接保护</h3>
+
+<p>如果设备使用外部电池或直流电源，需要考虑反接保护。</p>
+
+<p>常见方法：</p>
+
+<ul><li>串联二极管；</li><li>MOSFET 理想二极管结构；</li><li>专用电源保护芯片。</li></ul>
+
+<p>不同方案在压降、效率和成本上有所区别。</p>
+
+<h3>4. 电源去耦</h3>
+
+<p>芯片和外设在工作过程中会产生瞬态电流变化。</p>
+
+<p>去耦电容可以帮助降低局部电源阻抗。</p>
+
+<p>常见配置会包括：</p>
+
+<ul><li>0.1μF 陶瓷电容；</li><li>1μF 陶瓷电容；</li><li>10μF 或更大的储能电容。</li></ul>
+
+<p>但实际数量、位置和容量应根据芯片参考设计、稳压器数据手册以及 PCB 布局确定。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十四、XIAO ESP32S3 的接口调试工具</h2>
+
+<p>建议你逐步准备以下工具。</p>
+
+
+<div class="cg-grid" style="--cols:2"><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/21-09.jpg" alt="Smart Bench Essentials Plus | Keysight" loading="lazy"><figcaption><a href="https://www.keysight.com/content/dam/keysight/de/img/prd/smart-bench-essentials/sbe-plus/Smart-Bench-Essentials-Plus_In-Use_1600x900.png?fmt=png-alpha&amp;hei=219&amp;op_sharpen=1&amp;resMode=sharp2&amp;wid=388" target="_blank" rel="noopener">Smart Bench Essentials Plus | Keysight</a> · 搜索词：digital multimeter electronic measurement bench</figcaption></figure><strong>数字万用表</strong><span class="cg-text is-secondary is-xs">测量电压、电阻、通断和静态电流。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/21-10.jpg" alt="SparkFun USB Logic Analyser, 24MHz / 8 channels - buy at BerryBase" loading="lazy"><figcaption><a href="https://www.berrybase.de/media/74/3f/1c/1726353103/SparkFunUSBLogicAnalyzer24MHz8Kanle-163032.webp?ts=1750874015" target="_blank" rel="noopener">SparkFun USB Logic Analyser, 24MHz / 8 channels - buy at BerryBase</a> · 搜索词：USB logic analyzer 8 channel electronics</figcaption></figure><strong>逻辑分析仪</strong><span class="cg-text is-secondary is-xs">分析 I2C、SPI、UART、数字时序。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/21-11.jpg" alt="Rohde &amp; Schwarz Unveils Compact MXO 3 Oscilloscopes with Four and Eight Channels | Signal Integrity Journal" loading="lazy"><figcaption><a href="https://www.signalintegrityjournal.com/ext/resources/images/Newsletters/News/News_1/RS-10-15-25.webp?t=1760530883" target="_blank" rel="noopener">Rohde &amp; Schwarz Unveils Compact MXO 3 Oscilloscopes with Four and Eight Channels | Signal Integrity Journal</a> · 搜索词：digital oscilloscope electronics laboratory</figcaption></figure><strong>示波器</strong><span class="cg-text is-secondary is-xs">观察 PWM、时钟、噪声和电源波形。</span></div><div class="cg-grid-item"><figure class="cg-figure"><img src="../tutorial/images/21-12.jpg" alt="Amperometr Fnirsi cyfrowy FNB48, 5905191065973 • Cena • Opinie - Allegro" loading="lazy"><figcaption><a href="https://a.allegroimg.com/s720/118d13/9159159544569117a5af7ff09652/Wielofunkcyjny-miernik-tester-portu-USB-Fnirsi-FNB48-bez-Bluetooth-LCD-TFT" target="_blank" rel="noopener">Amperometr Fnirsi cyfrowy FNB48, 5905191065973 • Cena • Opinie - Allegro</a> · 搜索词：electronics USB current meter power measurement</figcaption></figure><strong>USB 电流表</strong><span class="cg-text is-secondary is-xs">观察开发板工作电流和功耗变化。</span></div></div>
+
+
+<h3>不同问题应该用什么工具？</h3>
+
+<div class="table-wrap"><table><thead><tr><th>问题</th><th>首选工具</th></tr></thead><tbody><tr><td>GPIO 是否输出高电平</td><td>万用表</td></tr><tr><td>按钮是否抖动</td><td>示波器</td></tr><tr><td>I2C 地址是否正确</td><td>逻辑分析仪</td></tr><tr><td>SPI 时钟是否正常</td><td>逻辑分析仪</td></tr><tr><td>电源是否瞬间跌落</td><td>示波器</td></tr><tr><td>Wi-Fi 工作时功耗</td><td>电流测量设备</td></tr><tr><td>软件异常</td><td>串口日志、GDB</td></tr></tbody></table></div>
+
+<hr class="cg-divider"/>
+
+<h2>十五、综合实战：建立 XIAO ESP32S3 硬件接口实验室</h2>
+
+<p>建议在你的项目仓库中建立独立的硬件实验工程。</p>
+
+<pre class="code"><code class="language-text">XIAO-ESP32S3-Projects/
+└── projects/
+    └── hardware_interface_lab/
+        ├── 01_gpio_output/
+        ├── 02_gpio_input/
+        ├── 03_gpio_interrupt/
+        ├── 04_button_debounce/
+        ├── 05_adc/
+        ├── 06_pwm/
+        ├── 07_i2c/
+        ├── 08_spi/
+        ├── 09_uart/
+        ├── 10_i2s_microphone/
+        ├── 11_i2s_amplifier/
+        └── docs/
+            ├── pin_mapping.md
+            ├── electrical_design.md
+            ├── wiring_guide.md
+            └── measurement_guide.md</code></pre>
+
+<h3>实验顺序与验收标准</h3>
+
+<div class="table-wrap"><table><thead><tr><th>实验</th><th>验收目标</th></tr></thead><tbody><tr><td>GPIO 输出</td><td>正确控制 LED</td></tr><tr><td>GPIO 输入</td><td>正确读取按钮</td></tr><tr><td>GPIO 中断</td><td>按键触发任务通知</td></tr><tr><td>按键消抖</td><td>一次按下只产生一次有效事件</td></tr><tr><td>ADC</td><td>能够读取电位器变化</td></tr><tr><td>PWM</td><td>能够控制 LED 亮度</td></tr><tr><td>I2C</td><td>能够识别 OLED</td></tr><tr><td>SPI</td><td>能够读取或写入外设</td></tr><tr><td>UART</td><td>能够与外部设备通信</td></tr><tr><td>I2S 麦克风</td><td>能够采集数字音频</td></tr><tr><td>I2S 功放</td><td>能够正常播放声音</td></tr></tbody></table></div>
+
+<p>注意：所有实验的 GPIO 都应先核对普通版 XIAO ESP32S3 引脚表，不能直接使用示例代码中的 GPIO 编号。</p>
+
+<hr class="cg-divider"/>
+
+<h2>十六、给 Codex 的第二十一课实践任务</h2>
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><strong>XIAO ESP32S3 Hardware Interface Lab</strong><span class="cg-badge color-success">独立实验工程</span>
+
+  要求 Codex 在现有项目中创建硬件接口实验室，不能修改已经正常工作的工程。
+
+  实施要求：
+
+<ol><li>核对普通版 XIAO ESP32S3 官方引脚映射。</li><li>建立 GPIO 输入输出实验。</li><li>建立 GPIO 中断实验。</li><li>建立按钮消抖实验。</li><li>建立 ADC 电压采集实验。</li><li>建立 LEDC PWM 实验。</li><li>建立 I2C OLED 实验。</li><li>建立 SPI 外设实验。</li><li>建立 UART 通信实验。</li><li>建立 I2S 麦克风实验。</li><li>建立 I2S 功放实验。</li><li>为每个实验编写接线图和测试说明。</li><li>记录 GPIO 占用和外设冲突。</li><li>为每个实验提供独立构建方式。</li></ol>
+  <button type="button" class="cg-btn" disabled><span class="cg-icon" data-icon="copy" style="color:currentColor;width:1.25rem;height:1.25rem" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span> 复制 Codex 实践任务
+  </button></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十七、本课学习验收</h2>
+
+
+
+
+<div class="cg-box has-border radius-lg" style="--gap:3;--pad:3;"><div class="cg-row justify-between" style="--gap:2;align-items:center"><strong>第二十一课学习进度</strong><span class="cg-text is-secondary">/</span></div><div class="cg-box radius-full bg-surface-tertiary" style="--gap:2;--pad:0;"><div class="cg-box radius-full" style="--gap:2;--pad:0;background:#16A34A;"></div></div></div>
+
+
+<hr class="cg-divider"/>
+
+<h2>十八、下一课：XIAO ESP32S3 电源系统与 PCB 设计</h2>
+
+
+<h2 class="cg-title">第二十二课：电源电路、锂电池、稳压器与 PCB 布局</h2>
+
+
+<p>下一课将进一步深入硬件设计，重点学习：</p>
+
+<ol><li>XIAO ESP32S3 电源输入结构。</li><li>USB 5V 与 3.3V 电源关系。</li><li>LDO 和 DC-DC 稳压器。</li><li>锂电池充电和保护。</li><li>电池电量检测。</li><li>Wi-Fi 发射瞬态电流。</li><li>电容选型与去耦布局。</li><li>地平面与电源走线。</li><li>模拟地和数字地。</li><li>ESD 与 USB 接口保护。</li><li>PCB 层数和布线规则。</li><li>PCB 电源完整性。</li><li>电路板尺寸与连接器布局。</li><li>KiCad 原理图和 PCB 设计。</li><li>FreeCAD 外壳与 PCB 尺寸协同。</li></ol>
+
+<p>特别是你之前正在研究的电路板外壳项目，下一课会把电源、电路板、接口和外壳的设计联系起来。</p>
+
+<p><strong>第二十一课最重要的结论：</strong></p>
+
+<p>GPIO 不只是一个能够输出高低电平的引脚。它背后涉及数字电路、电气特性、时序、外设复用和中断机制。掌握这些原理，才能从单纯使用开发板，逐步走向独立设计 XIAO ESP32S3 产品。</p>
+
+<p>官方参考资料：</p>
+
+<ul><li><a class="cg-link" href="https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/" target="_blank" rel="noopener">Seeed XIAO ESP32S3 官方入门指南<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/gpio.html" target="_blank" rel="noopener">ESP32-S3 GPIO 驱动<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/adc_oneshot.html" target="_blank" rel="noopener">ADC One-shot 驱动<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/ledc.html" target="_blank" rel="noopener">LEDC PWM 驱动<span class="cg-ext" aria-hidden="true">↗</span></a></li><li><a class="cg-link" href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/i2c.html" target="_blank" rel="noopener">I2C 驱动<span class="cg-ext" aria-hidden="true">↗</span></a></li></ul>
+</div></section>
+<nav class="lesson-nav"><a href="20-第二十课：XIAO ESP32S3 工程架构与产品级开发.html">← 第二十课：XIAO ESP32S3 工程架构与产品级开发</a><span class="spacer"></span><a href="22-第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理.html">第二十二课：XIAO ESP32S3 电源系统与 PCB 设计原理 →</a></nav>
+</main></body></html>
